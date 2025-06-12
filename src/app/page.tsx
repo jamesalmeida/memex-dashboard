@@ -1,13 +1,44 @@
-import { supabase } from '@/lib/supabaseClient'
+'use client'
 
-export default async function Home() {
-  // simple ping: read current time from Supabase
-  const { data, error } = await supabase.rpc('now')
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/utils/supabaseClient'
+
+export default function Home() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        router.push('/dashboard')
+      } else {
+        router.push('/login')
+      }
+    }
+
+    // Check on mount
+    checkUser()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        router.push('/dashboard')
+      } else {
+        router.push('/login')
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router])
+
   return (
-    <main className="p-8">
-      <h1 className="text-xl font-bold">Memex dashboard</h1>
-      <p>Supabase says it is: {data ?? error?.message}</p>
-    </main>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold">Loading...</h1>
+      </div>
+    </div>
   )
 }
 
