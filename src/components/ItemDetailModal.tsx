@@ -201,21 +201,185 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* Generate Transcript Button for Videos */}
-          {currentItem.content_type === 'video' && (
-            <div className="mb-4">
-              <button
-                onClick={handleGenerateTranscript}
-                className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          {/* Content-Type Specific Sections */}
+          {currentItem.content_type === 'youtube' && (
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <h3 className="font-medium text-red-900 dark:text-red-100 mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                 </svg>
-                Generate Transcript
-              </button>
-              <p className="text-xs text-gray-500 mt-1 text-center">
-                AI-powered transcript generation (coming soon)
-              </p>
+                YouTube Video
+              </h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {currentItem.metadata?.duration && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Duration:</span>
+                      <span className="ml-2 font-medium">{currentItem.metadata.duration}</span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.views && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Views:</span>
+                      <span className="ml-2 font-medium">{currentItem.metadata.views.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleGenerateTranscript}
+                    className="flex-1 px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Get Transcript
+                  </button>
+                  <button className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Watch Later
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentItem.content_type === 'github' && (
+            <div className="mb-6 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                GitHub Repository
+              </h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {currentItem.metadata?.stars && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Stars:</span>
+                      <span className="ml-2 font-medium">{currentItem.metadata.stars.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.forks && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Forks:</span>
+                      <span className="ml-2 font-medium">{currentItem.metadata.forks.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.language && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Language:</span>
+                      <span className="ml-2 font-medium">{currentItem.metadata.language}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button className="flex-1 px-3 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Clone Repo
+                  </button>
+                  <button className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    Star
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(currentItem.content_type === 'amazon' || currentItem.content_type === 'product') && (
+            <div className="mb-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+              <h3 className="font-medium text-orange-900 dark:text-orange-100 mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                Product
+              </h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {currentItem.metadata?.price && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Price:</span>
+                      <span className="ml-2 font-medium text-green-600 dark:text-green-400">{currentItem.metadata.price}</span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.rating && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Rating:</span>
+                      <span className="ml-2 font-medium">{currentItem.metadata.rating}/5 ⭐</span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.reviews && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Reviews:</span>
+                      <span className="ml-2 font-medium">{currentItem.metadata.reviews.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.in_stock !== undefined && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Stock:</span>
+                      <span className={`ml-2 font-medium ${currentItem.metadata.in_stock ? 'text-green-600' : 'text-red-600'}`}>
+                        {currentItem.metadata.in_stock ? 'In Stock' : 'Out of Stock'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button className="flex-1 px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.5 12.5l6 6 9-13.5" />
+                    </svg>
+                    Price Alert
+                  </button>
+                  <button className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    Wishlist
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentItem.content_type === 'article' && (
+            <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+                Article
+              </h3>
+              <div className="space-y-3">
+                <div className="text-sm">
+                  {currentItem.metadata?.published_date && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Published:</span>
+                      <span className="ml-2 font-medium">{new Date(currentItem.metadata.published_date).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Summarize
+                  </button>
+                  <button className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Mark Read
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
