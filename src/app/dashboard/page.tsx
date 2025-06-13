@@ -189,12 +189,12 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10 transition-colors">
+      <header id="main-header" className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between pt-4 gap-4">
             <div></div>
             {/* Navigation Links */}
-            <div className="flex items-center gap-2">
+            <div id="navigation-pills" className="flex items-center gap-2">
               <button
                 onClick={handleBackToEverything}
                 className={`text-sm font-medium transition-colors px-3 py-1.5 rounded-full ${
@@ -225,11 +225,11 @@ export default function Dashboard() {
 
       <div className="px-4 md:pl-20 md:pr-20 pb-8">
         {/* Search Bar with New Space Button */}
-        <div className="mb-6">
+        <div id="search-section" className="mb-6">
           <div className="flex gap-3 items-center">
             {/* Selected Content Type Indicator */}
             {selectedContentType && (
-              <div className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 whitespace-nowrap">
+              <div id="selected-filter-pill" className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 whitespace-nowrap">
                 <span className="capitalize">{selectedContentType.replace(/([A-Z])/g, ' $1').trim()}</span>
                 <button
                   onClick={() => setSelectedContentType(null)}
@@ -282,8 +282,8 @@ export default function Dashboard() {
 
           {/* Content Type Filter Pills - Show when search is focused and not in spaces view */}
           {isSearchFocused && viewMode !== 'spaces' && (
-            <div className="mt-4 overflow-x-auto">
-              <div className="flex gap-2 pb-2">
+            <div id="filter-pills-container" className="mt-4 overflow-x-auto">
+              <div id="filter-pills" className="flex gap-2 pb-2">
                 {/* All Types pill */}
                 <button
                   onClick={() => setSelectedContentType(null)}
@@ -315,17 +315,10 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Space Title for space-detail view */}
-        {viewMode === 'space-detail' && selectedSpace && (
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {selectedSpace}
-            </h1>
-          </div>
-        )}
 
         {/* Masonry Grid with Different Content Based on View Mode */}
-        <MasonryGrid gap={16}>
+        <div id="content-grid">
+          <MasonryGrid gap={16}>
           {viewMode === 'everything' && (
             <>
               {/* New Item Card - Position 1 */}
@@ -376,11 +369,12 @@ export default function Dashboard() {
               ))}
             </>
           )}
-        </MasonryGrid>
+          </MasonryGrid>
+        </div>
         
         {/* Empty state message when no items match search */}
         {viewMode !== 'spaces' && filteredItems.length === 0 && searchQuery && (
-          <div className="text-center py-12">
+          <div id="empty-state" className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
