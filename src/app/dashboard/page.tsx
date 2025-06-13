@@ -304,21 +304,21 @@ export default function Dashboard() {
             
             <div className="relative flex-1">
               {/* Custom placeholder overlay */}
-              {!searchQuery && !isSearchFocused && (
-                <div className="absolute left-0 top-0 text-4xl font-serif pb-2 pointer-events-none w-full overflow-hidden whitespace-nowrap">
-                  <span className="font-light text-gray-500 dark:text-gray-600">Search </span>
-                  <span className="font-medium" style={{ color: '#ff4d06' }}>
-                    {viewMode === 'everything' 
-                      ? 'everything' 
-                      : viewMode === 'spaces'
-                        ? 'spaces'
-                      : viewMode === 'space-detail' && selectedSpace 
-                        ? selectedSpace 
-                        : 'memex'
-                    }...
-                  </span>
-                </div>
-              )}
+              <div className={`absolute left-0 top-0 text-4xl font-serif pb-2 pointer-events-none w-full overflow-hidden whitespace-nowrap transition-opacity duration-200 ease-in-out ${
+                !searchQuery && !isSearchFocused ? 'opacity-100' : 'opacity-0'
+              }`}>
+                <span className="font-light text-gray-500 dark:text-gray-600">Search </span>
+                <span className="font-medium" style={{ color: '#ff4d06' }}>
+                  {viewMode === 'everything' 
+                    ? 'everything' 
+                    : viewMode === 'spaces'
+                      ? 'spaces'
+                    : viewMode === 'space-detail' && selectedSpace 
+                      ? selectedSpace 
+                      : 'memex'
+                  }...
+                </span>
+              </div>
               <input
                 type="text"
                 className="w-full text-4xl font-light bg-transparent outline-none text-gray-900 dark:text-gray-100 font-serif border-b border-gray-400 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 focus:border-gray-700 dark:focus:border-gray-300 transition-colors pb-2"
@@ -335,38 +335,43 @@ export default function Dashboard() {
           </div>
 
           {/* Content Type Filter Pills - Show when search is focused and not in spaces view */}
-          {isSearchFocused && viewMode !== 'spaces' && (
-            <div id="filter-pills-container" className="mt-4 overflow-x-auto">
-              <div id="filter-pills" className="flex gap-2 pb-2">
-                {/* All Types pill */}
+          <div 
+            id="filter-pills-container" 
+            className={`overflow-hidden transition-all duration-300 ease-out ${
+              isSearchFocused && viewMode !== 'spaces'
+                ? 'max-h-20 opacity-100 mt-4'
+                : 'max-h-0 opacity-0 mt-0'
+            }`}
+          >
+            <div id="filter-pills" className="flex gap-2 pb-2 overflow-x-auto">
+              {/* All Types pill */}
+              <button
+                onClick={() => setSelectedContentType(null)}
+                className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 ${
+                  selectedContentType === null
+                    ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }`}
+              >
+                All Types
+              </button>
+              
+              {/* Individual content type pills */}
+              {getAvailableContentTypes().map((contentType) => (
                 <button
-                  onClick={() => setSelectedContentType(null)}
-                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 ${
-                    selectedContentType === null
+                  key={contentType}
+                  onClick={() => setSelectedContentType(contentType === selectedContentType ? null : contentType)}
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 capitalize ${
+                    selectedContentType === contentType
                       ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
                       : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                   }`}
                 >
-                  All Types
+                  {contentType.replace(/([A-Z])/g, ' $1').trim()}
                 </button>
-                
-                {/* Individual content type pills */}
-                {getAvailableContentTypes().map((contentType) => (
-                  <button
-                    key={contentType}
-                    onClick={() => setSelectedContentType(contentType === selectedContentType ? null : contentType)}
-                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 capitalize ${
-                      selectedContentType === contentType
-                        ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-                    }`}
-                  >
-                    {contentType.replace(/([A-Z])/g, ' $1').trim()}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
 
 
