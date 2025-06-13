@@ -136,6 +136,7 @@ const ContentTypeIcon = ({ type }: { type: MockItem['content_type'] }) => {
 
 export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, onClick }: ItemCardProps) {
   const [showActions, setShowActions] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -164,17 +165,18 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
 
   return (
     <div 
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all flex flex-col cursor-pointer max-w-full"
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all flex flex-col cursor-pointer max-w-full relative"
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
       onClick={handleCardClick}
     >
-      {item.thumbnail && (
+      {item.thumbnail && !imageError ? (
         <div className={`relative overflow-hidden bg-gray-100 ${shouldShowFullImage() ? '' : 'flex-shrink-0'}`} style={{ height: shouldShowFullImage() ? 'auto' : '120px' }}>
           <img 
             src={item.thumbnail} 
             alt={item.title}
             className={`w-full ${shouldShowFullImage() ? 'h-auto' : 'h-full object-cover'}`}
+            onError={() => setImageError(true)}
           />
           {showActions && (
             <div className="absolute top-2 right-2 flex gap-1">
@@ -197,6 +199,28 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
             </div>
           )}
         </div>
+      ) : (
+        // Show action buttons in top right corner for cards without images
+        showActions && (
+          <div className="absolute top-2 right-2 flex gap-1">
+            <button 
+              className="p-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              onClick={() => onArchive?.(item.id)}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8l4 0V6a2 2 0 012-2h2a2 2 0 012 2v2l4 0m-6 12V10m0 0l1-1m-1 1l-1-1" />
+              </svg>
+            </button>
+            <button 
+              className="p-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              onClick={() => onDelete?.(item.id)}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        )
       )}
       
       <div className="p-4 flex-1 flex flex-col">
