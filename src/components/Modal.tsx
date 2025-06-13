@@ -15,7 +15,7 @@ export default function Modal({ isOpen, onClose, children, title, modalId }: Mod
   const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true);
   const modalRef = useRef<HTMLDivElement>(null);
   const startY = useRef<number>(0);
   const currentY = useRef<number>(0);
@@ -59,7 +59,7 @@ export default function Modal({ isOpen, onClose, children, title, modalId }: Mod
       // Wait for animation to complete before removing from DOM
       setTimeout(() => {
         setShouldRender(false);
-        setIsFullscreen(false); // Reset fullscreen after animation completes
+        setIsFullscreen(true); // Reset to fullscreen (default) after animation completes
       }, 550); // Slightly longer than transition duration
     }
   }, [isOpen, isVisible]);
