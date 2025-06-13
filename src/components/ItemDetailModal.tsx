@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { MockItem, mockProjects } from '@/utils/mockData';
+import { MockItem, mockSpaces } from '@/utils/mockData';
 
 interface ItemDetailModalProps {
   item: MockItem | null;
@@ -72,14 +72,14 @@ export default function ItemDetailModal({
   onUpdateItem 
 }: ItemDetailModalProps) {
   const [newTag, setNewTag] = useState('');
-  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [selectedSpace, setSelectedSpace] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [showTagInput, setShowTagInput] = useState(false);
 
   useEffect(() => {
     if (item) {
       setTags(item.metadata?.tags || []);
-      setSelectedProject(item.project || 'none');
+      setSelectedSpace(item.space || 'none');
     }
   }, [item]);
 
@@ -128,10 +128,10 @@ export default function ItemDetailModal({
     });
   };
 
-  const handleProjectChange = (newProject: string) => {
-    setSelectedProject(newProject);
+  const handleSpaceChange = (newSpace: string) => {
+    setSelectedSpace(newSpace);
     onUpdateItem?.(item.id, { 
-      project: newProject === 'none' ? undefined : newProject 
+      space: newSpace === 'none' ? undefined : newSpace 
     });
   };
 
@@ -244,20 +244,20 @@ export default function ItemDetailModal({
 
           {/* Metadata */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {/* Project */}
+            {/* Space */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Project
+                Space
               </label>
               <select
-                value={selectedProject}
-                onChange={(e) => handleProjectChange(e.target.value)}
+                value={selectedSpace}
+                onChange={(e) => handleSpaceChange(e.target.value)}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="none">No project</option>
-                {mockProjects.map((project) => (
-                  <option key={project.id} value={project.name}>
-                    {project.name}
+                <option value="none">No space</option>
+                {mockSpaces.map((space) => (
+                  <option key={space.id} value={space.name}>
+                    {space.name}
                   </option>
                 ))}
               </select>

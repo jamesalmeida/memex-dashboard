@@ -7,7 +7,7 @@ interface ItemCardProps {
   item: MockItem;
   onArchive?: (id: string) => void;
   onDelete?: (id: string) => void;
-  onMoveToProject?: (id: string, projectId: string) => void;
+  onMoveToProject?: (id: string, spaceId: string) => void;
   onClick?: (item: MockItem) => void;
 }
 
@@ -173,9 +173,9 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
 
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 min-w-0">
             <span className="truncate">{formatDate(item.created_at)}</span>
-            {item.project && (
+            {item.space && (
               <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded truncate max-w-20 ml-1">
-                {item.project}
+                {item.space}
               </span>
             )}
           </div>

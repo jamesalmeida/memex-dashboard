@@ -14,7 +14,7 @@ export interface MockItem {
     tags?: string[];
   };
   created_at: string;
-  project?: string;
+  space?: string;
 }
 
 export const mockItems: MockItem[] = [
@@ -31,7 +31,7 @@ export const mockItems: MockItem[] = [
       tags: ['web-development', 'components', 'javascript']
     },
     created_at: '2024-12-06T10:30:00Z',
-    project: 'Frontend Learning'
+    space: 'Frontend Learning'
   },
   {
     id: '2',
@@ -47,7 +47,7 @@ export const mockItems: MockItem[] = [
       tags: ['ai', 'design', 'future-tech']
     },
     created_at: '2024-12-05T15:45:00Z',
-    project: 'AI Research'
+    space: 'AI Research'
   },
   {
     id: '3',
@@ -62,7 +62,7 @@ export const mockItems: MockItem[] = [
       tags: ['architecture', 'minimalism', 'photography']
     },
     created_at: '2024-12-04T09:15:00Z',
-    project: 'Design Inspiration'
+    space: 'Design Inspiration'
   },
   {
     id: '4',
@@ -77,7 +77,7 @@ export const mockItems: MockItem[] = [
       tags: ['programming', 'problem-solving', 'architecture']
     },
     created_at: '2024-12-03T14:20:00Z',
-    project: 'Technical Reading'
+    space: 'Technical Reading'
   },
   {
     id: '5',
@@ -88,7 +88,7 @@ export const mockItems: MockItem[] = [
       tags: ['meetings', 'design', 'notes']
     },
     created_at: '2024-12-02T11:00:00Z',
-    project: 'Work Notes'
+    space: 'Work Notes'
   },
   {
     id: '6',
@@ -103,7 +103,7 @@ export const mockItems: MockItem[] = [
       tags: ['web-development', 'trends', 'discussion']
     },
     created_at: '2024-12-01T16:30:00Z',
-    project: 'Industry Trends'
+    space: 'Industry Trends'
   },
   {
     id: '7',
@@ -118,7 +118,7 @@ export const mockItems: MockItem[] = [
       tags: ['typescript', 'programming', 'advanced']
     },
     created_at: '2024-11-30T13:45:00Z',
-    project: 'Frontend Learning'
+    space: 'Frontend Learning'
   },
   {
     id: '8',
@@ -134,7 +134,7 @@ export const mockItems: MockItem[] = [
       tags: ['nature', 'documentary', 'ocean']
     },
     created_at: '2024-11-29T20:15:00Z',
-    project: 'Personal Interest'
+    space: 'Personal Interest'
   },
   {
     id: '9',
@@ -149,7 +149,7 @@ export const mockItems: MockItem[] = [
       tags: ['workspace', 'minimalism', 'productivity']
     },
     created_at: '2024-11-28T08:30:00Z',
-    project: 'Design Inspiration'
+    space: 'Design Inspiration'
   },
   {
     id: '10',
@@ -164,16 +164,24 @@ export const mockItems: MockItem[] = [
       tags: ['database', 'design', 'sql']
     },
     created_at: '2024-11-27T12:00:00Z',
-    project: 'Technical Reading'
+    space: 'Technical Reading'
   }
 ];
 
-export const mockProjects = [
-  { id: 'frontend-learning', name: 'Frontend Learning', color: '#3B82F6', count: 2 },
-  { id: 'ai-research', name: 'AI Research', color: '#8B5CF6', count: 1 },
-  { id: 'design-inspiration', name: 'Design Inspiration', color: '#10B981', count: 2 },
-  { id: 'technical-reading', name: 'Technical Reading', color: '#F59E0B', count: 2 },
-  { id: 'work-notes', name: 'Work Notes', color: '#EF4444', count: 1 },
-  { id: 'industry-trends', name: 'Industry Trends', color: '#6366F1', count: 1 },
-  { id: 'personal-interest', name: 'Personal Interest', color: '#84CC16', count: 1 }
+export interface MockSpace {
+  id: string;
+  name: string;
+  color: string;
+  count: number;
+  description?: string;
+}
+
+export const mockSpaces: MockSpace[] = [
+  { id: 'frontend-learning', name: 'Frontend Learning', color: '#3B82F6', count: 2, description: 'Web development tutorials and guides' },
+  { id: 'ai-research', name: 'AI Research', color: '#8B5CF6', count: 1, description: 'Artificial intelligence articles and videos' },
+  { id: 'design-inspiration', name: 'Design Inspiration', color: '#10B981', count: 2, description: 'Creative design ideas and examples' },
+  { id: 'technical-reading', name: 'Technical Reading', color: '#F59E0B', count: 2, description: 'Technical documentation and papers' },
+  { id: 'work-notes', name: 'Work Notes', color: '#EF4444', count: 1, description: 'Meeting notes and work-related content' },
+  { id: 'industry-trends', name: 'Industry Trends', color: '#6366F1', count: 1, description: 'Latest industry news and trends' },
+  { id: 'personal-interest', name: 'Personal Interest', color: '#84CC16', count: 1, description: 'Personal hobbies and interests' }
 ];

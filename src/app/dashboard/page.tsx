@@ -7,19 +7,21 @@ import ItemCard from '@/components/ItemCard';
 import CaptureModal from '@/components/CaptureModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import NewItemCard from '@/components/NewItemCard';
+import SpaceCard from '@/components/SpaceCard';
 import MasonryGrid from '@/components/MasonryGrid';
 import LeftRail from '@/components/LeftRail';
 import SettingsModal from '@/components/SettingsModal';
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
-import { mockItems, mockProjects, type MockItem } from '@/utils/mockData';
+import { mockItems, mockSpaces, type MockItem, type MockSpace } from '@/utils/mockData';
 
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProject, setSelectedProject] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'everything' | 'spaces' | 'space-detail'>('everything');
+  const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
   const [showCaptureModal, setShowCaptureModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MockItem | null>(null);
   const [showItemDetail, setShowItemDetail] = useState(false);
@@ -30,10 +32,10 @@ export default function Dashboard() {
   // Use mock data for now (UI-first approach)
   const [mockItemsState, setMockItemsState] = useState<MockItem[]>(mockItems);
 
-  // Calculate project counts dynamically
-  const projectCounts = mockProjects.map(project => ({
-    ...project,
-    count: mockItemsState.filter(item => item.project === project.name).length
+  // Calculate space counts dynamically
+  const spaceCounts = mockSpaces.map(space => ({
+    ...space,
+    count: mockItemsState.filter(item => item.space === space.name).length
   }));
 
   useEffect(() => {
@@ -62,9 +64,13 @@ export default function Dashboard() {
       item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.metadata?.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesProject = selectedProject === 'all' || item.project === selectedProject;
+    if (viewMode === 'everything') {
+      return matchesSearch;
+    } else if (viewMode === 'space-detail' && selectedSpace) {
+      return matchesSearch && item.space === selectedSpace;
+    }
     
-    return matchesSearch && matchesProject;
+    return false; // For spaces view, we don't show items
   });
 
   const handleArchive = (id: string) => {
@@ -75,8 +81,23 @@ export default function Dashboard() {
     setMockItemsState(items => items.filter(item => item.id !== id));
   };
 
-  const handleMoveToProject = (id: string, projectId: string) => {
-    console.log('Move item to project:', id, projectId);
+  const handleMoveToSpace = (id: string, spaceId: string) => {
+    console.log('Move item to space:', id, spaceId);
+  };
+
+  const handleSpaceClick = (space: MockSpace) => {
+    setSelectedSpace(space.name);
+    setViewMode('space-detail');
+  };
+
+  const handleBackToEverything = () => {
+    setViewMode('everything');
+    setSelectedSpace(null);
+  };
+
+  const handleShowSpaces = () => {
+    setViewMode('spaces');
+    setSelectedSpace(null);
   };
 
   const handleAddItem = (newItemData: Omit<MockItem, 'id' | 'created_at'>, openDetail: boolean = false) => {
@@ -136,7 +157,30 @@ export default function Dashboard() {
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4 gap-4">
-            {/* Empty header for now */}
+            <div></div>
+            {/* Navigation Links */}
+            <div className="flex items-center gap-6">
+              <button
+                onClick={handleBackToEverything}
+                className={`text-sm font-medium transition-colors ${
+                  viewMode === 'everything' 
+                    ? 'text-blue-600 dark:text-blue-400' 
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+              >
+                Everything
+              </button>
+              <button
+                onClick={handleShowSpaces}
+                className={`text-sm font-medium transition-colors ${
+                  viewMode === 'spaces' 
+                    ? 'text-blue-600 dark:text-blue-400' 
+                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+              >
+                Spaces
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -163,67 +207,77 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Masonry Grid with Left-to-Right Order */}
-        <MasonryGrid gap={16}>
-          {/* Project Selector Card - Position 1 */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Projects</h3>
-            <div className="space-y-2">
-              <button
-                onClick={() => setSelectedProject('all')}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  selectedProject === 'all' 
-                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium' 
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                All Items ({mockItemsState.length})
-              </button>
-              {projectCounts.map((project) => (
-                <button
-                  key={project.id}
-                  onClick={() => setSelectedProject(project.name)}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                    selectedProject === project.name 
-                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium' 
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <div 
-                    className="w-3 h-3 rounded-full flex-shrink-0" 
-                    style={{ backgroundColor: project.color }}
-                  ></div>
-                  <span className="truncate">{project.name}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">({project.count})</span>
-                </button>
-              ))}
-            </div>
+        {/* Space Title for space-detail view */}
+        {viewMode === 'space-detail' && selectedSpace && (
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {selectedSpace}
+            </h1>
           </div>
+        )}
 
-          {/* New Item Card - Position 2 */}
-          <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
-          
-          {/* Existing Items - Positions 3+ */}
-          {filteredItems.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              onArchive={handleArchive}
-              onDelete={handleDelete}
-              onMoveToProject={handleMoveToProject}
-              onClick={handleItemClick}
-            />
-          ))}
+        {/* Masonry Grid with Different Content Based on View Mode */}
+        <MasonryGrid gap={16}>
+          {viewMode === 'everything' && (
+            <>
+              {/* New Item Card - Position 1 */}
+              <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
+              
+              {/* Existing Items - Positions 2+ */}
+              {filteredItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onArchive={handleArchive}
+                  onDelete={handleDelete}
+                  onMoveToProject={handleMoveToSpace}
+                  onClick={handleItemClick}
+                />
+              ))}
+            </>
+          )}
+
+          {viewMode === 'spaces' && (
+            <>
+              {/* Space Cards */}
+              {spaceCounts.map((space) => (
+                <SpaceCard
+                  key={space.id}
+                  space={space}
+                  onClick={handleSpaceClick}
+                />
+              ))}
+            </>
+          )}
+
+          {viewMode === 'space-detail' && (
+            <>
+              {/* New Item Card - Position 1 */}
+              <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
+              
+              {/* Items in Selected Space - Positions 2+ */}
+              {filteredItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onArchive={handleArchive}
+                  onDelete={handleDelete}
+                  onMoveToProject={handleMoveToSpace}
+                  onClick={handleItemClick}
+                />
+              ))}
+            </>
+          )}
         </MasonryGrid>
         
         {/* Empty state message when no items match search */}
-        {filteredItems.length === 0 && searchQuery && (
+        {viewMode !== 'spaces' && filteredItems.length === 0 && searchQuery && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No items found</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No items found</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               No items match &ldquo;{searchQuery}&rdquo;. Try a different search term.
             </p>
           </div>
