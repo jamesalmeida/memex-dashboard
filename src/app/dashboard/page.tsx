@@ -188,45 +188,67 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      {/* Header */}
-      <header id="main-header" className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between pt-4 gap-4">
-            <div></div>
-            {/* Navigation Links */}
-            <div id="navigation-pills" className="flex items-center gap-2">
-              <button
-                onClick={handleBackToEverything}
-                className={`text-sm font-medium transition-colors px-3 py-1.5 rounded-full ${
-                  viewMode === 'everything' 
-                    ? 'bg-[rgb(255,77,6)] text-white' 
-                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
-                }`}
-              >
-                Everything
-              </button>
-              <button
-                onClick={handleShowSpaces}
-                className={`text-sm font-medium transition-colors px-3 py-1.5 rounded-full ${
-                  viewMode === 'spaces' 
-                    ? 'bg-[rgb(255,77,6)] text-white' 
-                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
-                }`}
-              >
-                Spaces
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Header - removed since navigation is now inline with search */}
 
       {/* Left Rail */}
       <LeftRail onSettingsClick={() => setShowSettingsModal(true)} />
 
       <div className="px-4 md:pl-20 md:pr-20 pb-8">
         {/* Search Bar with New Space Button */}
-        <div id="search-section" className="mb-6">
+        <div id="search-section" className="mb-6 pt-4">
           <div className="flex gap-3 items-center">
+            {/* Toggle Switch */}
+            <div id="navigation-toggle" className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center relative h-[52px] w-[120px]">
+              {/* Sliding pill background */}
+              <div 
+                className="absolute h-[calc(100%-8px)] bg-[rgb(255,77,6)] rounded-full transition-all duration-200 ease-out"
+                style={{
+                  width: 'calc(50% - 2px)',
+                  left: viewMode === 'everything' ? '4px' : 'calc(50% + 2px)',
+                }}
+              />
+              
+              {/* Toggle buttons */}
+              <button
+                onClick={handleBackToEverything}
+                className={`relative z-10 px-3 py-3 transition-colors rounded-full flex-1 flex items-center justify-center ${
+                  viewMode === 'everything' 
+                    ? 'text-white' 
+                    : 'text-gray-700 dark:text-gray-300'
+                }`}
+                aria-label="View all items"
+                title="Everything"
+              >
+                {/* Grid icon - 3x3 dots */}
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="4" cy="4" r="2"/>
+                  <circle cx="12" cy="4" r="2"/>
+                  <circle cx="20" cy="4" r="2"/>
+                  <circle cx="4" cy="12" r="2"/>
+                  <circle cx="12" cy="12" r="2"/>
+                  <circle cx="20" cy="12" r="2"/>
+                  <circle cx="4" cy="20" r="2"/>
+                  <circle cx="12" cy="20" r="2"/>
+                  <circle cx="20" cy="20" r="2"/>
+                </svg>
+              </button>
+              <button
+                onClick={handleShowSpaces}
+                className={`relative z-10 px-3 py-3 transition-colors rounded-full flex-1 flex items-center justify-center ${
+                  viewMode === 'spaces' || viewMode === 'space-detail'
+                    ? 'text-white' 
+                    : 'text-gray-700 dark:text-gray-300'
+                }`}
+                aria-label="View spaces"
+                title="Spaces"
+              >
+                {/* 3D cube icon */}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </button>
+            </div>
+
             {/* Selected Content Type Indicator */}
             {selectedContentType && (
               <div id="selected-filter-pill" className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 whitespace-nowrap">
