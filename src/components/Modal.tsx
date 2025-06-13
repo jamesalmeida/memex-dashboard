@@ -26,6 +26,23 @@ export default function Modal({ isOpen, onClose, children, title, modalId }: Mod
     return () => setMounted(false);
   }, []);
 
+  // ESC key handler
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     if (isOpen) {
       // Start rendering the modal
