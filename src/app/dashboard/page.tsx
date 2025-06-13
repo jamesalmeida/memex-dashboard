@@ -8,6 +8,7 @@ import CaptureModal from '@/components/CaptureModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import NewItemCard from '@/components/NewItemCard';
 import SpaceCard from '@/components/SpaceCard';
+import NewSpaceModal from '@/components/NewSpaceModal';
 import MasonryGrid from '@/components/MasonryGrid';
 import LeftRail from '@/components/LeftRail';
 import SettingsModal from '@/components/SettingsModal';
@@ -26,14 +27,16 @@ export default function Dashboard() {
   const [selectedItem, setSelectedItem] = useState<MockItem | null>(null);
   const [showItemDetail, setShowItemDetail] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showNewSpaceModal, setShowNewSpaceModal] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
   const router = useRouter();
 
   // Use mock data for now (UI-first approach)
   const [mockItemsState, setMockItemsState] = useState<MockItem[]>(mockItems);
+  const [mockSpacesState, setMockSpacesState] = useState<MockSpace[]>(mockSpaces);
 
   // Calculate space counts dynamically
-  const spaceCounts = mockSpaces.map(space => ({
+  const spaceCounts = mockSpacesState.map(space => ({
     ...space,
     count: mockItemsState.filter(item => item.space === space.name).length
   }));
@@ -98,6 +101,20 @@ export default function Dashboard() {
   const handleShowSpaces = () => {
     setViewMode('spaces');
     setSelectedSpace(null);
+  };
+
+  const handleCreateSpace = (newSpaceData: Omit<MockSpace, 'id' | 'count'>) => {
+    const newSpace: MockSpace = {
+      ...newSpaceData,
+      id: Date.now().toString(),
+      count: 0
+    };
+    
+    setMockSpacesState(spaces => [...spaces, newSpace]);
+    setNotification('Space created successfully!');
+    
+    // Clear notification after 3 seconds
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleAddItem = (newItemData: Omit<MockItem, 'id' | 'created_at'>, openDetail: boolean = false) => {
@@ -189,21 +206,36 @@ export default function Dashboard() {
       <LeftRail onSettingsClick={() => setShowSettingsModal(true)} />
 
       <div className="px-4 md:pl-20 md:pr-20 py-8">
-        {/* Search Bar - Full width */}
+        {/* Search Bar with New Space Button */}
         <div className="mb-6">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder={viewMode === 'spaces' ? 'Search spaces...' : 'Search your items...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-            <input
-              type="text"
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              placeholder="Search your items..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            
+            {/* New Space Button - Only show in Spaces view */}
+            {viewMode === 'spaces' && (
+              <button
+                onClick={() => setShowNewSpaceModal(true)}
+                className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 whitespace-nowrap"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                New Space
+              </button>
+            )}
           </div>
         </div>
 
@@ -320,6 +352,13 @@ export default function Dashboard() {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         userEmail={user?.email}
+      />
+
+      {/* New Space Modal */}
+      <NewSpaceModal
+        isOpen={showNewSpaceModal}
+        onClose={() => setShowNewSpaceModal(false)}
+        onCreateSpace={handleCreateSpace}
       />
 
       {/* Success Notification */}
