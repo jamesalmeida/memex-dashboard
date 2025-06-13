@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MockItem } from '@/utils/mockData';
+import Modal from './Modal';
 
 interface CaptureModalProps {
   isOpen: boolean;
@@ -111,7 +112,7 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
         domain: normalizedUrl ? new URL(normalizedUrl).hostname : undefined,
         tags: tags ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined
       },
-      project: project || undefined
+      space: project || undefined
     };
 
     onAdd(newItem);
@@ -131,24 +132,9 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
     handleQuickAdd();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Add New Item</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <Modal isOpen={isOpen} onClose={onClose} modalId="capture-modal" title="Add New Item">
+      <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-sm text-red-600">{error}</p>
@@ -234,20 +220,19 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || (!url.trim() && !title.trim()) || (url && !validateUrl(url))}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-4 py-2 bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? 'Adding...' : 'Add Item'}
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }

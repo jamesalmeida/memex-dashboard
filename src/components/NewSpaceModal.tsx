@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MockSpace } from '@/utils/mockData';
+import Modal from './Modal';
 
 interface NewSpaceModalProps {
   isOpen: boolean;
@@ -27,14 +28,6 @@ export default function NewSpaceModal({ isOpen, onClose, onCreateSpace }: NewSpa
   const [spaceDescription, setSpaceDescription] = useState('');
   const [selectedColor, setSelectedColor] = useState(spaceColors[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +55,7 @@ export default function NewSpaceModal({ isOpen, onClose, onCreateSpace }: NewSpa
   };
 
   const handleClose = () => {
+    // Reset form when closing
     setSpaceName('');
     setSpaceDescription('');
     setSelectedColor(spaceColors[0]);
@@ -70,26 +64,9 @@ export default function NewSpaceModal({ isOpen, onClose, onCreateSpace }: NewSpa
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50"
-      onClick={handleOverlayClick}
-    >
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md transition-colors">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create New Space</h2>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6">
+    <Modal isOpen={isOpen} onClose={handleClose} modalId="new-space-modal" title="Create New Space">
+      {/* Content */}
+      <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
             {/* Space Name */}
             <div>
@@ -162,7 +139,7 @@ export default function NewSpaceModal({ isOpen, onClose, onCreateSpace }: NewSpa
             <button
               type="submit"
               disabled={!spaceName.trim() || isSubmitting}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-sm bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -180,7 +157,6 @@ export default function NewSpaceModal({ isOpen, onClose, onCreateSpace }: NewSpa
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }
