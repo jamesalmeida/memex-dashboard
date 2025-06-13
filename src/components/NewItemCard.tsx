@@ -12,33 +12,68 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const detectContentType = (input: string): MockItem['content_type'] => {
-    if (!input) return 'text';
+    if (!input) return 'note';
     
     const lowerInput = input.toLowerCase();
     
     // Check if it's a URL
     if (input.startsWith('http') || input.includes('.')) {
-      if (lowerInput.includes('youtube.com') || lowerInput.includes('youtu.be') || 
-          lowerInput.includes('vimeo.com')) {
-        return 'video';
-      }
+      // Social Media
+      if (lowerInput.includes('twitter.com') || lowerInput.includes('x.com')) return 'x';
+      if (lowerInput.includes('instagram.com')) return 'instagram';
+      if (lowerInput.includes('youtube.com') || lowerInput.includes('youtu.be')) return 'youtube';
+      if (lowerInput.includes('linkedin.com')) return 'linkedin';
+      if (lowerInput.includes('tiktok.com')) return 'tiktok';
+      if (lowerInput.includes('reddit.com')) return 'reddit';
+      if (lowerInput.includes('facebook.com') || lowerInput.includes('fb.com')) return 'facebook';
       
-      if (lowerInput.includes('twitter.com') || lowerInput.includes('x.com')) {
-        return 'tweet';
-      }
+      // Development
+      if (lowerInput.includes('github.com')) return 'github';
+      if (lowerInput.includes('gitlab.com')) return 'gitlab';
+      if (lowerInput.includes('codepen.io')) return 'codepen';
+      if (lowerInput.includes('stackoverflow.com')) return 'stackoverflow';
+      if (lowerInput.includes('dev.to')) return 'devto';
+      if (lowerInput.includes('npmjs.com')) return 'npm';
       
-      if (lowerInput.match(/\.(jpg|jpeg|png|gif|webp|svg)$/)) {
-        return 'image';
-      }
+      // Commerce
+      if (lowerInput.includes('amazon.com')) return 'amazon';
+      if (lowerInput.includes('etsy.com')) return 'etsy';
+      if (lowerInput.includes('apps.apple.com') || lowerInput.includes('play.google.com')) return 'app';
       
-      if (lowerInput.includes('.pdf')) {
-        return 'pdf';
-      }
+      // Knowledge
+      if (lowerInput.includes('wikipedia.org')) return 'wikipedia';
+      if (lowerInput.includes('arxiv.org')) return 'paper';
+      if (lowerInput.includes('goodreads.com')) return 'book';
+      if (lowerInput.includes('coursera.com') || lowerInput.includes('udemy.com') || 
+          lowerInput.includes('edx.org') || lowerInput.includes('.edu/course')) return 'course';
       
-      return 'link';
+      // Content & Media
+      if (lowerInput.match(/\.(jpg|jpeg|png|gif|webp|svg)$/)) return 'image';
+      if (lowerInput.includes('.pdf')) return 'pdf';
+      if (lowerInput.match(/\.(mp3|wav|ogg|m4a)$/) || lowerInput.includes('podcast')) return 'audio';
+      if (lowerInput.match(/\.(mp4|avi|mov|webm)$/)) return 'video';
+      if (lowerInput.match(/\.(ppt|pptx|key)$/)) return 'presentation';
+      
+      // Recipe sites
+      if (lowerInput.includes('recipe') || lowerInput.includes('cooking') || 
+          lowerInput.includes('allrecipes.com') || lowerInput.includes('foodnetwork.com')) return 'recipe';
+      
+      // Documentation
+      if (lowerInput.includes('/docs/') || lowerInput.includes('/documentation/') || 
+          lowerInput.includes('docs.') || lowerInput.includes('developer.')) return 'documentation';
+      
+      // Default to article for news/blog sites
+      if (lowerInput.includes('medium.com') || lowerInput.includes('substack.com') || 
+          lowerInput.includes('blog') || lowerInput.includes('news')) return 'article';
+      
+      // Generic product page indicators
+      if (lowerInput.includes('/product/') || lowerInput.includes('/shop/') || 
+          lowerInput.includes('/item/')) return 'product';
+      
+      return 'bookmark';
     }
     
-    return 'text';
+    return 'note';
   };
 
   const normalizeUrl = (input: string): string => {
