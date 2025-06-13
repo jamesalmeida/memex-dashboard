@@ -191,11 +191,13 @@ export default function Dashboard() {
       {/* Header - removed since navigation is now inline with search */}
 
       {/* Left Rail */}
-      <LeftRail onSettingsClick={() => setShowSettingsModal(true)} />
+      <div id="left-rail">
+        <LeftRail onSettingsClick={() => setShowSettingsModal(true)} />
+      </div>
 
       <div className="px-4 md:pl-20 md:pr-20 pb-8">
         {/* Search Bar with New Space Button */}
-        <div id="search-section" className="mb-6 pt-4">
+        <div id="search-section" className="mb-6 pt-5">
           <div className="flex gap-3 items-center">
             {/* Toggle Switch */}
             <div id="navigation-toggle" className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center relative h-[52px] w-[120px]">
