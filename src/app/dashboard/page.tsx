@@ -210,17 +210,20 @@ export default function Dashboard() {
       <div className="px-4 md:pl-20 md:pr-20 py-8">
         {/* Search Bar with New Space Button */}
         <div className="mb-6">
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
             <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
               <input
                 type="text"
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder={viewMode === 'spaces' ? 'Search spaces...' : 'Search your items...'}
+                className="w-full text-4xl font-light bg-transparent outline-none placeholder-gray-600 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100 font-serif border-b border-gray-400 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 focus:border-gray-700 dark:focus:border-gray-300 transition-colors pb-2"
+                placeholder={
+                  viewMode === 'everything' 
+                    ? 'Search everything...' 
+                    : viewMode === 'spaces'
+                      ? 'Search spaces...'
+                    : viewMode === 'space-detail' && selectedSpace 
+                      ? `Search ${selectedSpace}...` 
+                      : 'Search memex…'
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
