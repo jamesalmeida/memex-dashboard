@@ -119,6 +119,15 @@ export default function Dashboard() {
     setSelectedContentType(null);
   };
 
+  const handleHomeClick = () => {
+    setViewMode('everything');
+    setSelectedSpace(null);
+    setSelectedContentType(null);
+    setSearchQuery('');
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleCreateSpace = (newSpaceData: Omit<MockSpace, 'id' | 'count'>) => {
     const newSpace: MockSpace = {
       ...newSpaceData,
@@ -197,6 +206,7 @@ export default function Dashboard() {
           viewMode={viewMode}
           onEverythingClick={handleBackToEverything}
           onSpacesClick={handleShowSpaces}
+          onHomeClick={handleHomeClick}
         />
       </div>
 

@@ -7,16 +7,35 @@ interface LeftRailProps {
   viewMode: 'everything' | 'spaces' | 'space-detail';
   onEverythingClick: () => void;
   onSpacesClick: () => void;
+  onHomeClick: () => void;
 }
 
-export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick, onSpacesClick }: LeftRailProps) {
+export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick, onSpacesClick, onHomeClick }: LeftRailProps) {
   const { theme, toggleTheme } = useTheme();
   return (
     <div className="hidden md:block fixed left-0 top-0 bottom-0 w-20 pointer-events-none z-30">
       {/* Rail container - full height, 80px wide */}
-      <div className="h-full flex flex-col justify-between items-center py-8 gap-2">
+      <div className="h-full flex flex-col items-center">
         
-        {/* Vertical Navigation Toggle - Top */}
+        {/* Home Button - Within top padding area (93px total) */}
+        <div id="home-button-container" className="h-[93px] flex items-center justify-center">
+          <button
+            onClick={onHomeClick}
+            className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 transition-colors pointer-events-auto"
+            aria-label="Go to home (Everything view)"
+            title="Home"
+          >
+            {/* House icon */}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Navigation and Content Area */}
+        <div className="flex-1 flex flex-col justify-between items-center pb-8 gap-2">
+        
+        {/* Vertical Navigation Toggle */}
         <div id="vertical-navigation-toggle" className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex flex-col items-center relative h-[120px] w-[52px] pointer-events-auto">
           {/* Sliding pill background */}
           <div 
@@ -116,6 +135,7 @@ export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick,
         
           {/* Placeholder for future icons above the settings button */}
           {/* You can add more buttons here later */}
+        </div>
         </div>
       </div>
     </div>
