@@ -1,4 +1,5 @@
 import './globals.css';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 export const metadata = {
   title: 'Memex',
@@ -12,7 +13,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

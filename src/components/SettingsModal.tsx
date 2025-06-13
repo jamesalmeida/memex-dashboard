@@ -22,13 +22,13 @@ export default function SettingsModal({ isOpen, onClose, userEmail }: SettingsMo
       className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50"
       onClick={handleOverlayClick}
     >
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Settings</h2>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Settings</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -41,16 +41,16 @@ export default function SettingsModal({ isOpen, onClose, userEmail }: SettingsMo
           <div className="space-y-6">
             {/* Account Section */}
             <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Account</h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Account</h3>
               <div className="space-y-3">
                 {userEmail && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">Email</span>
-                    <span className="text-sm text-gray-500">{userEmail}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Email</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{userEmail}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Sign out of your account</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Sign out of your account</span>
                   <SignOutButton />
                 </div>
               </div>
@@ -58,31 +58,31 @@ export default function SettingsModal({ isOpen, onClose, userEmail }: SettingsMo
 
             {/* Placeholder for future settings */}
             <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Preferences</h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Preferences</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Theme</span>
-                  <span className="text-sm text-gray-500">Light</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Theme</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Light</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Language</span>
-                  <span className="text-sm text-gray-500">English</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Language</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">English</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Data</h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Data</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Export data</span>
-                  <button className="text-sm text-blue-600 hover:text-blue-700">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Export data</span>
+                  <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
                     Export
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Import data</span>
-                  <button className="text-sm text-blue-600 hover:text-blue-700">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Import data</span>
+                  <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
                     Import
                   </button>
                 </div>

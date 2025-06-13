@@ -114,14 +114,14 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors h-48 flex flex-col p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors h-48 flex flex-col p-4">
       <div className="flex-1">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type a note, paste a link, or drop anything here..."
-          className="w-full h-full resize-none border-0 focus:outline-none text-gray-700 placeholder-gray-400"
+          className="w-full h-full resize-none border-0 focus:outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 bg-transparent"
           disabled={isSubmitting}
           autoFocus
         />
@@ -132,7 +132,7 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
           <button
             type="button"
             onClick={handlePaste}
-            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
             disabled={isSubmitting}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,7 +145,7 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             <button
               type="button"
               onClick={handleClear}
-              className="px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 border border-gray-300 rounded-md hover:bg-red-50 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1.5"
               disabled={isSubmitting}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

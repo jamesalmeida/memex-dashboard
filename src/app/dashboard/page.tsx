@@ -131,9 +131,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4 gap-4">
             {/* Empty header for now */}
@@ -155,7 +155,7 @@ export default function Dashboard() {
             </div>
             <input
               type="text"
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               placeholder="Search your items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -166,15 +166,15 @@ export default function Dashboard() {
         {/* Masonry Grid with Left-to-Right Order */}
         <MasonryGrid gap={16}>
           {/* Project Selector Card - Position 1 */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Projects</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Projects</h3>
             <div className="space-y-2">
               <button
                 onClick={() => setSelectedProject('all')}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                   selectedProject === 'all' 
-                    ? 'bg-blue-50 text-blue-700 font-medium' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 All Items ({mockItemsState.length})
@@ -185,8 +185,8 @@ export default function Dashboard() {
                   onClick={() => setSelectedProject(project.name)}
                   className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
                     selectedProject === project.name 
-                      ? 'bg-blue-50 text-blue-700 font-medium' 
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium' 
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   <div 
@@ -194,7 +194,7 @@ export default function Dashboard() {
                     style={{ backgroundColor: project.color }}
                   ></div>
                   <span className="truncate">{project.name}</span>
-                  <span className="text-xs text-gray-500 ml-auto">({project.count})</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">({project.count})</span>
                 </button>
               ))}
             </div>

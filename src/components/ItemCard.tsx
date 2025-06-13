@@ -93,7 +93,7 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
 
   return (
     <div 
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow ${getCardHeight()} flex flex-col cursor-pointer max-w-full`}
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all ${getCardHeight()} flex flex-col cursor-pointer max-w-full`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
       onClick={handleCardClick}
@@ -130,7 +130,7 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
       
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2 text-gray-500 text-sm min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm min-w-0 flex-1">
             <ContentTypeIcon type={item.content_type} />
             <span className="capitalize">{item.content_type}</span>
             {item.metadata?.domain && (
@@ -141,18 +141,18 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
             )}
           </div>
           {item.metadata?.duration && (
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
               {item.metadata.duration}
             </span>
           )}
         </div>
 
-        <h3 className="font-medium text-gray-900 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
+        <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
           {item.title}
         </h3>
 
         {item.description && (
-          <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-w-0 break-words">
+          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 min-w-0 break-words">
             {item.description}
           </p>
         )}
@@ -163,7 +163,7 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
               {item.metadata.tags.slice(0, 3).map((tag) => (
                 <span 
                   key={tag}
-                  className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full"
+                  className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full"
                 >
                   {tag}
                 </span>
@@ -171,10 +171,10 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs text-gray-500 min-w-0">
+          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 min-w-0">
             <span className="truncate">{formatDate(item.created_at)}</span>
             {item.project && (
-              <span className="bg-gray-100 px-2 py-1 rounded truncate max-w-20 ml-1">
+              <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded truncate max-w-20 ml-1">
                 {item.project}
               </span>
             )}
