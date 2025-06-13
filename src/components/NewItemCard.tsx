@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MockItem } from '@/utils/mockData';
 
 interface NewItemCardProps {
@@ -10,6 +10,30 @@ interface NewItemCardProps {
 export default function NewItemCard({ onAdd }: NewItemCardProps) {
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [lastHeight, setLastHeight] = useState(48); // 3rem = 48px
+
+  // Auto-resize textarea and trigger grid re-layout if needed
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to get proper scrollHeight
+      textarea.style.height = '3rem';
+      // Set height based on content, but cap at max height
+      const newHeight = Math.min(textarea.scrollHeight, 128); // 8rem = 128px
+      textarea.style.height = `${newHeight}px`;
+      
+      // If height changed significantly, trigger a window resize event to update masonry grid
+      if (Math.abs(newHeight - lastHeight) > 10) {
+        setLastHeight(newHeight);
+        // Delay to ensure DOM has updated
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 50);
+      }
+    }
+  }, [input, lastHeight]);
 
   const detectContentType = (input: string): MockItem['content_type'] => {
     if (!input) return 'note';
@@ -149,16 +173,22 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors h-48 flex flex-col p-4">
+    <div ref={cardRef} id="new-item-card" className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors flex flex-col p-4">
       <div className="flex-1">
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a note, paste a link, or drop anything here..."
-          className="w-full h-full resize-none border-0 focus:outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 bg-transparent"
+          placeholder="Type a note or paste something here..."
+          className="w-full resize-none border-0 focus:outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 bg-transparent overflow-y-auto"
+          style={{
+            minHeight: '3rem', // ~2 lines minimum
+            maxHeight: '8rem', // ~5 lines maximum before scrolling
+          }}
           disabled={isSubmitting}
           autoFocus
+          rows={1}
         />
       </div>
       
