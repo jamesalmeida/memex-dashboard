@@ -4,15 +4,73 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 interface LeftRailProps {
   onSettingsClick: () => void;
+  viewMode: 'everything' | 'spaces' | 'space-detail';
+  onEverythingClick: () => void;
+  onSpacesClick: () => void;
 }
 
-export default function LeftRail({ onSettingsClick }: LeftRailProps) {
+export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick, onSpacesClick }: LeftRailProps) {
   const { theme, toggleTheme } = useTheme();
   return (
     <div className="hidden md:block fixed left-0 top-0 bottom-0 w-20 pointer-events-none z-30">
       {/* Rail container - full height, 80px wide */}
-      <div className="h-full flex flex-col justify-end items-center pb-8 gap-2">
-        {/* Dark Mode Toggle - Above settings */}
+      <div className="h-full flex flex-col justify-between items-center py-8 gap-2">
+        
+        {/* Vertical Navigation Toggle - Top */}
+        <div id="vertical-navigation-toggle" className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex flex-col items-center relative h-[120px] w-[52px] pointer-events-auto">
+          {/* Sliding pill background */}
+          <div 
+            className="absolute w-[calc(100%-8px)] bg-[rgb(255,77,6)] rounded-full transition-all duration-200 ease-out"
+            style={{
+              height: 'calc(50% - 4px)',
+              top: viewMode === 'everything' ? '4px' : 'calc(50%)',
+            }}
+          />
+          
+          {/* Toggle buttons */}
+          <button
+            onClick={onEverythingClick}
+            className={`relative z-10 py-3 px-3 transition-colors rounded-full flex-1 flex items-center justify-center ${
+              viewMode === 'everything' 
+                ? 'text-white' 
+                : 'text-gray-700 dark:text-gray-300'
+            }`}
+            aria-label="View all items"
+            title="Everything"
+          >
+            {/* Grid icon - 3x3 dots */}
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="4" cy="4" r="2"/>
+              <circle cx="12" cy="4" r="2"/>
+              <circle cx="20" cy="4" r="2"/>
+              <circle cx="4" cy="12" r="2"/>
+              <circle cx="12" cy="12" r="2"/>
+              <circle cx="20" cy="12" r="2"/>
+              <circle cx="4" cy="20" r="2"/>
+              <circle cx="12" cy="20" r="2"/>
+              <circle cx="20" cy="20" r="2"/>
+            </svg>
+          </button>
+          <button
+            onClick={onSpacesClick}
+            className={`relative z-10 py-3 px-3 transition-colors rounded-full flex-1 flex items-center justify-center ${
+              viewMode === 'spaces' || viewMode === 'space-detail'
+                ? 'text-white' 
+                : 'text-gray-700 dark:text-gray-300'
+            }`}
+            aria-label="View spaces"
+            title="Spaces"
+          >
+            {/* 3D cube icon */}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Bottom icons */}
+        <div className="flex flex-col gap-2">
+          {/* Dark Mode Toggle - Above settings */}
         <button
           onClick={toggleTheme}
           className="p-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all group pointer-events-auto"
@@ -56,8 +114,9 @@ export default function LeftRail({ onSettingsClick }: LeftRailProps) {
           </svg>
         </button>
         
-        {/* Placeholder for future icons above the settings button */}
-        {/* You can add more buttons here later */}
+          {/* Placeholder for future icons above the settings button */}
+          {/* You can add more buttons here later */}
+        </div>
       </div>
     </div>
   );

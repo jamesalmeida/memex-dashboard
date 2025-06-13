@@ -192,15 +192,20 @@ export default function Dashboard() {
 
       {/* Left Rail */}
       <div id="left-rail">
-        <LeftRail onSettingsClick={() => setShowSettingsModal(true)} />
+        <LeftRail 
+          onSettingsClick={() => setShowSettingsModal(true)}
+          viewMode={viewMode}
+          onEverythingClick={handleBackToEverything}
+          onSpacesClick={handleShowSpaces}
+        />
       </div>
 
       <div className="px-4 md:pl-20 md:pr-20 pb-8">
         {/* Search Bar with New Space Button */}
         <div id="search-section" className="mb-6 pt-5">
           <div className="flex gap-3 items-center">
-            {/* Toggle Switch */}
-            <div id="navigation-toggle" className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center relative h-[52px] w-[120px]">
+            {/* Horizontal Toggle Switch - Mobile Only */}
+            <div id="horizontal-navigation-toggle" className="md:hidden bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center relative h-[52px] w-[120px]">
               {/* Sliding pill background */}
               <div 
                 className="absolute h-[calc(100%-8px)] bg-[rgb(255,77,6)] rounded-full transition-all duration-200 ease-out"
