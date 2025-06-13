@@ -76,15 +76,18 @@ export default function ItemDetailModal({
   const [selectedSpace, setSelectedSpace] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [showTagInput, setShowTagInput] = useState(false);
+  const [currentItem, setCurrentItem] = useState<MockItem | null>(null);
 
   useEffect(() => {
-    if (item) {
+    if (item && isOpen) {
+      setCurrentItem(item);
       setTags(item.metadata?.tags || []);
       setSelectedSpace(item.space || 'none');
     }
-  }, [item]);
+  }, [item, isOpen]);
 
-  if (!isOpen || !item) return null;
+  // Don't render if never opened or no item data
+  if (!currentItem) return null;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -99,8 +102,8 @@ export default function ItemDetailModal({
 
 
   const handleOpenUrl = () => {
-    if (item.url) {
-      window.open(item.url, '_blank', 'noopener,noreferrer');
+    if (currentItem.url) {
+      window.open(currentItem.url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -108,8 +111,8 @@ export default function ItemDetailModal({
     if (newTag.trim() && !tags.includes(newTag.trim())) {
       const updatedTags = [...tags, newTag.trim()];
       setTags(updatedTags);
-      onUpdateItem?.(item.id, { 
-        metadata: { ...item.metadata, tags: updatedTags } 
+      onUpdateItem?.(currentItem.id, { 
+        metadata: { ...currentItem.metadata, tags: updatedTags } 
       });
       setNewTag('');
       setShowTagInput(false);
@@ -119,20 +122,20 @@ export default function ItemDetailModal({
   const handleRemoveTag = (tagToRemove: string) => {
     const updatedTags = tags.filter(tag => tag !== tagToRemove);
     setTags(updatedTags);
-    onUpdateItem?.(item.id, { 
-      metadata: { ...item.metadata, tags: updatedTags } 
+    onUpdateItem?.(currentItem.id, { 
+      metadata: { ...currentItem.metadata, tags: updatedTags } 
     });
   };
 
   const handleSpaceChange = (newSpace: string) => {
     setSelectedSpace(newSpace);
-    onUpdateItem?.(item.id, { 
+    onUpdateItem?.(currentItem.id, { 
       space: newSpace === 'none' ? undefined : newSpace 
     });
   };
 
   const handleGenerateTranscript = () => {
-    console.log('Generate transcript for video:', item.id);
+    console.log('Generate transcript for video:', currentItem.id);
     // Placeholder for future implementation
   };
 
@@ -143,17 +146,17 @@ export default function ItemDetailModal({
       modalId="item-detail-modal"
       title={
         <div className="flex items-center gap-3">
-          <ContentTypeIcon type={item.content_type} />
+          <ContentTypeIcon type={currentItem.content_type} />
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
-              {item.title}
+              {currentItem.title}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-              {item.content_type}
-              {item.metadata?.domain && (
+              {currentItem.content_type}
+              {currentItem.metadata?.domain && (
                 <>
                   <span className="mx-1">•</span>
-                  {item.metadata.domain}
+                  {currentItem.metadata.domain}
                 </>
               )}
             </p>
@@ -165,25 +168,25 @@ export default function ItemDetailModal({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {/* Thumbnail */}
-          {item.thumbnail && (
+          {currentItem.thumbnail && (
             <div className="mb-6">
               <img 
-                src={item.thumbnail} 
-                alt={item.title}
+                src={currentItem.thumbnail} 
+                alt={currentItem.title}
                 className="w-full h-48 object-cover rounded-lg bg-gray-100"
               />
             </div>
           )}
 
           {/* URL */}
-          {item.url && (
+          {currentItem.url && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 URL
               </label>
               <div className="flex items-center gap-2">
                 <div className="flex-1 p-3 bg-gray-50 rounded-lg text-sm text-gray-600 break-all">
-                  {item.url}
+                  {currentItem.url}
                 </div>
                 <button
                   onClick={handleOpenUrl}
@@ -199,7 +202,7 @@ export default function ItemDetailModal({
           )}
 
           {/* Generate Transcript Button for Videos */}
-          {item.content_type === 'video' && (
+          {currentItem.content_type === 'video' && (
             <div className="mb-4">
               <button
                 onClick={handleGenerateTranscript}
@@ -217,13 +220,13 @@ export default function ItemDetailModal({
           )}
 
           {/* Description */}
-          {item.description && (
+          {currentItem.description && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description
               </label>
               <p className="text-gray-600 leading-relaxed">
-                {item.description}
+                {currentItem.description}
               </p>
             </div>
           )}
@@ -250,37 +253,37 @@ export default function ItemDetailModal({
             </div>
 
             {/* Duration (for videos) */}
-            {item.metadata?.duration && (
+            {currentItem.metadata?.duration && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Duration
                 </label>
                 <span className="text-gray-600 text-sm">
-                  {item.metadata.duration}
+                  {currentItem.metadata.duration}
                 </span>
               </div>
             )}
 
             {/* File size (for PDFs) */}
-            {item.metadata?.file_size && (
+            {currentItem.metadata?.file_size && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   File Size
                 </label>
                 <span className="text-gray-600 text-sm">
-                  {item.metadata.file_size}
+                  {currentItem.metadata.file_size}
                 </span>
               </div>
             )}
 
             {/* Page count (for PDFs) */}
-            {item.metadata?.page_count && (
+            {currentItem.metadata?.page_count && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Pages
                 </label>
                 <span className="text-gray-600 text-sm">
-                  {item.metadata.page_count} pages
+                  {currentItem.metadata.page_count} pages
                 </span>
               </div>
             )}
@@ -344,7 +347,7 @@ export default function ItemDetailModal({
 
           {/* Created date */}
           <div className="text-sm text-gray-500 border-t pt-4">
-            Added on {formatDate(item.created_at)}
+            Added on {formatDate(currentItem.created_at)}
           </div>
         </div>
 
@@ -353,7 +356,7 @@ export default function ItemDetailModal({
           <div className="flex gap-2">
             {onEdit && (
               <button
-                onClick={() => onEdit(item)}
+                onClick={() => onEdit(currentItem)}
                 className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 Edit
@@ -361,10 +364,7 @@ export default function ItemDetailModal({
             )}
             {onArchive && (
               <button
-                onClick={() => {
-                  onArchive(item.id);
-                  onClose();
-                }}
+                onClick={() => onArchive(currentItem.id)}
                 className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               >
                 Archive
@@ -381,10 +381,7 @@ export default function ItemDetailModal({
             </button>
             {onDelete && (
               <button
-                onClick={() => {
-                  onDelete(item.id);
-                  onClose();
-                }}
+                onClick={() => onDelete(currentItem.id)}
                 className="px-4 py-2 text-sm text-white bg-red-600 dark:bg-red-700 rounded-md hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
               >
                 Delete

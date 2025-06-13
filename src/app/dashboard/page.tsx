@@ -91,10 +91,16 @@ export default function Dashboard() {
 
   const handleArchive = (id: string) => {
     console.log('Archive item:', id);
+    // Close the modal after archiving
+    setShowItemDetail(false);
+    setSelectedItem(null);
   };
 
   const handleDelete = (id: string) => {
     setMockItemsState(items => items.filter(item => item.id !== id));
+    // Close the modal after deleting
+    setShowItemDetail(false);
+    setSelectedItem(null);
   };
 
   const handleMoveToSpace = (id: string, spaceId: string) => {
