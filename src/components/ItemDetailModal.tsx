@@ -165,8 +165,10 @@ export default function ItemDetailModal({
       }
     >
       <div className="flex flex-col h-full">
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        {/* Two-Column Layout */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* Left Column - Main Content */}
+          <div className="flex-1 overflow-y-auto p-6">
           {/* Thumbnail */}
           {currentItem.thumbnail && (
             <div className="mb-6">
@@ -394,12 +396,15 @@ export default function ItemDetailModal({
               </p>
             </div>
           )}
+          </div>
 
+          {/* Right Column - Metadata & Actions */}
+          <div className="w-full md:w-80 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-800/50">
           {/* Metadata */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="space-y-4 mb-4">
             {/* Space */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Space
               </label>
               <select
@@ -419,7 +424,7 @@ export default function ItemDetailModal({
             {/* Duration (for videos) */}
             {currentItem.metadata?.duration && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Duration
                 </label>
                 <span className="text-gray-600 text-sm">
@@ -431,7 +436,7 @@ export default function ItemDetailModal({
             {/* File size (for PDFs) */}
             {currentItem.metadata?.file_size && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   File Size
                 </label>
                 <span className="text-gray-600 text-sm">
@@ -443,7 +448,7 @@ export default function ItemDetailModal({
             {/* Page count (for PDFs) */}
             {currentItem.metadata?.page_count && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Pages
                 </label>
                 <span className="text-gray-600 text-sm">
@@ -455,7 +460,7 @@ export default function ItemDetailModal({
 
           {/* Tags */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Tags
             </label>
             <div className="flex flex-wrap gap-2">
@@ -512,6 +517,7 @@ export default function ItemDetailModal({
           {/* Created date */}
           <div className="text-sm text-gray-500 border-t pt-4">
             Added on {formatDate(currentItem.created_at)}
+          </div>
           </div>
         </div>
 
