@@ -91,6 +91,7 @@ export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick,
 
         {/* Context-Aware Add Button */}
         <button
+          id="left-rail-add-button"
           onClick={onAddClick}
           className="w-[52px] h-[52px] bg-[rgb(255,77,6)] text-white rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 hover:bg-[rgb(230,69,5)] hover:border-gray-400 dark:hover:border-gray-500 transition-colors pointer-events-auto shadow-lg hover:shadow-xl"
           aria-label={

@@ -224,62 +224,62 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Floating Navigation Toggle - Mobile only */}
+      <div id="floating-navigation-toggle" className="md:hidden fixed bottom-6 left-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center h-[52px] w-[120px] shadow-lg z-50">
+        {/* Sliding pill background */}
+        <div 
+          className="absolute h-[calc(100%-8px)] bg-[rgb(255,77,6)] rounded-full transition-all duration-200 ease-out"
+          style={{
+            width: 'calc(50% - 4px)',
+            left: viewMode === 'everything' ? '4px' : 'calc(50%)',
+          }}
+        />
+        
+        {/* Toggle buttons */}
+        <button
+          onClick={handleBackToEverything}
+          className={`relative z-10 px-3 py-3 transition-colors rounded-full flex-1 flex items-center justify-center ${
+            viewMode === 'everything' 
+              ? 'text-white' 
+              : 'text-gray-700 dark:text-gray-300'
+          }`}
+          aria-label="View all items"
+          title="Everything"
+        >
+          {/* Grid icon - 3x3 dots */}
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="4" cy="4" r="2"/>
+            <circle cx="12" cy="4" r="2"/>
+            <circle cx="20" cy="4" r="2"/>
+            <circle cx="4" cy="12" r="2"/>
+            <circle cx="12" cy="12" r="2"/>
+            <circle cx="20" cy="12" r="2"/>
+            <circle cx="4" cy="20" r="2"/>
+            <circle cx="12" cy="20" r="2"/>
+            <circle cx="20" cy="20" r="2"/>
+          </svg>
+        </button>
+        <button
+          onClick={handleShowSpaces}
+          className={`relative z-10 px-3 py-3 transition-colors rounded-full flex-1 flex items-center justify-center ${
+            viewMode === 'spaces' || viewMode === 'space-detail'
+              ? 'text-white' 
+              : 'text-gray-700 dark:text-gray-300'
+          }`}
+          aria-label="View spaces"
+          title="Spaces"
+        >
+          {/* 3D cube icon */}
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </button>
+      </div>
+
       <div className="px-4 md:pl-20 md:pr-20 pb-8">
         {/* Search Bar with New Space Button */}
         <div id="search-section" className="mb-6 pt-5">
           <div className="flex gap-3 items-center">
-            {/* Horizontal Toggle Switch - Mobile Only */}
-            <div id="horizontal-navigation-toggle" className="md:hidden bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center relative h-[52px] w-[120px]">
-              {/* Sliding pill background */}
-              <div 
-                className="absolute h-[calc(100%-8px)] bg-[rgb(255,77,6)] rounded-full transition-all duration-200 ease-out"
-                style={{
-                  width: 'calc(50% - 4px)',
-                  left: viewMode === 'everything' ? '4px' : 'calc(50%)',
-                }}
-              />
-              
-              {/* Toggle buttons */}
-              <button
-                onClick={handleBackToEverything}
-                className={`relative z-10 px-3 py-3 transition-colors rounded-full flex-1 flex items-center justify-center ${
-                  viewMode === 'everything' 
-                    ? 'text-white' 
-                    : 'text-gray-700 dark:text-gray-300'
-                }`}
-                aria-label="View all items"
-                title="Everything"
-              >
-                {/* Grid icon - 3x3 dots */}
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <circle cx="4" cy="4" r="2"/>
-                  <circle cx="12" cy="4" r="2"/>
-                  <circle cx="20" cy="4" r="2"/>
-                  <circle cx="4" cy="12" r="2"/>
-                  <circle cx="12" cy="12" r="2"/>
-                  <circle cx="20" cy="12" r="2"/>
-                  <circle cx="4" cy="20" r="2"/>
-                  <circle cx="12" cy="20" r="2"/>
-                  <circle cx="20" cy="20" r="2"/>
-                </svg>
-              </button>
-              <button
-                onClick={handleShowSpaces}
-                className={`relative z-10 px-3 py-3 transition-colors rounded-full flex-1 flex items-center justify-center ${
-                  viewMode === 'spaces' || viewMode === 'space-detail'
-                    ? 'text-white' 
-                    : 'text-gray-700 dark:text-gray-300'
-                }`}
-                aria-label="View spaces"
-                title="Spaces"
-              >
-                {/* 3D cube icon */}
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </button>
-            </div>
-
             {/* Selected Content Type Indicator */}
             {selectedContentType && (
               <div id="selected-filter-pill" className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 whitespace-nowrap">
@@ -297,18 +297,25 @@ export default function Dashboard() {
             )}
             
             <div className="relative flex-1">
+              {/* Custom placeholder overlay */}
+              {!searchQuery && !isSearchFocused && (
+                <div className="absolute left-0 top-0 text-4xl font-serif pb-2 pointer-events-none w-full overflow-hidden whitespace-nowrap">
+                  <span className="font-light text-gray-500 dark:text-gray-600">Search </span>
+                  <span className="font-medium" style={{ color: '#ff4d06' }}>
+                    {viewMode === 'everything' 
+                      ? 'everything' 
+                      : viewMode === 'spaces'
+                        ? 'spaces'
+                      : viewMode === 'space-detail' && selectedSpace 
+                        ? selectedSpace 
+                        : 'memex'
+                    }...
+                  </span>
+                </div>
+              )}
               <input
                 type="text"
-                className="w-full text-4xl font-light bg-transparent outline-none placeholder-gray-600 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100 font-serif border-b border-gray-400 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 focus:border-gray-700 dark:focus:border-gray-300 transition-colors pb-2"
-                placeholder={
-                  viewMode === 'everything' 
-                    ? 'Search everything...' 
-                    : viewMode === 'spaces'
-                      ? 'Search spaces...'
-                    : viewMode === 'space-detail' && selectedSpace 
-                      ? `Search ${selectedSpace}...` 
-                      : 'Search memex…'
-                }
+                className="w-full text-4xl font-light bg-transparent outline-none text-gray-900 dark:text-gray-100 font-serif border-b border-gray-400 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 focus:border-gray-700 dark:focus:border-gray-300 transition-colors pb-2"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
@@ -431,15 +438,15 @@ export default function Dashboard() {
       <button
         id="floating-add-button"
         onClick={handleContextAwareAdd}
-        className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-[rgb(255,77,6)] text-white rounded-full shadow-lg hover:bg-[rgb(230,69,5)] hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40"
+        className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[rgb(255,77,6)] text-white rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 hover:bg-[rgb(230,69,5)] hover:border-gray-400 dark:hover:border-gray-500 transition-colors shadow-lg hover:shadow-xl z-50"
         aria-label={
           viewMode === 'everything' ? 'Add new item' :
           viewMode === 'spaces' ? 'Create new space' :
           'Add item to space'
         }
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
       </button>
 
