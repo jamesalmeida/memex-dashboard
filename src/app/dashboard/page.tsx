@@ -121,7 +121,9 @@ export default function Dashboard() {
     const newItem: MockItem = {
       ...newItemData,
       id: Date.now().toString(),
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      // If we're in a space detail view, assign the item to that space
+      space: viewMode === 'space-detail' && selectedSpace ? selectedSpace : newItemData.space
     };
     
     setMockItemsState(items => [newItem, ...items]);
