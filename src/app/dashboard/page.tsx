@@ -286,7 +286,7 @@ export default function Dashboard() {
                 <span className="capitalize">{selectedContentType.replace(/([A-Z])/g, ' $1').trim()}</span>
                 <button
                   onClick={() => setSelectedContentType(null)}
-                  className="hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors"
+                  className="hover:bg-black hover:bg-opacity-20 rounded-full p-0.5 transition-colors"
                   aria-label="Clear filter"
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
