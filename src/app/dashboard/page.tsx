@@ -227,6 +227,22 @@ export default function Dashboard() {
         {/* Search Bar with New Space Button */}
         <div className="mb-6">
           <div className="flex gap-3 items-center">
+            {/* Selected Content Type Indicator */}
+            {selectedContentType && (
+              <div className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 whitespace-nowrap">
+                <span className="capitalize">{selectedContentType.replace(/([A-Z])/g, ' $1').trim()}</span>
+                <button
+                  onClick={() => setSelectedContentType(null)}
+                  className="hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors"
+                  aria-label="Clear filter"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
             <div className="relative flex-1">
               <input
                 type="text"
