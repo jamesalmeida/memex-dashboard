@@ -47,3 +47,18 @@ body {
   overflow: hidden;
 }
 
+/* Masonry grid constraints */
+.columns-1 > div,
+.columns-2 > div,
+.columns-3 > div,
+.columns-4 > div {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Force break long words and URLs */
+.break-words {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+

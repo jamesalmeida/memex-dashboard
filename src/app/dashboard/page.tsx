@@ -4,26 +4,37 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { SignOutButton } from '@/components/SignOutButton';
 import ItemCard from '@/components/ItemCard';
+import CaptureModal from '@/components/CaptureModal';
+import ItemDetailModal from '@/components/ItemDetailModal';
+import NewItemCard from '@/components/NewItemCard';
+import MasonryGrid from '@/components/MasonryGrid';
+import LeftRail from '@/components/LeftRail';
+import SettingsModal from '@/components/SettingsModal';
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import { mockItems, mockProjects, type MockItem } from '@/utils/mockData';
 
-interface Item {
-  id: string;
-  title: string | null;
-  url: string | null;
-  created_at: string;
-}
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProject, setSelectedProject] = useState<string>('all');
+  const [showCaptureModal, setShowCaptureModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MockItem | null>(null);
+  const [showItemDetail, setShowItemDetail] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
   const router = useRouter();
 
   // Use mock data for now (UI-first approach)
   const [mockItemsState, setMockItemsState] = useState<MockItem[]>(mockItems);
+
+  // Calculate project counts dynamically
+  const projectCounts = mockProjects.map(project => ({
+    ...project,
+    count: mockItemsState.filter(item => item.project === project.name).length
+  }));
 
   useEffect(() => {
     const checkUserAndLoadData = async () => {
@@ -68,6 +79,46 @@ export default function Dashboard() {
     console.log('Move item to project:', id, projectId);
   };
 
+  const handleAddItem = (newItemData: Omit<MockItem, 'id' | 'created_at'>, openDetail: boolean = false) => {
+    const newItem: MockItem = {
+      ...newItemData,
+      id: Date.now().toString(),
+      created_at: new Date().toISOString()
+    };
+    
+    setMockItemsState(items => [newItem, ...items]);
+    setNotification('Item added successfully!');
+    
+    // Clear notification after 3 seconds
+    setTimeout(() => setNotification(null), 3000);
+    
+    // Open detail modal for quick-added items
+    if (openDetail) {
+      setSelectedItem(newItem);
+      setShowItemDetail(true);
+    }
+    
+    return newItem;
+  };
+
+  const handleItemClick = (item: MockItem) => {
+    setSelectedItem(item);
+    setShowItemDetail(true);
+  };
+
+  const handleUpdateItem = (id: string, updates: Partial<MockItem>) => {
+    setMockItemsState(items => 
+      items.map(item => 
+        item.id === id ? { ...item, ...updates } : item
+      )
+    );
+    
+    // Update selected item if it's being viewed
+    if (selectedItem?.id === id) {
+      setSelectedItem(prev => prev ? { ...prev, ...updates } : prev);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -84,18 +135,17 @@ export default function Dashboard() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Memex</h1>
-              <p className="text-sm text-gray-600">Welcome back, {user?.email}</p>
-            </div>
-            <SignOutButton />
+          <div className="flex items-center justify-between py-4 gap-4">
+            {/* Empty header for now */}
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Bar - Above everything on mobile */}
+      {/* Left Rail */}
+      <LeftRail onSettingsClick={() => setShowSettingsModal(true)} />
+
+      <div className="px-4 md:pl-20 md:pr-20 py-8">
+        {/* Search Bar - Full width */}
         <div className="mb-6">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -113,75 +163,117 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <aside className="w-full lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Projects</h3>
-              <div className="space-y-2">
+        {/* Masonry Grid with Left-to-Right Order */}
+        <MasonryGrid gap={16}>
+          {/* Project Selector Card - Position 1 */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Projects</h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => setSelectedProject('all')}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                  selectedProject === 'all' 
+                    ? 'bg-blue-50 text-blue-700 font-medium' 
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                All Items ({mockItemsState.length})
+              </button>
+              {projectCounts.map((project) => (
                 <button
-                  onClick={() => setSelectedProject('all')}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    selectedProject === 'all' 
+                  key={project.id}
+                  onClick={() => setSelectedProject(project.name)}
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                    selectedProject === project.name 
                       ? 'bg-blue-50 text-blue-700 font-medium' 
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  All Items ({mockItemsState.length})
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: project.color }}
+                  ></div>
+                  <span className="truncate">{project.name}</span>
+                  <span className="text-xs text-gray-500 ml-auto">({project.count})</span>
                 </button>
-                {mockProjects.map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => setSelectedProject(project.name)}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                      selectedProject === project.name 
-                        ? 'bg-blue-50 text-blue-700 font-medium' 
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: project.color }}
-                    ></div>
-                    <span className="truncate">{project.name}</span>
-                    <span className="text-xs text-gray-500 ml-auto">({project.count})</span>
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
-          </aside>
+          </div>
 
-          {/* Main Content */}
-          <main className="flex-1">
-
-            {/* Items Grid */}
-            {filteredItems.length > 0 ? (
-              <div className="columns-1 md:columns-2 lg:columns-2 xl:columns-3 gap-4 space-y-4">
-                {filteredItems.map((item) => (
-                  <div key={item.id} className="break-inside-avoid">
-                    <ItemCard
-                      item={item}
-                      onArchive={handleArchive}
-                      onDelete={handleDelete}
-                      onMoveToProject={handleMoveToProject}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14-7H5a2 2 0 00-2 2v14c2-2 6-2 8 0V6a2 2 0 00-2-2zM9 7h6M9 11h6m-6 4h4" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No items found</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {searchQuery ? `No items match "${searchQuery}"` : 'Start by adding your first item to get organized.'}
-                </p>
-              </div>
-            )}
-          </main>
-        </div>
+          {/* New Item Card - Position 2 */}
+          <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
+          
+          {/* Existing Items - Positions 3+ */}
+          {filteredItems.map((item) => (
+            <ItemCard
+              key={item.id}
+              item={item}
+              onArchive={handleArchive}
+              onDelete={handleDelete}
+              onMoveToProject={handleMoveToProject}
+              onClick={handleItemClick}
+            />
+          ))}
+        </MasonryGrid>
+        
+        {/* Empty state message when no items match search */}
+        {filteredItems.length === 0 && searchQuery && (
+          <div className="text-center py-12">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No items found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              No items match &ldquo;{searchQuery}&rdquo;. Try a different search term.
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setShowCaptureModal(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40"
+        aria-label="Add new item"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      </button>
+
+      {/* Capture Modal */}
+      <CaptureModal
+        isOpen={showCaptureModal}
+        onClose={() => setShowCaptureModal(false)}
+        onAdd={handleAddItem}
+      />
+
+      {/* Item Detail Modal */}
+      <ItemDetailModal
+        item={selectedItem}
+        isOpen={showItemDetail}
+        onClose={() => {
+          setShowItemDetail(false);
+          setSelectedItem(null);
+        }}
+        onDelete={handleDelete}
+        onArchive={handleArchive}
+        onUpdateItem={handleUpdateItem}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        userEmail={user?.email}
+      />
+
+      {/* Success Notification */}
+      {notification && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse">
+          {notification}
+        </div>
+      )}
     </div>
   );
 }

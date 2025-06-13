@@ -8,6 +8,7 @@ interface ItemCardProps {
   onArchive?: (id: string) => void;
   onDelete?: (id: string) => void;
   onMoveToProject?: (id: string, projectId: string) => void;
+  onClick?: (item: MockItem) => void;
 }
 
 const ContentTypeIcon = ({ type }: { type: MockItem['content_type'] }) => {
@@ -59,7 +60,7 @@ const ContentTypeIcon = ({ type }: { type: MockItem['content_type'] }) => {
   }
 };
 
-export default function ItemCard({ item, onArchive, onDelete, onMoveToProject }: ItemCardProps) {
+export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, onClick }: ItemCardProps) {
   const [showActions, setShowActions] = useState(false);
 
   const formatDate = (dateString: string) => {
@@ -82,11 +83,20 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject }:
     return 'h-48';
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger card click if clicking on action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    onClick?.(item);
+  };
+
   return (
     <div 
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow ${getCardHeight()} flex flex-col`}
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow ${getCardHeight()} flex flex-col cursor-pointer max-w-full`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
+      onClick={handleCardClick}
     >
       {item.thumbnail && (
         <div className="relative overflow-hidden bg-gray-100 flex-shrink-0" style={{ height: '120px' }}>
@@ -120,13 +130,13 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject }:
       
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
+          <div className="flex items-center gap-2 text-gray-500 text-sm min-w-0 flex-1">
             <ContentTypeIcon type={item.content_type} />
             <span className="capitalize">{item.content_type}</span>
             {item.metadata?.domain && (
               <>
                 <span>•</span>
-                <span className="truncate">{item.metadata.domain}</span>
+                <span className="truncate min-w-0">{item.metadata.domain}</span>
               </>
             )}
           </div>
@@ -137,12 +147,12 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject }:
           )}
         </div>
 
-        <h3 className="font-medium text-gray-900 line-clamp-2 mb-2 flex-1">
+        <h3 className="font-medium text-gray-900 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
           {item.title}
         </h3>
 
         {item.description && (
-          <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+          <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-w-0 break-words">
             {item.description}
           </p>
         )}
@@ -161,10 +171,10 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject }:
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>{formatDate(item.created_at)}</span>
+          <div className="flex items-center justify-between text-xs text-gray-500 min-w-0">
+            <span className="truncate">{formatDate(item.created_at)}</span>
             {item.project && (
-              <span className="bg-gray-100 px-2 py-1 rounded">
+              <span className="bg-gray-100 px-2 py-1 rounded truncate max-w-20 ml-1">
                 {item.project}
               </span>
             )}
