@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabaseClient';
-import { SignOutButton } from '@/components/SignOutButton';
 import ItemCard from '@/components/ItemCard';
 import CaptureModal from '@/components/CaptureModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
@@ -173,17 +172,17 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 transition-colors">
+      <header className="bg-gray-50 dark:bg-gray-900 sticky top-0 z-10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4 gap-4">
+          <div className="flex items-center justify-between pt-4 gap-4">
             <div></div>
             {/* Navigation Links */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleBackToEverything}
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-medium transition-colors px-3 py-1.5 rounded-full ${
                   viewMode === 'everything' 
-                    ? 'text-blue-600 dark:text-blue-400' 
+                    ? 'bg-[rgb(255,77,6)] text-white' 
                     : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
@@ -191,9 +190,9 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={handleShowSpaces}
-                className={`text-sm font-medium transition-colors ${
+                className={`text-sm font-medium transition-colors px-3 py-1.5 rounded-full ${
                   viewMode === 'spaces' 
-                    ? 'text-blue-600 dark:text-blue-400' 
+                    ? 'bg-[rgb(255,77,6)] text-white' 
                     : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
@@ -207,7 +206,7 @@ export default function Dashboard() {
       {/* Left Rail */}
       <LeftRail onSettingsClick={() => setShowSettingsModal(true)} />
 
-      <div className="px-4 md:pl-20 md:pr-20 py-8">
+      <div className="px-4 md:pl-20 md:pr-20 pb-8">
         {/* Search Bar with New Space Button */}
         <div className="mb-6">
           <div className="flex gap-3 items-center">
@@ -233,7 +232,7 @@ export default function Dashboard() {
             {viewMode === 'spaces' && (
               <button
                 onClick={() => setShowNewSpaceModal(true)}
-                className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 whitespace-nowrap"
+                className="px-4 py-3 bg-[rgb(255,77,6)] text-white rounded-lg hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-2 whitespace-nowrap"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

@@ -44,5 +44,6 @@ next-env.d.ts
 # Keep planning documents private (working materials, notes, drafts)
 /planning/
 CLAUDE.md
+DESIGN.md
 project-plan.md
 settings.local.json
