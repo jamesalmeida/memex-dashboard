@@ -20,6 +20,8 @@ export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'everything' | 'spaces' | 'space-detail'>('everything');
   const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
   const [showCaptureModal, setShowCaptureModal] = useState(false);
@@ -39,6 +41,16 @@ export default function Dashboard() {
     ...space,
     count: mockItemsState.filter(item => item.space === space.name).length
   }));
+
+  // Get unique content types from current items (filtered by space if applicable)
+  const getAvailableContentTypes = () => {
+    const relevantItems = viewMode === 'space-detail' && selectedSpace 
+      ? mockItemsState.filter(item => item.space === selectedSpace)
+      : mockItemsState;
+    
+    const types = [...new Set(relevantItems.map(item => item.content_type))];
+    return types.sort();
+  };
 
   useEffect(() => {
     const checkUserAndLoadData = async () => {
@@ -66,10 +78,12 @@ export default function Dashboard() {
       item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.metadata?.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     
+    const matchesContentType = selectedContentType === null || item.content_type === selectedContentType;
+    
     if (viewMode === 'everything') {
-      return matchesSearch;
+      return matchesSearch && matchesContentType;
     } else if (viewMode === 'space-detail' && selectedSpace) {
-      return matchesSearch && item.space === selectedSpace;
+      return matchesSearch && matchesContentType && item.space === selectedSpace;
     }
     
     return false; // For spaces view, we don't show items
@@ -90,16 +104,19 @@ export default function Dashboard() {
   const handleSpaceClick = (space: MockSpace) => {
     setSelectedSpace(space.name);
     setViewMode('space-detail');
+    setSelectedContentType(null);
   };
 
   const handleBackToEverything = () => {
     setViewMode('everything');
     setSelectedSpace(null);
+    setSelectedContentType(null);
   };
 
   const handleShowSpaces = () => {
     setViewMode('spaces');
     setSelectedSpace(null);
+    setSelectedContentType(null);
   };
 
   const handleCreateSpace = (newSpaceData: Omit<MockSpace, 'id' | 'count'>) => {
@@ -225,6 +242,11 @@ export default function Dashboard() {
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => {
+                  // Delay blur to allow pill clicks
+                  setTimeout(() => setIsSearchFocused(false), 150);
+                }}
               />
             </div>
             
@@ -241,6 +263,40 @@ export default function Dashboard() {
               </button>
             )}
           </div>
+
+          {/* Content Type Filter Pills - Show when search is focused and not in spaces view */}
+          {isSearchFocused && viewMode !== 'spaces' && (
+            <div className="mt-4 overflow-x-auto">
+              <div className="flex gap-2 pb-2">
+                {/* All Types pill */}
+                <button
+                  onClick={() => setSelectedContentType(null)}
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 ${
+                    selectedContentType === null
+                      ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  }`}
+                >
+                  All Types
+                </button>
+                
+                {/* Individual content type pills */}
+                {getAvailableContentTypes().map((contentType) => (
+                  <button
+                    key={contentType}
+                    onClick={() => setSelectedContentType(contentType === selectedContentType ? null : contentType)}
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 capitalize ${
+                      selectedContentType === contentType
+                        ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    {contentType.replace(/([A-Z])/g, ' $1').trim()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Space Title for space-detail view */}
