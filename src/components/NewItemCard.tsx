@@ -40,8 +40,10 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
     
     const lowerInput = input.toLowerCase();
     
-    // Check if it's a URL
-    if (input.startsWith('http') || input.includes('.')) {
+    // Check if it's a valid URL (must start with http or be a recognizable domain pattern)
+    const urlPattern = /^(https?:\/\/)|(www\.)|([a-zA-Z0-9-]+\.(com|org|net|io|dev|app|co|edu|gov|mil|info|biz|me|tv|fm|ai|cloud|xyz|tech|site|online|store|shop|blog|news|media|social|network|community|platform|service|solutions|digital|global|world|international|[a-z]{2,3}))/i;
+    
+    if (input.startsWith('http') || urlPattern.test(input)) {
       // Social Media
       if (lowerInput.includes('twitter.com') || lowerInput.includes('x.com')) return 'x';
       if (lowerInput.includes('instagram.com')) return 'instagram';
@@ -118,6 +120,18 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
     const contentType = detectContentType(input);
     const isUrl = input.startsWith('http') || input.includes('.');
     const normalizedUrl = isUrl ? normalizeUrl(input) : undefined;
+    
+    // Validate URL before using it
+    let domain: string | undefined;
+    if (normalizedUrl) {
+      try {
+        const url = new URL(normalizedUrl);
+        domain = url.hostname;
+      } catch (error) {
+        // Not a valid URL, treat as note
+        domain = undefined;
+      }
+    }
 
     // Generate mock thumbnail for URLs
     const generateThumbnail = (): string => {
@@ -130,13 +144,13 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
     };
 
     const newItem: Omit<MockItem, 'id' | 'created_at'> = {
-      title: isUrl ? 'Quick Link' : input.substring(0, 50) + (input.length > 50 ? '...' : ''),
-      url: normalizedUrl,
+      title: isUrl && domain ? 'Quick Link' : input.substring(0, 50) + (input.length > 50 ? '...' : ''),
+      url: normalizedUrl && domain ? normalizedUrl : undefined,
       content_type: contentType,
-      description: isUrl ? `Added via quick capture` : undefined,
-      thumbnail: normalizedUrl ? generateThumbnail() : undefined,
+      description: isUrl && domain ? `Added via quick capture` : undefined,
+      thumbnail: normalizedUrl && domain ? generateThumbnail() : undefined,
       metadata: {
-        domain: normalizedUrl ? new URL(normalizedUrl).hostname : undefined,
+        domain: domain,
         tags: ['quick-add']
       }
     };
