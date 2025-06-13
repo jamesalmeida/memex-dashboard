@@ -128,6 +128,19 @@ export default function Dashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleContextAwareAdd = () => {
+    if (viewMode === 'everything') {
+      // Add new item
+      setShowCaptureModal(true);
+    } else if (viewMode === 'spaces') {
+      // Create new space
+      setShowNewSpaceModal(true);
+    } else if (viewMode === 'space-detail') {
+      // Add item to current space
+      setShowCaptureModal(true);
+    }
+  };
+
   const handleCreateSpace = (newSpaceData: Omit<MockSpace, 'id' | 'count'>) => {
     const newSpace: MockSpace = {
       ...newSpaceData,
@@ -207,6 +220,7 @@ export default function Dashboard() {
           onEverythingClick={handleBackToEverything}
           onSpacesClick={handleShowSpaces}
           onHomeClick={handleHomeClick}
+          onAddClick={handleContextAwareAdd}
         />
       </div>
 
@@ -305,18 +319,6 @@ export default function Dashboard() {
               />
             </div>
             
-            {/* New Space Button - Only show in Spaces view */}
-            {viewMode === 'spaces' && (
-              <button
-                onClick={() => setShowNewSpaceModal(true)}
-                className="px-4 py-3 bg-[rgb(255,77,6)] text-white rounded-lg hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-2 whitespace-nowrap"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                New Space
-              </button>
-            )}
           </div>
 
           {/* Content Type Filter Pills - Show when search is focused and not in spaces view */}
@@ -425,11 +427,16 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button - Mobile only, desktop uses left rail button */}
       <button
-        onClick={() => setShowCaptureModal(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40"
-        aria-label="Add new item"
+        id="floating-add-button"
+        onClick={handleContextAwareAdd}
+        className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-[rgb(255,77,6)] text-white rounded-full shadow-lg hover:bg-[rgb(230,69,5)] hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40"
+        aria-label={
+          viewMode === 'everything' ? 'Add new item' :
+          viewMode === 'spaces' ? 'Create new space' :
+          'Add item to space'
+        }
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

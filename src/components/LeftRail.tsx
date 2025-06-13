@@ -8,9 +8,10 @@ interface LeftRailProps {
   onEverythingClick: () => void;
   onSpacesClick: () => void;
   onHomeClick: () => void;
+  onAddClick: () => void;
 }
 
-export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick, onSpacesClick, onHomeClick }: LeftRailProps) {
+export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick, onSpacesClick, onHomeClick, onAddClick }: LeftRailProps) {
   const { theme, toggleTheme } = useTheme();
   return (
     <div className="hidden md:block fixed left-0 top-0 bottom-0 w-20 pointer-events-none z-30">
@@ -21,7 +22,7 @@ export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick,
         <div id="home-button-container" className="h-[93px] flex items-center justify-center">
           <button
             onClick={onHomeClick}
-            className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 transition-colors pointer-events-auto"
+            className="w-[52px] h-[52px] bg-white dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 transition-colors pointer-events-auto"
             aria-label="Go to home (Everything view)"
             title="Home"
           >
@@ -35,6 +36,7 @@ export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick,
         {/* Navigation and Content Area */}
         <div className="flex-1 flex flex-col justify-between items-center pb-8 gap-2">
         
+        <div className="flex flex-col gap-4">
         {/* Vertical Navigation Toggle */}
         <div id="vertical-navigation-toggle" className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex flex-col items-center relative h-[120px] w-[52px] pointer-events-auto">
           {/* Sliding pill background */}
@@ -85,6 +87,27 @@ export default function LeftRail({ onSettingsClick, viewMode, onEverythingClick,
               <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           </button>
+        </div>
+
+        {/* Context-Aware Add Button */}
+        <button
+          onClick={onAddClick}
+          className="w-[52px] h-[52px] bg-[rgb(255,77,6)] text-white rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 hover:bg-[rgb(230,69,5)] hover:border-gray-400 dark:hover:border-gray-500 transition-colors pointer-events-auto shadow-lg hover:shadow-xl"
+          aria-label={
+            viewMode === 'everything' ? 'Add new item' :
+            viewMode === 'spaces' ? 'Create new space' :
+            'Add item to space'
+          }
+          title={
+            viewMode === 'everything' ? 'Add Item' :
+            viewMode === 'spaces' ? 'New Space' :
+            'Add to Space'
+          }
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
         </div>
 
         {/* Bottom icons */}
