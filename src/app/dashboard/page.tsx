@@ -203,8 +203,8 @@ export default function Dashboard() {
               <div 
                 className="absolute h-[calc(100%-8px)] bg-[rgb(255,77,6)] rounded-full transition-all duration-200 ease-out"
                 style={{
-                  width: 'calc(50% - 2px)',
-                  left: viewMode === 'everything' ? '4px' : 'calc(50% + 2px)',
+                  width: 'calc(50% - 4px)',
+                  left: viewMode === 'everything' ? '4px' : 'calc(50%)',
                 }}
               />
               
