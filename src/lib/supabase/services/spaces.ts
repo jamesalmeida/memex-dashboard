@@ -23,16 +23,19 @@ export const spacesService = {
     
     const { data, error } = await supabase
       .from('spaces')
-      .select('*')
+      .select(`
+        *,
+        items!items_space_id_fkey(count)
+      `)
       .eq('is_archived', false)
       .order('sort_order', { ascending: true })
     
     if (error) throw error
     
-    // For now, return spaces without counts
+    // Transform the data to include item_count
     return (data || []).map(space => ({
       ...space,
-      item_count: 0
+      item_count: space.items?.[0]?.count || 0
     }))
   },
 

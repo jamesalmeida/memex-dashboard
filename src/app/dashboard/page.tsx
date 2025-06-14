@@ -8,6 +8,7 @@ import ItemDetailModal from '@/components/ItemDetailModal';
 import NewItemCard from '@/components/NewItemCard';
 import SpaceCard from '@/components/SpaceCard';
 import NewSpaceModal from '@/components/NewSpaceModal';
+import EditSpaceModal from '@/components/EditSpaceModal';
 import MasonryGrid from '@/components/MasonryGrid';
 import LeftRail from '@/components/LeftRail';
 import SettingsModal from '@/components/SettingsModal';
@@ -30,6 +31,8 @@ export default function Dashboard() {
   const [showItemDetail, setShowItemDetail] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showNewSpaceModal, setShowNewSpaceModal] = useState(false);
+  const [showEditSpaceModal, setShowEditSpaceModal] = useState(false);
+  const [editingSpace, setEditingSpace] = useState<Space | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const router = useRouter();
 
@@ -105,6 +108,11 @@ export default function Dashboard() {
       setItems(items.filter(item => item.id !== id));
       setShowItemDetail(false);
       setSelectedItem(null);
+      
+      // Update spaces with counts
+      const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
+      setSpacesWithCounts(updatedSpacesWithCounts);
+      
       setNotification('Item archived successfully!');
       setTimeout(() => setNotification(null), 3000);
     } catch (error) {
@@ -118,6 +126,11 @@ export default function Dashboard() {
       setItems(items.filter(item => item.id !== id));
       setShowItemDetail(false);
       setSelectedItem(null);
+      
+      // Update spaces with counts
+      const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
+      setSpacesWithCounts(updatedSpacesWithCounts);
+      
       setNotification('Item deleted successfully!');
       setTimeout(() => setNotification(null), 3000);
     } catch (error) {
@@ -134,6 +147,10 @@ export default function Dashboard() {
         if (selectedItem?.id === id) {
           setSelectedItem(updatedItem);
         }
+        
+        // Update spaces with counts
+        const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
+        setSpacesWithCounts(updatedSpacesWithCounts);
       }
     } catch (error) {
       console.error('Error moving item to space:', error);
@@ -144,6 +161,69 @@ export default function Dashboard() {
     setSelectedSpace(space.id);
     setViewMode('space-detail');
     setSelectedContentType(null);
+  };
+
+  const handleEditSpace = (space: Space & { item_count: number }) => {
+    setEditingSpace(space);
+    setShowEditSpaceModal(true);
+  };
+
+  const handleDeleteSpace = async (space: Space & { item_count: number }) => {
+    if (space.item_count > 0) {
+      const confirmed = window.confirm(`This space contains ${space.item_count} item${space.item_count > 1 ? 's' : ''}. Are you sure you want to delete it?`);
+      if (!confirmed) return;
+    } else {
+      const confirmed = window.confirm(`Are you sure you want to delete "${space.name}"?`);
+      if (!confirmed) return;
+    }
+
+    try {
+      await spacesService.deleteSpace(space.id);
+      
+      // Update local state
+      setSpaces(spaces.filter(s => s.id !== space.id));
+      setSpacesWithCounts(spacesWithCounts.filter(s => s.id !== space.id));
+      
+      // If we're viewing this space, go back to spaces view
+      if (selectedSpace === space.id) {
+        setViewMode('spaces');
+        setSelectedSpace(null);
+      }
+      
+      setNotification(`Space "${space.name}" deleted successfully!`);
+      setTimeout(() => setNotification(null), 3000);
+    } catch (error) {
+      console.error('Error deleting space:', error);
+      setNotification('Error deleting space. Please try again.');
+      setTimeout(() => setNotification(null), 3000);
+    }
+  };
+
+  const handleUpdateSpace = async (data: { name: string; description?: string; color: string }) => {
+    if (!editingSpace) return;
+
+    try {
+      await spacesService.updateSpace(editingSpace.id, data);
+      
+      // Reload spaces to get updated data
+      const [updatedSpaces, updatedSpacesWithCounts] = await Promise.all([
+        spacesService.getSpaces(),
+        spacesService.getSpacesWithCounts()
+      ]);
+      
+      setSpaces(updatedSpaces);
+      setSpacesWithCounts(updatedSpacesWithCounts);
+      
+      setShowEditSpaceModal(false);
+      setEditingSpace(null);
+      
+      setNotification('Space updated successfully!');
+      setTimeout(() => setNotification(null), 3000);
+    } catch (error) {
+      console.error('Error updating space:', error);
+      setNotification('Error updating space. Please try again.');
+      setTimeout(() => setNotification(null), 3000);
+    }
   };
 
   const handleBackToEverything = () => {
@@ -211,7 +291,7 @@ export default function Dashboard() {
       if (newItemData.metadata) {
         const metadata = newItemData.metadata;
         
-        const metadataInput: any = {
+        const metadataInput: Record<string, unknown> = {
           domain: metadata.domain,
           author: metadata.author,
           username: metadata.username,
@@ -297,6 +377,12 @@ export default function Dashboard() {
         setItems(items.map(item => item.id === id ? updatedItem : item));
         if (selectedItem?.id === id) {
           setSelectedItem(updatedItem);
+        }
+        
+        // Update spaces with counts if space changed
+        if (updateInput.space_id !== undefined) {
+          const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
+          setSpacesWithCounts(updatedSpacesWithCounts);
         }
       }
     } catch (error) {
@@ -531,6 +617,8 @@ export default function Dashboard() {
                   key={space.id}
                   space={space}
                   onClick={() => handleSpaceClick(space)}
+                  onEdit={handleEditSpace}
+                  onDelete={handleDeleteSpace}
                 />
               ))}
             </>
@@ -617,6 +705,16 @@ export default function Dashboard() {
         isOpen={showNewSpaceModal}
         onClose={() => setShowNewSpaceModal(false)}
         onCreateSpace={handleCreateSpace}
+      />
+
+      <EditSpaceModal
+        isOpen={showEditSpaceModal}
+        onClose={() => {
+          setShowEditSpaceModal(false);
+          setEditingSpace(null);
+        }}
+        onSubmit={handleUpdateSpace}
+        space={editingSpace}
       />
 
       {/* Notification */}
