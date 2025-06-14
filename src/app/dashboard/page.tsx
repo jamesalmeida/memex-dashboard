@@ -200,12 +200,54 @@ export default function Dashboard() {
         url: newItemData.url,
         content_type: newItemData.content_type as ContentType,
         description: newItemData.description,
-        thumbnail_url: newItemData.thumbnail,
+        thumbnail_url: newItemData.thumbnail_url || newItemData.thumbnail,
         space_id: viewMode === 'space-detail' && selectedSpace ? selectedSpace : 
                   newItemData.space ? spaces.find(s => s.name === newItemData.space)?.id : undefined
       };
 
       const newItem = await itemsService.createItem(createInput);
+      
+      // Store metadata if provided
+      if (newItemData.metadata) {
+        const metadata = newItemData.metadata;
+        
+        const metadataInput: any = {
+          domain: metadata.domain,
+          author: metadata.author,
+          username: metadata.username,
+          extra_data: {
+            profile_image: metadata.profile_image,
+            video_url: metadata.video_url,
+            video_type: metadata.video_type,
+            tags: metadata.tags,
+            likes: metadata.likes,
+            replies: metadata.replies,
+            retweets: metadata.retweets,
+            views: metadata.views,
+            duration: metadata.duration,
+            tweet_date: metadata.tweet_date,
+            display_name: metadata.display_name
+          }
+        };
+        
+        // Remove undefined values
+        Object.keys(metadataInput).forEach(key => {
+          if (metadataInput[key] === undefined) {
+            delete metadataInput[key];
+          }
+        });
+        
+        // Clean extra_data
+        if (metadataInput.extra_data) {
+          Object.keys(metadataInput.extra_data).forEach(key => {
+            if (metadataInput.extra_data[key] === undefined) {
+              delete metadataInput.extra_data[key];
+            }
+          });
+        }
+        
+        await itemsService.updateItemMetadata(newItem.id, metadataInput);
+      }
       
       // Fetch the full item with metadata
       const fullItem = await itemsService.getItem(newItem.id);
@@ -244,7 +286,7 @@ export default function Dashboard() {
         url: updates.url,
         content_type: updates.content_type as ContentType,
         description: updates.description,
-        thumbnail_url: updates.thumbnail,
+        thumbnail_url: updates.thumbnail_url || updates.thumbnail,
         space_id: updates.space ? spaces.find(s => s.name === updates.space)?.id : null
       };
 

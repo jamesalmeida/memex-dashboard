@@ -136,6 +136,38 @@ export default function ItemDetailModal({
       minute: '2-digit'
     });
   };
+  
+  const formatTweetDate = (dateString: string | undefined) => {
+    if (!dateString) return formatDate(currentItem.created_at);
+    
+    // If it's already formatted like "10:30 AM · Nov 15, 2024", return as is
+    if (dateString.includes('·')) return dateString;
+    
+    // Otherwise parse and format
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString; // Return original if parsing fails
+      
+      // Format to match Twitter style: "10:30 AM · Nov 15, 2024"
+      const timeOptions: Intl.DateTimeFormatOptions = { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      };
+      const dateOptions: Intl.DateTimeFormatOptions = { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      };
+      
+      const time = date.toLocaleTimeString('en-US', timeOptions);
+      const dateStr = date.toLocaleDateString('en-US', dateOptions);
+      
+      return `${time} · ${dateStr}`;
+    } catch {
+      return dateString;
+    }
+  };
 
 
   const handleOpenUrl = () => {
@@ -184,6 +216,17 @@ export default function ItemDetailModal({
     });
   };
 
+  const handleCopyUrl = async () => {
+    if (currentItem.url) {
+      try {
+        await navigator.clipboard.writeText(currentItem.url);
+        // Could add a toast notification here in the future
+      } catch (error) {
+        console.error('Failed to copy URL:', error);
+      }
+    }
+  };
+
   const handleGenerateTranscript = () => {
     console.log('Generate transcript for video:', currentItem.id);
     // Placeholder for future implementation
@@ -219,19 +262,19 @@ export default function ItemDetailModal({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left Column - Main Content */}
           <div className="flex-1 overflow-y-auto p-6">
-          {/* Thumbnail */}
-          {currentItem.thumbnail && (
+          {/* Thumbnail - Hide for X/Twitter since it's shown in tweet replica */}
+          {currentItem.thumbnail_url && currentItem.content_type !== 'x' && (
             <div className="mb-6">
               <img 
-                src={currentItem.thumbnail} 
+                src={currentItem.thumbnail_url} 
                 alt={currentItem.title}
                 className="w-full h-48 object-cover rounded-lg bg-gray-100"
               />
             </div>
           )}
 
-          {/* URL */}
-          {currentItem.url && (
+          {/* URL - Only show for non-X content, X URLs will be in right column */}
+          {currentItem.url && currentItem.content_type !== 'x' && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 URL
@@ -435,8 +478,149 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* Description */}
-          {currentItem.description && (
+          {/* X/Twitter Post */}
+          {currentItem.content_type === 'x' && (
+            <div className="mb-6 flex justify-center">
+              <div className="max-w-md w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+                {/* Tweet Header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center overflow-hidden relative">
+                    {currentItem.metadata?.extra_data?.profile_image ? (
+                      <>
+                        <img 
+                          src={currentItem.metadata.extra_data.profile_image}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Hide the image and show fallback icon
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                        <svg 
+                          className="w-6 h-6 text-gray-600 dark:text-gray-400 absolute inset-0 m-auto hidden" 
+                          fill="currentColor" 
+                          viewBox="0 0 24 24"
+                          style={{ display: 'none' }}
+                        >
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                      </>
+                    ) : (
+                      <svg className="w-6 h-6 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-gray-900 dark:text-gray-100">
+                        {currentItem.metadata?.extra_data?.display_name || currentItem.metadata?.username || currentItem.metadata?.author?.replace('@', '') || 'User'}
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        @{currentItem.metadata?.username || currentItem.metadata?.author?.replace('@', '') || 'user'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatTweetDate(currentItem.metadata?.extra_data?.tweet_date)}
+                    </div>
+                  </div>
+                  <div className="w-5 h-5">
+                    <svg className="w-5 h-5 text-black dark:text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Tweet Content */}
+                <div className="mb-3">
+                  <p className="text-gray-900 dark:text-gray-100 leading-relaxed">
+                    {currentItem.description || currentItem.title}
+                  </p>
+                </div>
+
+                {/* Tweet Media - Video or Image */}
+                {currentItem.thumbnail_url && (
+                  <div className="mb-3 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                    {(currentItem.metadata?.extra_data?.video_url || 
+                      currentItem.metadata?.extra_data?.video_type || 
+                      currentItem.title?.toLowerCase().includes('video') ||
+                      currentItem.description?.toLowerCase().includes('video') ||
+                      currentItem.url?.includes('/video/')) ? (
+                      <div className="relative">
+                        {/* Video thumbnail with play button overlay */}
+                        <div className="relative group cursor-pointer" onClick={() => window.open(currentItem.url, '_blank')}>
+                          <img 
+                            src={currentItem.thumbnail_url}
+                            alt="Video thumbnail"
+                            className="w-full h-auto"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                          {/* Play button overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-all">
+                            <div className="w-16 h-16 bg-black bg-opacity-60 rounded-full flex items-center justify-center">
+                              <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                          {/* Video indicator */}
+                          <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            Video
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <img 
+                        src={currentItem.thumbnail_url}
+                        alt="Tweet media"
+                        className="w-full h-auto"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Tweet Actions */}
+                <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-1 hover:text-blue-500 cursor-pointer transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span className="text-xs">{currentItem.metadata?.extra_data?.replies || currentItem.metadata?.replies || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1 hover:text-green-500 cursor-pointer transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="text-xs">{currentItem.metadata?.extra_data?.retweets || currentItem.metadata?.retweets || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1 hover:text-red-500 cursor-pointer transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    <span className="text-xs">{currentItem.metadata?.extra_data?.likes || currentItem.metadata?.likes || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1 hover:text-blue-500 cursor-pointer transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Description - Hide for X/Twitter since content is shown in tweet replica */}
+          {currentItem.description && currentItem.content_type !== 'x' && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description
@@ -470,6 +654,40 @@ export default function ItemDetailModal({
                 ))}
               </select>
             </div>
+
+            {/* X/Twitter URL */}
+            {currentItem.content_type === 'x' && currentItem.url && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Post URL
+                </label>
+                <div className="space-y-2">
+                  <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md text-xs text-gray-600 dark:text-gray-400 break-all">
+                    {currentItem.url}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCopyUrl}
+                      className="flex-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                      Copy
+                    </button>
+                    <button
+                      onClick={handleOpenUrl}
+                      className="flex-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Open
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Duration (for videos) */}
             {currentItem.metadata?.duration && (

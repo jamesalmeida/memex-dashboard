@@ -45,5 +45,6 @@ next-env.d.ts
 /planning/
 CLAUDE.md
 DESIGN.md
+CONTENT_INTELLIGENCE_SUMMARY.md
 project-plan.md
 settings.local.json

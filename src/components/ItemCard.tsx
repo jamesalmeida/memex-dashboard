@@ -152,7 +152,7 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
   };
 
   const shouldShowFullImage = () => {
-    return ['image', 'instagram', 'video', 'youtube'].includes(item.content_type);
+    return ['image', 'instagram', 'video', 'youtube', 'x'].includes(item.content_type);
   };
 
   const handleCardClick = (e: React.MouseEvent) => {

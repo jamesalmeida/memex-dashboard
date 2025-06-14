@@ -26,11 +26,27 @@ export const itemsService = {
     
     if (error) throw error
     
-    // For now, return items without metadata, tags, and space details
-    // We'll enhance this progressively
+    // Fetch metadata for all items
+    const itemIds = (items || []).map(item => item.id)
+    let metadataList = null
+    
+    if (itemIds.length > 0) {
+      const { data } = await supabase
+        .from('item_metadata')
+        .select('*')
+        .in('item_id', itemIds)
+      metadataList = data
+    }
+    
+    // Create a map of item_id -> metadata
+    const metadataMap = new Map()
+    metadataList?.forEach(metadata => {
+      metadataMap.set(metadata.item_id, metadata)
+    })
+    
     return (items || []).map(item => ({
       ...item,
-      metadata: null,
+      metadata: metadataMap.get(item.id) || null,
       tags: [],
       space: null
     }))
@@ -68,9 +84,16 @@ export const itemsService = {
       space = spaceData
     }
     
+    // Get metadata for this item
+    const { data: metadataData } = await supabase
+      .from('item_metadata')
+      .select('*')
+      .eq('item_id', id)
+      .single()
+    
     return {
       ...data,
-      metadata: null,
+      metadata: metadataData || null,
       tags: itemTags?.map((row: any) => row.tag).filter(Boolean) || [],
       space: space
     }
@@ -226,9 +249,27 @@ export const itemsService = {
     
     if (error) throw error
     
+    // Fetch metadata for all items
+    const itemIds = (data || []).map(item => item.id)
+    let metadataList = null
+    
+    if (itemIds.length > 0) {
+      const { data: metadata } = await supabase
+        .from('item_metadata')
+        .select('*')
+        .in('item_id', itemIds)
+      metadataList = metadata
+    }
+    
+    // Create a map of item_id -> metadata
+    const metadataMap = new Map()
+    metadataList?.forEach(metadata => {
+      metadataMap.set(metadata.item_id, metadata)
+    })
+    
     return (data || []).map(item => ({
       ...item,
-      metadata: null,
+      metadata: metadataMap.get(item.id) || null,
       tags: [],
       space: null
     }))

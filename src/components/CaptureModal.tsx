@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { MockItem } from '@/utils/mockData';
 import Modal from './Modal';
+import UrlPreview from './UrlPreview';
+import type { UrlAnalysisResult } from '@/lib/services/urlMetadata';
 
 interface CaptureModalProps {
   isOpen: boolean;
@@ -18,6 +20,7 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
   const [tags, setTags] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [extractedMetadata, setExtractedMetadata] = useState<UrlAnalysisResult | null>(null);
 
   const detectContentType = (url: string): MockItem['content_type'] => {
     if (!url) return 'text';
@@ -76,6 +79,18 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
     }
   };
 
+  const handleMetadataExtracted = (result: UrlAnalysisResult) => {
+    setExtractedMetadata(result);
+    
+    // Auto-fill form fields if they're empty
+    if (!title && result.metadata.title) {
+      setTitle(result.metadata.title);
+    }
+    if (!description && result.metadata.description) {
+      setDescription(result.metadata.description);
+    }
+  };
+
   const handleQuickAdd = async () => {
     if (!url.trim() && !title.trim()) {
       setError('Please enter a URL or title');
@@ -85,31 +100,28 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
     setError('');
     setIsSubmitting(true);
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
     const normalizedUrl = url ? normalizeUrl(url) : undefined;
-    const contentType = detectContentType(url);
     
-    // Generate mock metadata based on content type
-    const generateThumbnail = (): string => {
-      const thumbnails = [
-        'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=200&fit=crop'
-      ];
-      return thumbnails[Math.floor(Math.random() * thumbnails.length)];
-    };
-
+    // Use extracted metadata if available, otherwise fallback to detection
+    const contentType = extractedMetadata ? extractedMetadata.content_type : detectContentType(url);
+    
     const newItem: Omit<MockItem, 'id' | 'created_at'> = {
-      title: title || url || 'New Item',
+      title: title || extractedMetadata?.metadata.title || url || 'New Item',
       url: normalizedUrl,
       content_type: contentType,
-      description: description || undefined,
-      thumbnail: normalizedUrl ? generateThumbnail() : undefined,
+      description: description || extractedMetadata?.metadata.description || undefined,
+      thumbnail_url: extractedMetadata?.metadata.thumbnail_url || undefined,
       metadata: {
-        domain: normalizedUrl ? new URL(normalizedUrl).hostname : undefined,
+        domain: extractedMetadata?.metadata.domain || (normalizedUrl ? new URL(normalizedUrl).hostname : undefined),
+        author: extractedMetadata?.metadata.author,
+        duration: extractedMetadata?.metadata.duration,
+        published_date: extractedMetadata?.metadata.published_date,
+        video_url: extractedMetadata?.metadata.video_url,
+        video_type: extractedMetadata?.metadata.video_type,
+        profile_image: extractedMetadata?.metadata.profile_image,
+        likes: extractedMetadata?.metadata.likes,
+        retweets: extractedMetadata?.metadata.retweets,
+        replies: extractedMetadata?.metadata.replies,
         tags: tags ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined
       },
       space: project || undefined
@@ -123,6 +135,7 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
     setDescription('');
     setProject('');
     setTags('');
+    setExtractedMetadata(null);
     setIsSubmitting(false);
     onClose();
   };
@@ -157,6 +170,15 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
               <p className="text-xs text-red-600 mt-1">Please enter a valid URL</p>
             )}
           </div>
+
+          {/* URL Preview */}
+          {url && validateUrl(url) && (
+            <UrlPreview 
+              url={url} 
+              onMetadataExtracted={handleMetadataExtracted}
+              className="mt-4"
+            />
+          )}
 
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">

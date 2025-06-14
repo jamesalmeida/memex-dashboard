@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { MockItem } from '@/utils/mockData';
+import { urlMetadataService } from '@/lib/services/urlMetadata';
 
 interface NewItemCardProps {
   onAdd: (item: Omit<MockItem, 'id' | 'created_at'>) => void;
@@ -114,48 +115,72 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
 
     setIsSubmitting(true);
 
-    // Simulate processing
-    await new Promise(resolve => setTimeout(resolve, 300));
-
     const contentType = detectContentType(input);
     const isUrl = input.startsWith('http') || input.includes('.');
     const normalizedUrl = isUrl ? normalizeUrl(input) : undefined;
     
-    // Validate URL before using it
-    let domain: string | undefined;
+    let newItem: Omit<MockItem, 'id' | 'created_at'>;
+
     if (normalizedUrl) {
       try {
-        const url = new URL(normalizedUrl);
-        domain = url.hostname;
+        // Try to extract metadata for URLs
+        const result = await urlMetadataService.analyzeUrl(normalizedUrl);
+        
+        newItem = {
+          title: result.metadata.title || 'Quick Link',
+          url: normalizedUrl,
+          content_type: result.content_type,
+          description: result.metadata.description || 'Added via quick capture',
+          thumbnail_url: result.metadata.thumbnail_url,
+          metadata: {
+            domain: result.metadata.domain,
+            author: result.metadata.author,
+            duration: result.metadata.duration,
+            video_url: result.metadata.video_url,
+            video_type: result.metadata.video_type,
+            profile_image: result.metadata.profile_image,
+            likes: result.metadata.likes,
+            retweets: result.metadata.retweets,
+            replies: result.metadata.replies,
+            tags: ['quick-add']
+          }
+        };
       } catch (error) {
-        // Not a valid URL, treat as note
-        domain = undefined;
+        console.error('Failed to extract metadata:', error);
+        
+        // Fallback to simple URL handling
+        let domain: string | undefined;
+        try {
+          const url = new URL(normalizedUrl);
+          domain = url.hostname;
+        } catch {
+          domain = undefined;
+        }
+
+        newItem = {
+          title: domain ? 'Quick Link' : input.substring(0, 50) + (input.length > 50 ? '...' : ''),
+          url: domain ? normalizedUrl : undefined,
+          content_type: contentType,
+          description: domain ? 'Added via quick capture' : undefined,
+          metadata: {
+            domain: domain,
+            tags: ['quick-add']
+          }
+        };
       }
+    } else {
+      // Handle text notes
+      newItem = {
+        title: input.substring(0, 50) + (input.length > 50 ? '...' : ''),
+        content_type: 'note',
+        description: input.length > 50 ? input : undefined,
+        metadata: {
+          tags: ['quick-add']
+        }
+      };
     }
 
-    // Generate mock thumbnail for URLs
-    const generateThumbnail = (): string => {
-      const thumbnails = [
-        'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=200&fit=crop',
-        'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400&h=200&fit=crop'
-      ];
-      return thumbnails[Math.floor(Math.random() * thumbnails.length)];
-    };
-
-    const newItem: Omit<MockItem, 'id' | 'created_at'> = {
-      title: isUrl && domain ? 'Quick Link' : input.substring(0, 50) + (input.length > 50 ? '...' : ''),
-      url: normalizedUrl && domain ? normalizedUrl : undefined,
-      content_type: contentType,
-      description: isUrl && domain ? `Added via quick capture` : undefined,
-      thumbnail: normalizedUrl && domain ? generateThumbnail() : undefined,
-      metadata: {
-        domain: domain,
-        tags: ['quick-add']
-      }
-    };
-
-    onAdd(newItem); // Just add to grid, no modal
+    onAdd(newItem);
     setInput('');
     setIsSubmitting(false);
   };

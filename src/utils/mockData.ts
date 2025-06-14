@@ -19,6 +19,7 @@ export interface MockItem {
   content_type: ContentType;
   description?: string;
   thumbnail?: string;
+  thumbnail_url?: string;
   metadata?: {
     // Common
     author?: string;
@@ -29,6 +30,9 @@ export interface MockItem {
     duration?: string;
     file_size?: string;
     page_count?: number;
+    video_url?: string;
+    video_type?: string;
+    profile_image?: string;
     
     // Social
     username?: string;
