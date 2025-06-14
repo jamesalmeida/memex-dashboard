@@ -13,7 +13,9 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [lastHeight, setLastHeight] = useState(48); // 3rem = 48px
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Auto-resize textarea and trigger grid re-layout if needed
   useEffect(() => {
@@ -187,8 +189,68 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
     setIsSubmitting(false);
   };
 
+  const handleImageSubmit = async (file: File, dataUrl: string) => {
+    setIsSubmitting(true);
+
+    try {
+      // For now, we'll use the data URL as the thumbnail
+      // In a production app, you'd want to upload to a storage service like Supabase Storage
+      
+      const newItem: Omit<MockItem, 'id' | 'created_at'> = {
+        title: `Pasted Image - ${file.name}`,
+        content_type: 'image',
+        description: `Image pasted from clipboard (${Math.round(file.size / 1024)}KB)`,
+        thumbnail_url: dataUrl, // Using data URL for now
+        metadata: {
+          file_size: `${Math.round(file.size / 1024)}KB`,
+          tags: ['pasted-image', 'quick-add']
+        }
+      };
+
+      onAdd(newItem);
+      setInput('');
+      setIsSubmitting(false);
+    } catch (error) {
+      console.error('Failed to process image:', error);
+      setIsSubmitting(false);
+    }
+  };
+
   const handlePaste = async () => {
     try {
+      // Try to read clipboard data (including images)
+      const clipboardItems = await navigator.clipboard.read();
+      
+      for (const clipboardItem of clipboardItems) {
+        // Check if clipboard contains an image
+        const imageTypes = clipboardItem.types.filter(type => type.startsWith('image/'));
+        
+        if (imageTypes.length > 0) {
+          const imageType = imageTypes[0];
+          const blob = await clipboardItem.getType(imageType);
+          
+          // Create a File object from the blob
+          const file = new File([blob], `pasted-image.${imageType.split('/')[1]}`, { type: imageType });
+          
+          // Create a data URL for immediate display
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const dataUrl = e.target?.result as string;
+            
+            // Set input to indicate an image was pasted
+            setInput(`📷 Image pasted (${file.size} bytes)`);
+            
+            // Auto-submit with image data
+            setTimeout(() => {
+              handleImageSubmit(file, dataUrl);
+            }, 100);
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+      
+      // If no image, try to read text
       const text = await navigator.clipboard.readText();
       if (text) {
         setInput(text);
@@ -199,6 +261,18 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
       }
     } catch (err) {
       console.error('Failed to read clipboard:', err);
+      // Fallback to text-only clipboard reading
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          setInput(text);
+          setTimeout(() => {
+            handleSubmit();
+          }, 100);
+        }
+      } catch (textErr) {
+        console.error('Failed to read text from clipboard:', textErr);
+      }
     }
   };
 
@@ -213,8 +287,89 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
     setInput('');
   };
 
+  const handleFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    // Check if it's an image
+    if (!file.type.startsWith('image/')) {
+      console.error('Only image files are supported');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Create a data URL for the image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        
+        const newItem: Omit<MockItem, 'id' | 'created_at'> = {
+          title: file.name.replace(/\.[^/.]+$/, ''), // Remove file extension
+          content_type: 'image',
+          description: `Uploaded image (${Math.round(file.size / 1024)}KB)`,
+          thumbnail_url: dataUrl,
+          metadata: {
+            file_size: `${Math.round(file.size / 1024)}KB`,
+            tags: ['uploaded-image', 'quick-add']
+          }
+        };
+
+        onAdd(newItem);
+        setInput('');
+        setIsSubmitting(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    const imageFile = files.find(file => file.type.startsWith('image/'));
+    
+    if (imageFile) {
+      handleFileUpload(imageFile);
+    }
+  };
+
   return (
-    <div ref={cardRef} id="new-item-card" className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors flex flex-col p-4">
+    <div 
+      ref={cardRef} 
+      id="new-item-card" 
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border-2 border-dashed transition-colors flex flex-col p-4 ${
+        isDragOver 
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+          : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div className="flex-1">
         <textarea
           ref={textareaRef}
@@ -272,19 +427,41 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             )}
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={handlePaste}
-            className="px-4 py-1.5 text-sm bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-1.5"
-            disabled={isSubmitting}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-            </svg>
-            Paste
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handlePaste}
+              className="px-4 py-1.5 text-sm bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-1.5"
+              disabled={isSubmitting}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
+              Paste
+            </button>
+            <button
+              type="button"
+              onClick={handleFileSelect}
+              className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+              disabled={isSubmitting}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Image
+            </button>
+          </div>
         )}
       </div>
+      
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
     </div>
   );
 }

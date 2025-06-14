@@ -262,8 +262,8 @@ export default function ItemDetailModal({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left Column - Main Content */}
           <div className="flex-1 overflow-y-auto p-6">
-          {/* Thumbnail - Hide for X/Twitter and YouTube since they have special displays */}
-          {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && (
+          {/* Thumbnail - Hide for X/Twitter, YouTube, and images since they have special displays */}
+          {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && (
             <div className="mb-6">
               <img 
                 src={currentItem.thumbnail_url} 
@@ -273,8 +273,8 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* URL - Only show for non-X and non-YouTube content */}
-          {currentItem.url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && (
+          {/* URL - Only show for non-X, non-YouTube, and non-image content */}
+          {currentItem.url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 URL
@@ -323,6 +323,19 @@ export default function ItemDetailModal({
                     </div>
                   );
                 })()}
+              </div>
+            </div>
+          )}
+
+          {/* Image Display */}
+          {currentItem.content_type === 'image' && currentItem.thumbnail_url && (
+            <div className="mb-6">
+              <div className="rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                <img 
+                  src={currentItem.thumbnail_url} 
+                  alt={currentItem.title}
+                  className="w-full h-auto max-h-[70vh] object-contain"
+                />
               </div>
             </div>
           )}
@@ -605,8 +618,8 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* Description - Hide for X/Twitter since content is shown in tweet replica */}
-          {currentItem.description && currentItem.content_type !== 'x' && (
+          {/* Description - Hide for X/Twitter and images since they're shown in right column */}
+          {currentItem.description && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description
@@ -799,6 +812,114 @@ export default function ItemDetailModal({
                     Watch Later
                   </button>
                 </div>
+              </>
+            )}
+
+            {/* Image Metadata & Actions */}
+            {currentItem.content_type === 'image' && (
+              <>
+                {/* Image Description */}
+                {currentItem.description && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Description
+                    </label>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                      {currentItem.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Image URL (if exists) */}
+                {currentItem.url && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Source URL
+                    </label>
+                    <div className="space-y-2">
+                      <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md text-xs text-gray-600 dark:text-gray-400 break-all">
+                        {currentItem.url}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCopyUrl}
+                          className="flex-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          </svg>
+                          Copy
+                        </button>
+                        <button
+                          onClick={handleOpenUrl}
+                          className="flex-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Open
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Image Download/Copy Actions */}
+                {currentItem.thumbnail_url && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Image Actions
+                    </label>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => navigator.clipboard.writeText(currentItem.thumbnail_url || '')}
+                        className="w-full px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        Copy Image URL
+                      </button>
+                      <button
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = currentItem.thumbnail_url || '';
+                          link.download = `${currentItem.title}.jpg`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        className="w-full px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download Image
+                      </button>
+                      <button
+                        onClick={() => window.open(currentItem.thumbnail_url, '_blank')}
+                        className="w-full px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        Open in New Tab
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* File size for images */}
+                {currentItem.metadata?.file_size && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      File Size
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {currentItem.metadata.file_size}
+                    </span>
+                  </div>
+                )}
               </>
             )}
 
