@@ -1,17 +1,17 @@
 'use client'
 
-import { MockItem } from '@/utils/mockData';
+import { ItemWithMetadata, ContentType } from '@/types/database';
 import { useState } from 'react';
 
 interface ItemCardProps {
-  item: MockItem;
+  item: ItemWithMetadata;
   onArchive?: (id: string) => void;
   onDelete?: (id: string) => void;
   onMoveToProject?: (id: string, spaceId: string) => void;
-  onClick?: (item: MockItem) => void;
+  onClick?: (item: ItemWithMetadata) => void;
 }
 
-const ContentTypeIcon = ({ type }: { type: MockItem['content_type'] }) => {
+const ContentTypeIcon = ({ type }: { type: ContentType }) => {
   const iconClass = "w-4 h-4 flex-shrink-0";
   
   switch (type) {
@@ -170,10 +170,10 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
       onMouseLeave={() => setShowActions(false)}
       onClick={handleCardClick}
     >
-      {item.thumbnail && !imageError ? (
+      {item.thumbnail_url && !imageError ? (
         <div className={`relative overflow-hidden bg-gray-100 ${shouldShowFullImage() ? '' : 'flex-shrink-0'}`} style={{ height: shouldShowFullImage() ? 'auto' : '120px' }}>
           <img 
-            src={item.thumbnail} 
+            src={item.thumbnail_url} 
             alt={item.title}
             className={`w-full ${shouldShowFullImage() ? 'h-auto' : 'h-full object-cover'}`}
             onError={() => setImageError(true)}
@@ -315,14 +315,14 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
         )}
 
         <div className="mt-auto">
-          {item.metadata?.tags && (
+          {item.tags && item.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-2">
-              {item.metadata.tags.slice(0, 3).map((tag) => (
+              {item.tags.slice(0, 3).map((tag) => (
                 <span 
-                  key={tag}
+                  key={tag.id}
                   className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full"
                 >
-                  {tag}
+                  {tag.name}
                 </span>
               ))}
             </div>
@@ -332,7 +332,7 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
             <span className="truncate">{formatDate(item.created_at)}</span>
             {item.space && (
               <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded truncate max-w-20 ml-1">
-                {item.space}
+                {item.space.name}
               </span>
             )}
           </div>
