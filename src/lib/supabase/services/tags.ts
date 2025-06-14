@@ -108,12 +108,14 @@ export const tagsService = {
     if (!user) throw new Error('User not authenticated')
     
     // First try to get existing tag
-    const { data: existing } = await supabase
+    const { data: existing, error: selectError } = await supabase
       .from('tags')
       .select('*')
       .eq('name', name.toLowerCase())
-      .single()
+      .eq('user_id', user.id)
+      .maybeSingle()
     
+    if (selectError) throw selectError
     if (existing) return existing
     
     // Create new tag if it doesn't exist

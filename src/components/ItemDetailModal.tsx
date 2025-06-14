@@ -1,17 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { MockItem, mockSpaces } from '@/utils/mockData';
+import { MockItem } from '@/utils/mockData';
+import { Space, ItemWithMetadata } from '@/types/database';
 import Modal from './Modal';
 
 interface ItemDetailModalProps {
-  item: MockItem | null;
+  item: MockItem | ItemWithMetadata | null;
   isOpen: boolean;
   onClose: () => void;
   onEdit?: (item: MockItem) => void;
   onDelete?: (id: string) => void;
   onArchive?: (id: string) => void;
   onUpdateItem?: (id: string, updates: Partial<MockItem>) => void;
+  onAddTag?: (itemId: string, tagName: string) => void;
+  onRemoveTag?: (itemId: string, tagId: string) => void;
+  spaces?: Space[];
 }
 
 const ContentTypeIcon = ({ type }: { type: MockItem['content_type'] }) => {
@@ -70,21 +74,54 @@ export default function ItemDetailModal({
   onEdit, 
   onDelete, 
   onArchive,
-  onUpdateItem 
+  onUpdateItem,
+  onAddTag,
+  onRemoveTag,
+  spaces = []
 }: ItemDetailModalProps) {
   const [newTag, setNewTag] = useState('');
   const [selectedSpace, setSelectedSpace] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [showTagInput, setShowTagInput] = useState(false);
-  const [currentItem, setCurrentItem] = useState<MockItem | null>(null);
+  const [currentItem, setCurrentItem] = useState<MockItem | ItemWithMetadata | null>(null);
 
   useEffect(() => {
     if (item && isOpen) {
       setCurrentItem(item);
-      setTags(item.metadata?.tags || []);
-      setSelectedSpace(item.space || 'none');
+      
+      // Handle tags from both mock data (metadata.tags) and real data (tags array)
+      const tagNames = item.tags && Array.isArray(item.tags) 
+        ? item.tags.map(tag => typeof tag === 'string' ? tag : tag.name)
+        : item.metadata?.tags || [];
+      setTags(tagNames);
+      
+      // Handle both string (mock) and object (real) space data
+      const spaceName = typeof item.space === 'string' 
+        ? item.space 
+        : item.space?.name || 'none';
+      setSelectedSpace(spaceName);
     }
   }, [item, isOpen]);
+
+  // Update local state when item changes (after operations like adding tags or moving spaces)
+  useEffect(() => {
+    if (item && currentItem && item.id === currentItem.id) {
+      // Update tags if they've changed
+      const newTagNames = item.tags && Array.isArray(item.tags) 
+        ? item.tags.map(tag => typeof tag === 'string' ? tag : tag.name)
+        : item.metadata?.tags || [];
+      setTags(newTagNames);
+      
+      // Update selected space if it's changed
+      const newSpaceName = typeof item.space === 'string' 
+        ? item.space 
+        : item.space?.name || 'none';
+      setSelectedSpace(newSpaceName);
+      
+      // Update current item
+      setCurrentItem(item);
+    }
+  }, [item, currentItem]);
 
   // Don't render if never opened or no item data
   if (!currentItem) return null;
@@ -107,24 +144,37 @@ export default function ItemDetailModal({
     }
   };
 
-  const handleAddTag = () => {
+  const handleAddTag = async () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
-      const updatedTags = [...tags, newTag.trim()];
-      setTags(updatedTags);
-      onUpdateItem?.(currentItem.id, { 
-        metadata: { ...currentItem.metadata, tags: updatedTags } 
-      });
+      if (onAddTag) {
+        try {
+          await onAddTag(currentItem.id, newTag.trim());
+          // Don't optimistically update - let the parent update the item prop
+        } catch (error) {
+          console.error('Failed to add tag:', error);
+        }
+      }
       setNewTag('');
       setShowTagInput(false);
     }
   };
 
-  const handleRemoveTag = (tagToRemove: string) => {
-    const updatedTags = tags.filter(tag => tag !== tagToRemove);
-    setTags(updatedTags);
-    onUpdateItem?.(currentItem.id, { 
-      metadata: { ...currentItem.metadata, tags: updatedTags } 
-    });
+  const handleRemoveTag = async (tagToRemove: string) => {
+    if (onRemoveTag && currentItem && 'tags' in currentItem && Array.isArray(currentItem.tags)) {
+      // Find the tag object with the matching name to get its ID
+      const tagToDelete = currentItem.tags.find(tag => 
+        typeof tag === 'object' && tag.name === tagToRemove
+      );
+      
+      if (tagToDelete && typeof tagToDelete === 'object' && 'id' in tagToDelete) {
+        try {
+          await onRemoveTag(currentItem.id, tagToDelete.id);
+          // Don't optimistically update - let the parent update the item prop
+        } catch (error) {
+          console.error('Failed to remove tag:', error);
+        }
+      }
+    }
   };
 
   const handleSpaceChange = (newSpace: string) => {
@@ -413,7 +463,7 @@ export default function ItemDetailModal({
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="none">No space</option>
-                {mockSpaces.map((space) => (
+                {spaces.map((space) => (
                   <option key={space.id} value={space.name}>
                     {space.name}
                   </option>

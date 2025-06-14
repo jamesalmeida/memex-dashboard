@@ -50,12 +50,29 @@ export const itemsService = {
       if (error.code === 'PGRST116') return null // Not found
       throw error
     }
+
+    // Get tags for this item
+    const { data: itemTags } = await supabase
+      .from('items_tags')
+      .select('tag:tags(*)')
+      .eq('item_id', id)
+
+    // Get space for this item
+    let space = null
+    if (data.space_id) {
+      const { data: spaceData } = await supabase
+        .from('spaces')
+        .select('*')
+        .eq('id', data.space_id)
+        .single()
+      space = spaceData
+    }
     
     return {
       ...data,
       metadata: null,
-      tags: [],
-      space: null
+      tags: itemTags?.map((row: any) => row.tag).filter(Boolean) || [],
+      space: space
     }
   },
 

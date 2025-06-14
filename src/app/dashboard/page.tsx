@@ -13,7 +13,9 @@ import LeftRail from '@/components/LeftRail';
 import SettingsModal from '@/components/SettingsModal';
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
-import { mockItems, mockSpaces, type MockItem, type MockSpace } from '@/utils/mockData';
+import { itemsService, spacesService, tagsService } from '@/lib/supabase/services';
+import type { ItemWithMetadata, Space, ContentType } from '@/types/database';
+import type { MockItem } from '@/utils/mockData';
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -24,25 +26,21 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'everything' | 'spaces' | 'space-detail'>('everything');
   const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
   const [showCaptureModal, setShowCaptureModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<MockItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ItemWithMetadata | null>(null);
   const [showItemDetail, setShowItemDetail] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showNewSpaceModal, setShowNewSpaceModal] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
   const router = useRouter();
 
-  // Use mock data temporarily while we set up the database
-  const [mockItemsState, setMockItemsState] = useState<MockItem[]>(mockItems);
-  const [mockSpacesState, setMockSpacesState] = useState<MockSpace[]>(mockSpaces);
+  // Real data from Supabase
+  const [items, setItems] = useState<ItemWithMetadata[]>([]);
+  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [spacesWithCounts, setSpacesWithCounts] = useState<(Space & { item_count: number })[]>([]);
 
-  // Calculate space counts dynamically
-  const spaceCounts = mockSpacesState.map(space => ({
-    ...space,
-    count: mockItemsState.filter(item => item.space === space.name).length
-  }));
-
+  // Load data from Supabase
   useEffect(() => {
-    const checkUserAndLoadData = async () => {
+    const loadData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -52,62 +50,98 @@ export default function Dashboard() {
         }
 
         setUser(user);
+
+        // Load spaces and items
+        const [spacesData, spacesWithCountsData, itemsData] = await Promise.all([
+          spacesService.getSpaces(),
+          spacesService.getSpacesWithCounts(),
+          itemsService.getItems()
+        ]);
+
+        setSpaces(spacesData);
+        setSpacesWithCounts(spacesWithCountsData);
+        setItems(itemsData);
         setLoading(false);
       } catch (error) {
-        console.error('Auth error:', error);
+        console.error('Error loading data:', error);
         setLoading(false);
       }
     };
 
-    checkUserAndLoadData();
+    loadData();
   }, [router]);
 
   // Get unique content types from current items
   const getAvailableContentTypes = () => {
     const relevantItems = viewMode === 'space-detail' && selectedSpace 
-      ? mockItemsState.filter(item => item.space === selectedSpace)
-      : mockItemsState;
+      ? items.filter(item => item.space_id === selectedSpace)
+      : items;
     
     const types = [...new Set(relevantItems.map(item => item.content_type))];
     return types.sort();
   };
 
   // Filter items based on search and content type
-  const filteredItems = mockItemsState.filter(item => {
+  const filteredItems = items.filter(item => {
     const matchesSearch = searchQuery === '' || 
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.metadata?.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      item.tags?.some(tag => tag.name.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesContentType = selectedContentType === null || item.content_type === selectedContentType;
     
     if (viewMode === 'everything') {
       return matchesSearch && matchesContentType;
     } else if (viewMode === 'space-detail' && selectedSpace) {
-      return matchesSearch && matchesContentType && item.space === selectedSpace;
+      return matchesSearch && matchesContentType && item.space_id === selectedSpace;
     }
     
-    return false;
+    return false; // For spaces view, we don't show items
   });
 
-  const handleArchive = (id: string) => {
-    console.log('Archive item:', id);
-    setShowItemDetail(false);
-    setSelectedItem(null);
+  const handleArchive = async (id: string) => {
+    try {
+      await itemsService.archiveItem(id);
+      setItems(items.filter(item => item.id !== id));
+      setShowItemDetail(false);
+      setSelectedItem(null);
+      setNotification('Item archived successfully!');
+      setTimeout(() => setNotification(null), 3000);
+    } catch (error) {
+      console.error('Error archiving item:', error);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setMockItemsState(items => items.filter(item => item.id !== id));
-    setShowItemDetail(false);
-    setSelectedItem(null);
+  const handleDelete = async (id: string) => {
+    try {
+      await itemsService.deleteItem(id);
+      setItems(items.filter(item => item.id !== id));
+      setShowItemDetail(false);
+      setSelectedItem(null);
+      setNotification('Item deleted successfully!');
+      setTimeout(() => setNotification(null), 3000);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+    }
   };
 
-  const handleMoveToSpace = (id: string, spaceId: string) => {
-    console.log('Move item to space:', id, spaceId);
+  const handleMoveToSpace = async (id: string, spaceId: string) => {
+    try {
+      await itemsService.updateItem(id, { space_id: spaceId });
+      const updatedItem = await itemsService.getItem(id);
+      if (updatedItem) {
+        setItems(items.map(item => item.id === id ? updatedItem : item));
+        if (selectedItem?.id === id) {
+          setSelectedItem(updatedItem);
+        }
+      }
+    } catch (error) {
+      console.error('Error moving item to space:', error);
+    }
   };
 
-  const handleSpaceClick = (space: MockSpace) => {
-    setSelectedSpace(space.name);
+  const handleSpaceClick = (space: Space) => {
+    setSelectedSpace(space.id);
     setViewMode('space-detail');
     setSelectedContentType(null);
   };
@@ -142,54 +176,132 @@ export default function Dashboard() {
     }
   };
 
-  const handleCreateSpace = (newSpaceData: Omit<MockSpace, 'id' | 'count'>) => {
-    const newSpace: MockSpace = {
-      ...newSpaceData,
-      id: Date.now().toString(),
-      count: 0
-    };
-    
-    setMockSpacesState(spaces => [...spaces, newSpace]);
-    setNotification('Space created successfully!');
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const handleAddItem = (newItemData: Omit<MockItem, 'id' | 'created_at'>, openDetail: boolean = false) => {
-    const newItem: MockItem = {
-      ...newItemData,
-      id: Date.now().toString(),
-      created_at: new Date().toISOString(),
-      space: viewMode === 'space-detail' && selectedSpace ? selectedSpace : newItemData.space
-    };
-    
-    setMockItemsState(items => [newItem, ...items]);
-    setNotification('Item added successfully!');
-    setTimeout(() => setNotification(null), 3000);
-    
-    if (openDetail) {
-      setSelectedItem(newItem);
-      setShowItemDetail(true);
+  const handleCreateSpace = async (newSpaceData: { name: string; color: string; description?: string }) => {
+    try {
+      const newSpace = await spacesService.createSpace(newSpaceData);
+      setSpaces([...spaces, newSpace]);
+      
+      // Update spaces with counts
+      const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
+      setSpacesWithCounts(updatedSpacesWithCounts);
+      
+      setNotification('Space created successfully!');
+      setTimeout(() => setNotification(null), 3000);
+    } catch (error) {
+      console.error('Error creating space:', error);
     }
-    
-    return newItem;
   };
 
-  const handleItemClick = (item: MockItem) => {
+  const handleAddItem = async (newItemData: Omit<MockItem, 'id' | 'created_at'>, openDetail: boolean = false) => {
+    try {
+      // Convert MockItem format to our database format
+      const createInput = {
+        title: newItemData.title,
+        url: newItemData.url,
+        content_type: newItemData.content_type as ContentType,
+        description: newItemData.description,
+        thumbnail_url: newItemData.thumbnail,
+        space_id: viewMode === 'space-detail' && selectedSpace ? selectedSpace : 
+                  newItemData.space ? spaces.find(s => s.name === newItemData.space)?.id : undefined
+      };
+
+      const newItem = await itemsService.createItem(createInput);
+      
+      // Fetch the full item with metadata
+      const fullItem = await itemsService.getItem(newItem.id);
+      if (fullItem) {
+        setItems([fullItem, ...items]);
+        
+        // Update spaces with counts
+        const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
+        setSpacesWithCounts(updatedSpacesWithCounts);
+        
+        setNotification('Item added successfully!');
+        setTimeout(() => setNotification(null), 3000);
+        
+        if (openDetail) {
+          setSelectedItem(fullItem);
+          setShowItemDetail(true);
+        }
+        
+        return fullItem;
+      }
+    } catch (error) {
+      console.error('Error adding item:', error);
+    }
+  };
+
+  const handleItemClick = (item: ItemWithMetadata) => {
     setSelectedItem(item);
     setShowItemDetail(true);
   };
 
-  const handleUpdateItem = (id: string, updates: Partial<MockItem>) => {
-    setMockItemsState(items => 
-      items.map(item => 
-        item.id === id ? { ...item, ...updates } : item
-      )
-    );
-    
-    if (selectedItem?.id === id) {
-      setSelectedItem(prev => prev ? { ...prev, ...updates } : prev);
+  const handleUpdateItem = async (id: string, updates: Partial<MockItem>) => {
+    try {
+      // Convert updates to database format
+      const updateInput = {
+        title: updates.title,
+        url: updates.url,
+        content_type: updates.content_type as ContentType,
+        description: updates.description,
+        thumbnail_url: updates.thumbnail,
+        space_id: updates.space ? spaces.find(s => s.name === updates.space)?.id : null
+      };
+
+      await itemsService.updateItem(id, updateInput);
+      const updatedItem = await itemsService.getItem(id);
+      
+      if (updatedItem) {
+        setItems(items.map(item => item.id === id ? updatedItem : item));
+        if (selectedItem?.id === id) {
+          setSelectedItem(updatedItem);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating item:', error);
     }
   };
+
+  const handleAddTagToItem = async (itemId: string, tagName: string) => {
+    try {
+      // Create or get the tag
+      const tag = await tagsService.getOrCreateTag(tagName);
+      
+      // Add the tag to the item
+      await itemsService.addTagsToItem(itemId, [tag.id]);
+      
+      // Refresh the item data
+      const updatedItem = await itemsService.getItem(itemId);
+      if (updatedItem) {
+        setItems(items.map(item => item.id === itemId ? updatedItem : item));
+        if (selectedItem?.id === itemId) {
+          setSelectedItem(updatedItem);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding tag to item:', error);
+    }
+  };
+
+  const handleRemoveTagFromItem = async (itemId: string, tagId: string) => {
+    try {
+      await itemsService.removeTagsFromItem(itemId, [tagId]);
+      
+      // Refresh the item data
+      const updatedItem = await itemsService.getItem(itemId);
+      if (updatedItem) {
+        setItems(items.map(item => item.id === itemId ? updatedItem : item));
+        if (selectedItem?.id === itemId) {
+          setSelectedItem(updatedItem);
+        }
+      }
+    } catch (error) {
+      console.error('Error removing tag from item:', error);
+    }
+  };
+
+  // Get selected space details
+  const selectedSpaceDetails = selectedSpace ? spaces.find(s => s.id === selectedSpace) : null;
 
   if (loading) {
     return (
@@ -216,7 +328,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Floating Navigation Toggle - Mobile only */}
       <div id="floating-navigation-toggle" className="md:hidden fixed bottom-6 left-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center h-[52px] w-[120px] shadow-lg z-50">
         <div 
           className="absolute h-[calc(100%-8px)] bg-[rgb(255,77,6)] rounded-full transition-all duration-200 ease-out"
@@ -233,6 +345,8 @@ export default function Dashboard() {
               ? 'text-white' 
               : 'text-gray-700 dark:text-gray-300'
           }`}
+          aria-label="View all items"
+          title="Everything"
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <circle cx="4" cy="4" r="2"/>
@@ -253,6 +367,8 @@ export default function Dashboard() {
               ? 'text-white' 
               : 'text-gray-700 dark:text-gray-300'
           }`}
+          aria-label="View spaces"
+          title="Spaces"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -265,9 +381,13 @@ export default function Dashboard() {
         <div id="search-section" className="mb-6 pt-5">
           <div className="flex gap-3 items-center">
             {selectedContentType && (
-              <div className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2">
+              <div id="selected-filter-pill" className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 whitespace-nowrap">
                 <span className="capitalize">{selectedContentType.replace(/([A-Z])/g, ' $1').trim()}</span>
-                <button onClick={() => setSelectedContentType(null)}>
+                <button
+                  onClick={() => setSelectedContentType(null)}
+                  className="hover:bg-black hover:bg-opacity-20 rounded-full p-0.5 transition-colors"
+                  aria-label="Clear filter"
+                >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -276,14 +396,19 @@ export default function Dashboard() {
             )}
             
             <div className="relative flex-1">
-              <div className={`absolute left-0 top-0 text-4xl font-serif pb-2 pointer-events-none transition-opacity ${
+              <div className={`absolute left-0 top-0 text-4xl font-serif pb-2 pointer-events-none w-full overflow-hidden whitespace-nowrap transition-opacity duration-200 ease-in-out ${
                 !searchQuery && !isSearchFocused ? 'opacity-100' : 'opacity-0'
               }`}>
-                <span className="font-light text-gray-500">Search </span>
+                <span className="font-light text-gray-500 dark:text-gray-600">Search </span>
                 <span className="font-medium" style={{ color: '#ff4d06' }}>
-                  {viewMode === 'everything' ? 'everything' : 
-                   viewMode === 'spaces' ? 'spaces' : 
-                   selectedSpace || 'memex'}...
+                  {viewMode === 'everything' 
+                    ? 'everything' 
+                    : viewMode === 'spaces'
+                      ? 'spaces'
+                    : viewMode === 'space-detail' && selectedSpaceDetails 
+                      ? selectedSpaceDetails.name 
+                      : 'memex'
+                  }...
                 </span>
               </div>
               <input
@@ -292,24 +417,29 @@ export default function Dashboard() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+                onBlur={() => {
+                  setTimeout(() => setIsSearchFocused(false), 150);
+                }}
               />
             </div>
           </div>
 
-          {/* Filter Pills */}
-          <div className={`overflow-hidden transition-all duration-300 ${
-            isSearchFocused && viewMode !== 'spaces'
-              ? 'max-h-20 opacity-100 mt-4'
-              : 'max-h-0 opacity-0 mt-0'
-          }`}>
-            <div className="flex gap-2 pb-2 overflow-x-auto">
+          {/* Content Type Filter Pills */}
+          <div 
+            id="filter-pills-container" 
+            className={`overflow-hidden transition-all duration-300 ease-out ${
+              isSearchFocused && viewMode !== 'spaces'
+                ? 'max-h-20 opacity-100 mt-4'
+                : 'max-h-0 opacity-0 mt-0'
+            }`}
+          >
+            <div id="filter-pills" className="flex gap-2 pb-2 overflow-x-auto">
               <button
                 onClick={() => setSelectedContentType(null)}
-                className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap ${
+                className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 ${
                   selectedContentType === null
                     ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
               >
                 All Types
@@ -319,10 +449,10 @@ export default function Dashboard() {
                 <button
                   key={contentType}
                   onClick={() => setSelectedContentType(contentType === selectedContentType ? null : contentType)}
-                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap capitalize ${
+                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 capitalize ${
                     selectedContentType === contentType
                       ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                   }`}
                 >
                   {contentType.replace(/([A-Z])/g, ' $1').trim()}
@@ -332,12 +462,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Content Grid */}
+        {/* Masonry Grid */}
         <div id="content-grid">
           <MasonryGrid gap={16}>
           {viewMode === 'everything' && (
             <>
               <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
+              
               {filteredItems.map((item) => (
                 <ItemCard
                   key={item.id}
@@ -353,11 +484,11 @@ export default function Dashboard() {
 
           {viewMode === 'spaces' && (
             <>
-              {spaceCounts.map((space) => (
+              {spacesWithCounts.map((space) => (
                 <SpaceCard
                   key={space.id}
                   space={space}
-                  onClick={handleSpaceClick}
+                  onClick={() => handleSpaceClick(space)}
                 />
               ))}
             </>
@@ -366,6 +497,7 @@ export default function Dashboard() {
           {viewMode === 'space-detail' && (
             <>
               <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
+              
               {filteredItems.map((item) => (
                 <ItemCard
                   key={item.id}
@@ -383,13 +515,13 @@ export default function Dashboard() {
         
         {/* Empty state */}
         {viewMode !== 'spaces' && filteredItems.length === 0 && searchQuery && (
-          <div className="text-center py-12">
+          <div id="empty-state" className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No items found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              No items match "{searchQuery}". Try a different search term.
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No items found</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              No items match &ldquo;{searchQuery}&rdquo;. Try a different search term.
             </p>
           </div>
         )}
@@ -397,8 +529,14 @@ export default function Dashboard() {
 
       {/* Floating Action Button */}
       <button
+        id="floating-add-button"
         onClick={handleContextAwareAdd}
-        className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[rgb(255,77,6)] text-white rounded-full flex items-center justify-center shadow-lg"
+        className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[rgb(255,77,6)] text-white rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 hover:bg-[rgb(230,69,5)] hover:border-gray-400 dark:hover:border-gray-500 transition-colors shadow-lg hover:shadow-xl z-50"
+        aria-label={
+          viewMode === 'everything' ? 'Add new item' :
+          viewMode === 'spaces' ? 'Create new space' :
+          'Add item to space'
+        }
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -422,6 +560,9 @@ export default function Dashboard() {
         onDelete={handleDelete}
         onArchive={handleArchive}
         onUpdateItem={handleUpdateItem}
+        onAddTag={handleAddTagToItem}
+        onRemoveTag={handleRemoveTagFromItem}
+        spaces={spaces}
       />
 
       <SettingsModal
@@ -438,7 +579,7 @@ export default function Dashboard() {
 
       {/* Notification */}
       {notification && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse">
           {notification}
         </div>
       )}
