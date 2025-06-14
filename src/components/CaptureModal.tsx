@@ -23,17 +23,20 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
   const [extractedMetadata, setExtractedMetadata] = useState<UrlAnalysisResult | null>(null);
 
   const detectContentType = (url: string): MockItem['content_type'] => {
-    if (!url) return 'text';
+    if (!url) return 'note';
     
     const lowerUrl = url.toLowerCase();
     
-    if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be') || 
-        lowerUrl.includes('vimeo.com') || lowerUrl.includes('twitch.tv')) {
+    if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+      return 'youtube';
+    }
+    
+    if (lowerUrl.includes('vimeo.com') || lowerUrl.includes('twitch.tv')) {
       return 'video';
     }
     
     if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
-      return 'tweet';
+      return 'x';
     }
     
     if (lowerUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)$/)) {
@@ -45,10 +48,10 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
     }
     
     if (url.startsWith('http')) {
-      return 'link';
+      return 'bookmark';
     }
     
-    return 'text';
+    return 'note';
   };
 
   const validateUrl = (url: string): boolean => {

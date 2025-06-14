@@ -116,7 +116,9 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
     setIsSubmitting(true);
 
     const contentType = detectContentType(input);
-    const isUrl = input.startsWith('http') || input.includes('.');
+    // More specific URL detection - check for domain patterns, not just any period
+    const urlPattern = /^(https?:\/\/)|(www\\.)|([a-zA-Z0-9-]+\.(com|org|net|io|dev|app|co|edu|gov|mil|info|biz|me|tv|fm|ai|cloud|xyz|tech|site|online|store|shop|blog|news|media|social|network|community|platform|service|solutions|digital|global|world|international|[a-z]{2,3}))/i;
+    const isUrl = input.startsWith('http') || urlPattern.test(input);
     const normalizedUrl = isUrl ? normalizeUrl(input) : undefined;
     
     let newItem: Omit<MockItem, 'id' | 'created_at'>;

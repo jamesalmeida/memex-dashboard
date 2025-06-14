@@ -262,8 +262,8 @@ export default function ItemDetailModal({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left Column - Main Content */}
           <div className="flex-1 overflow-y-auto p-6">
-          {/* Thumbnail - Hide for X/Twitter since it's shown in tweet replica */}
-          {currentItem.thumbnail_url && currentItem.content_type !== 'x' && (
+          {/* Thumbnail - Hide for X/Twitter and YouTube since they have special displays */}
+          {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && (
             <div className="mb-6">
               <img 
                 src={currentItem.thumbnail_url} 
@@ -273,8 +273,8 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* URL - Only show for non-X content, X URLs will be in right column */}
-          {currentItem.url && currentItem.content_type !== 'x' && (
+          {/* URL - Only show for non-X and non-YouTube content */}
+          {currentItem.url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 URL
@@ -298,45 +298,31 @@ export default function ItemDetailModal({
 
           {/* Content-Type Specific Sections */}
           {currentItem.content_type === 'youtube' && (
-            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-              <h3 className="font-medium text-red-900 dark:text-red-100 mb-3 flex items-center gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
-                YouTube Video
-              </h3>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  {currentItem.metadata?.duration && (
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Duration:</span>
-                      <span className="ml-2 font-medium">{currentItem.metadata.duration}</span>
+            <div className="mb-6">
+              {/* YouTube Video Embed */}
+              <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                {(() => {
+                  const videoIdMatch = currentItem.url?.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]+)/);
+                  const videoId = videoIdMatch?.[1];
+                  
+                  if (videoId) {
+                    return (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0`}
+                        title={currentItem.title}
+                        className="w-full h-full"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    );
+                  }
+                  return (
+                    <div className="flex items-center justify-center h-full text-gray-500">
+                      <p>Unable to load video</p>
                     </div>
-                  )}
-                  {currentItem.metadata?.views && (
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Views:</span>
-                      <span className="ml-2 font-medium">{currentItem.metadata.views.toLocaleString()}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleGenerateTranscript}
-                    className="flex-1 px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Get Transcript
-                  </button>
-                  <button className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Watch Later
-                  </button>
-                </div>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -689,8 +675,135 @@ export default function ItemDetailModal({
               </div>
             )}
 
-            {/* Duration (for videos) */}
-            {currentItem.metadata?.duration && (
+            {/* YouTube Video Metadata & Actions */}
+            {currentItem.content_type === 'youtube' && (
+              <>
+                {/* YouTube URL */}
+                {currentItem.url && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Video URL
+                    </label>
+                    <div className="space-y-2">
+                      <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md text-xs text-gray-600 dark:text-gray-400 break-all">
+                        {currentItem.url}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCopyUrl}
+                          className="flex-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          </svg>
+                          Copy
+                        </button>
+                        <button
+                          onClick={handleOpenUrl}
+                          className="flex-1 px-3 py-1.5 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                          </svg>
+                          Open
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Thumbnail with Download/Copy Options */}
+                {currentItem.thumbnail_url && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Thumbnail
+                    </label>
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <img 
+                          src={currentItem.thumbnail_url} 
+                          alt="Video thumbnail"
+                          className="w-full rounded-lg bg-gray-100"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(currentItem.thumbnail_url || '')}
+                          className="flex-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          </svg>
+                          Copy URL
+                        </button>
+                        <button
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = currentItem.thumbnail_url || '';
+                            link.download = `thumbnail-${currentItem.title}.jpg`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          className="flex-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* YouTube Video Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {currentItem.metadata?.duration && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Duration
+                      </label>
+                      <span className="text-gray-600 text-sm">
+                        {currentItem.metadata.duration}
+                      </span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.extra_data?.views && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Views
+                      </label>
+                      <span className="text-gray-600 text-sm">
+                        {parseInt(currentItem.metadata.extra_data.views).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* YouTube Actions */}
+                <div className="space-y-2 mb-4">
+                  <button
+                    onClick={handleGenerateTranscript}
+                    className="w-full px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Get Transcript
+                  </button>
+                  <button className="w-full px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Watch Later
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Duration (for videos) - Hide for YouTube since it's shown in YouTube section */}
+            {currentItem.metadata?.duration && currentItem.content_type !== 'youtube' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Duration
