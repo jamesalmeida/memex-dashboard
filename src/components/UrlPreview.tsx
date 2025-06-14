@@ -21,25 +21,39 @@ export default function UrlPreview({ url, onMetadataExtracted, className = '' }:
       return
     }
 
+    console.log('=== UrlPreview: Starting metadata extraction ===');
+    console.log('URL for preview:', url);
+
     const extractMetadata = async () => {
       setLoading(true)
       setError(null)
+      console.log('UrlPreview: Setting loading state to true');
       
       try {
+        console.log('UrlPreview: Calling urlMetadataService.analyzeUrl');
         const analysisResult = await urlMetadataService.analyzeUrl(url)
+        console.log('UrlPreview: Received analysis result:', analysisResult);
+        
         setResult(analysisResult)
         onMetadataExtracted?.(analysisResult)
+        console.log('UrlPreview: Result set and callback called');
       } catch (err) {
+        console.error('UrlPreview: Error during metadata extraction:', err);
         setError(err instanceof Error ? err.message : 'Failed to extract metadata')
         setResult(null)
       } finally {
         setLoading(false)
+        console.log('UrlPreview: Setting loading state to false');
       }
     }
 
     // Debounce the extraction
+    console.log('UrlPreview: Setting up debounced extraction (800ms delay)');
     const timer = setTimeout(extractMetadata, 800)
-    return () => clearTimeout(timer)
+    return () => {
+      console.log('UrlPreview: Cleaning up timer');
+      clearTimeout(timer)
+    }
   }, [url, onMetadataExtracted])
 
   if (!url || !url.trim()) return null

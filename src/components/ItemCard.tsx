@@ -227,12 +227,9 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm min-w-0 flex-1">
             <ContentTypeIcon type={item.content_type} />
-            <span className="capitalize">{item.content_type}</span>
-            {item.metadata?.domain && (
-              <>
-                <span>•</span>
-                <span className="truncate min-w-0">{item.metadata.domain}</span>
-              </>
+            {/* Show content type name for all except X (to avoid "X x") */}
+            {item.content_type !== 'x' && (
+              <span className="capitalize">{item.content_type}</span>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -284,34 +281,52 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
           </div>
         </div>
 
-        <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
-          {item.title}
-        </h3>
+        {/* Special handling for X/Twitter cards */}
+        {item.content_type === 'x' ? (
+          <>
+            {/* Display name and username for X/Twitter */}
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
+              {item.metadata?.display_name || item.metadata?.username || 'Unknown User'} (@{item.metadata?.username || 'unknown'})
+            </h3>
+            
+            {/* Tweet content */}
+            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 min-w-0 break-words">
+              {item.title}
+            </p>
+          </>
+        ) : (
+          <>
+            {/* Standard card layout for non-X content */}
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
+              {item.title}
+            </h3>
 
-        {item.description && (
-          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 min-w-0 break-words">
-            {item.description}
-          </p>
-        )}
-
-        {/* Author and additional metadata */}
-        {item.metadata?.author && (
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
-            <span>by</span>
-            <span className="font-medium">{item.metadata.author}</span>
-            {(['product', 'amazon', 'etsy'] as const).includes(item.content_type) && item.metadata?.rating && (
-              <>
-                <span>•</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-yellow-500">★</span>
-                  <span>{item.metadata.rating}</span>
-                  {item.metadata?.reviews && (
-                    <span className="text-gray-400">({item.metadata.reviews.toLocaleString()})</span>
-                  )}
-                </div>
-              </>
+            {item.description && (
+              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 min-w-0 break-words">
+                {item.description}
+              </p>
             )}
-          </div>
+
+            {/* Author and additional metadata for non-X content */}
+            {item.metadata?.author && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
+                <span>by</span>
+                <span className="font-medium">{item.metadata.author}</span>
+                {(['product', 'amazon', 'etsy'] as const).includes(item.content_type) && item.metadata?.rating && (
+                  <>
+                    <span>•</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-yellow-500">★</span>
+                      <span>{item.metadata.rating}</span>
+                      {item.metadata?.reviews && (
+                        <span className="text-gray-400">({item.metadata.reviews.toLocaleString()})</span>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         <div className="mt-auto">
@@ -328,10 +343,9 @@ export default function ItemCard({ item, onArchive, onDelete, onMoveToProject, o
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 min-w-0">
-            <span className="truncate">{formatDate(item.created_at)}</span>
+          <div className="flex items-center justify-end text-xs text-gray-500 dark:text-gray-400 min-w-0">
             {item.space && (
-              <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded truncate max-w-20 ml-1">
+              <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded truncate max-w-20">
                 {item.space.name}
               </span>
             )}

@@ -115,20 +115,37 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
   const handleSubmit = async () => {
     if (!input.trim()) return;
 
+    console.log('=== NewItemCard: Submit Handler Started ===');
+    console.log('Input:', {
+      raw: input,
+      trimmed: input.trim(),
+      length: input.length
+    });
+
     setIsSubmitting(true);
 
     const contentType = detectContentType(input);
+    console.log('Detected content type:', contentType);
+    
     // More specific URL detection - check for domain patterns, not just any period
     const urlPattern = /^(https?:\/\/)|(www\\.)|([a-zA-Z0-9-]+\.(com|org|net|io|dev|app|co|edu|gov|mil|info|biz|me|tv|fm|ai|cloud|xyz|tech|site|online|store|shop|blog|news|media|social|network|community|platform|service|solutions|digital|global|world|international|[a-z]{2,3}))/i;
     const isUrl = input.startsWith('http') || urlPattern.test(input);
     const normalizedUrl = isUrl ? normalizeUrl(input) : undefined;
     
+    console.log('URL detection:', {
+      isUrl,
+      normalizedUrl,
+      originalInput: input
+    });
+    
     let newItem: Omit<MockItem, 'id' | 'created_at'>;
 
     if (normalizedUrl) {
       try {
+        console.log('Calling urlMetadataService.analyzeUrl for:', normalizedUrl);
         // Try to extract metadata for URLs
         const result = await urlMetadataService.analyzeUrl(normalizedUrl);
+        console.log('URL metadata extraction result:', result);
         
         newItem = {
           title: result.metadata.title || 'Quick Link',
@@ -139,6 +156,8 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
           metadata: {
             domain: result.metadata.domain,
             author: result.metadata.author,
+            display_name: result.metadata.display_name,
+            username: result.metadata.username,
             duration: result.metadata.duration,
             video_url: result.metadata.video_url,
             video_type: result.metadata.video_type,
@@ -149,6 +168,8 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             tags: ['quick-add']
           }
         };
+        
+        console.log('Created item from URL metadata:', newItem);
       } catch (error) {
         console.error('Failed to extract metadata:', error);
         
@@ -171,6 +192,8 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             tags: ['quick-add']
           }
         };
+        
+        console.log('Created fallback item:', newItem);
       }
     } else {
       // Handle text notes
@@ -182,8 +205,11 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
           tags: ['quick-add']
         }
       };
+      
+      console.log('Created text note item:', newItem);
     }
 
+    console.log('=== NewItemCard: Submit Handler Completed ===');
     onAdd(newItem);
     setInput('');
     setIsSubmitting(false);
@@ -217,17 +243,28 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
   };
 
   const handlePaste = async () => {
+    console.log('=== NewItemCard: Paste Handler Started ===');
+    
     try {
       // Try to read clipboard data (including images)
       const clipboardItems = await navigator.clipboard.read();
+      console.log('Clipboard items found:', clipboardItems.length);
       
       for (const clipboardItem of clipboardItems) {
+        console.log('Clipboard item types:', clipboardItem.types);
+        
         // Check if clipboard contains an image
         const imageTypes = clipboardItem.types.filter(type => type.startsWith('image/'));
         
         if (imageTypes.length > 0) {
+          console.log('Image types detected:', imageTypes);
           const imageType = imageTypes[0];
           const blob = await clipboardItem.getType(imageType);
+          console.log('Image blob details:', {
+            type: blob.type,
+            size: blob.size,
+            sizeKB: Math.round(blob.size / 1024)
+          });
           
           // Create a File object from the blob
           const file = new File([blob], `pasted-image.${imageType.split('/')[1]}`, { type: imageType });
@@ -236,6 +273,10 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
           const reader = new FileReader();
           reader.onload = (e) => {
             const dataUrl = e.target?.result as string;
+            console.log('Image data URL created:', {
+              dataUrlLength: dataUrl.length,
+              dataUrlPreview: dataUrl.substring(0, 100) + '...'
+            });
             
             // Set input to indicate an image was pasted
             setInput(`📷 Image pasted (${file.size} bytes)`);
@@ -253,6 +294,13 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
       // If no image, try to read text
       const text = await navigator.clipboard.readText();
       if (text) {
+        console.log('Text content pasted:', {
+          text,
+          length: text.length,
+          isUrl: text.startsWith('http') || /^(www\.|[a-zA-Z0-9-]+\.)/.test(text),
+          contentType: detectContentType(text)
+        });
+        
         setInput(text);
         // Auto-submit after a brief delay to show what was pasted
         setTimeout(() => {
@@ -265,6 +313,12 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
       try {
         const text = await navigator.clipboard.readText();
         if (text) {
+          console.log('Fallback text read:', {
+            text,
+            length: text.length,
+            isUrl: text.startsWith('http') || /^(www\.|[a-zA-Z0-9-]+\.)/.test(text)
+          });
+          
           setInput(text);
           setTimeout(() => {
             handleSubmit();
@@ -274,6 +328,8 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
         console.error('Failed to read text from clipboard:', textErr);
       }
     }
+    
+    console.log('=== NewItemCard: Paste Handler Completed ===');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

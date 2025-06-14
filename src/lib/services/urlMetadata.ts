@@ -98,33 +98,55 @@ export class UrlMetadataService {
    * Analyze a URL and extract metadata
    */
   async analyzeUrl(url: string): Promise<UrlAnalysisResult> {
+    console.log('=== UrlMetadataService: analyzeUrl Started ===');
+    console.log('Original URL:', url);
+    
     try {
       const normalizedUrl = this.normalizeUrl(url)
       const urlObj = new URL(normalizedUrl)
+      console.log('Normalized URL:', normalizedUrl);
+      console.log('URL Object:', {
+        hostname: urlObj.hostname,
+        pathname: urlObj.pathname,
+        search: urlObj.search,
+        protocol: urlObj.protocol
+      });
       
       // Detect content type and platform
       const contentType = this.detectContentType(normalizedUrl)
+      console.log('Detected content type:', contentType);
       
       // Extract platform-specific metadata
       const metadata = await this.extractMetadata(normalizedUrl, contentType)
+      console.log('Extracted metadata:', metadata);
       
-      return {
+      const confidence = this.calculateConfidence(contentType, metadata);
+      console.log('Confidence score:', confidence);
+      
+      const result = {
         content_type: contentType,
         metadata,
-        confidence: this.calculateConfidence(contentType, metadata)
-      }
+        confidence
+      };
+      
+      console.log('=== UrlMetadataService: analyzeUrl Completed ===');
+      return result;
     } catch (error) {
       console.error('Error analyzing URL:', error)
       
       // Fallback analysis
-      return {
-        content_type: 'link',
+      const fallbackResult = {
+        content_type: 'link' as ContentType,
         metadata: {
           title: url,
           domain: this.extractDomain(url)
         },
         confidence: 0.1
-      }
+      };
+      
+      console.log('Fallback result:', fallbackResult);
+      console.log('=== UrlMetadataService: analyzeUrl Failed (using fallback) ===');
+      return fallbackResult;
     }
   }
 
@@ -132,11 +154,13 @@ export class UrlMetadataService {
    * Detect content type based on URL patterns
    */
   private detectContentType(url: string): ContentType {
+    console.log('Detecting content type for URL:', url);
     const urlLower = url.toLowerCase()
     
     // Check file extensions first
     for (const [type, pattern] of Object.entries(FILE_PATTERNS)) {
       if (pattern.test(url)) {
+        console.log(`Matched file pattern: ${type}`);
         return type as ContentType
       }
     }
@@ -145,25 +169,41 @@ export class UrlMetadataService {
     for (const [platform, patterns] of Object.entries(PLATFORM_PATTERNS)) {
       for (const pattern of patterns) {
         if (pattern.test(url)) {
+          console.log(`Matched platform pattern: ${platform}`);
           return platform as ContentType
         }
       }
     }
     
     // Special cases
-    if (urlLower.includes('arxiv.org')) return 'paper'
-    if (urlLower.includes('medium.com') || urlLower.includes('substack.com')) return 'article'
-    if (urlLower.includes('docs.google.com')) return 'documentation'
-    if (urlLower.includes('notion.so')) return 'note'
+    if (urlLower.includes('arxiv.org')) {
+      console.log('Matched special case: paper (arxiv.org)');
+      return 'paper'
+    }
+    if (urlLower.includes('medium.com') || urlLower.includes('substack.com')) {
+      console.log('Matched special case: article (medium/substack)');
+      return 'article'
+    }
+    if (urlLower.includes('docs.google.com')) {
+      console.log('Matched special case: documentation (Google Docs)');
+      return 'documentation'
+    }
+    if (urlLower.includes('notion.so')) {
+      console.log('Matched special case: note (Notion)');
+      return 'note'
+    }
     
     // Default to bookmark for HTTP(S) URLs
-    return url.startsWith('http') ? 'bookmark' : 'note'
+    const defaultType = url.startsWith('http') ? 'bookmark' : 'note';
+    console.log(`No specific match, defaulting to: ${defaultType}`);
+    return defaultType
   }
 
   /**
    * Extract metadata based on content type
    */
   private async extractMetadata(url: string, contentType: ContentType): Promise<ExtractedMetadata> {
+    console.log('Extracting metadata for URL:', url, 'Content type:', contentType);
     const domain = this.extractDomain(url)
     
     // Base metadata
@@ -171,13 +211,17 @@ export class UrlMetadataService {
       title: this.generateFallbackTitle(url),
       domain
     }
+    console.log('Base metadata:', metadata);
 
     try {
       // Try to fetch and parse the page
+      console.log('Fetching page metadata from API...');
       const pageData = await this.fetchPageMetadata(url)
+      console.log('Page metadata from API:', pageData);
       Object.assign(metadata, pageData)
 
       // Platform-specific enhancements
+      console.log('Applying platform-specific enhancements for:', contentType);
       switch (contentType) {
         case 'youtube':
           await this.enhanceYouTubeMetadata(url, metadata)
@@ -198,6 +242,8 @@ export class UrlMetadataService {
           await this.enhanceStackOverflowMetadata(url, metadata)
           break
       }
+      
+      console.log('Final metadata after enhancements:', metadata);
     } catch (error) {
       console.error('Error extracting metadata for', url, error)
     }
@@ -210,6 +256,7 @@ export class UrlMetadataService {
    */
   private async fetchPageMetadata(url: string): Promise<Partial<ExtractedMetadata>> {
     try {
+      console.log('Calling backend API to extract metadata for:', url);
       // Use a CORS proxy or server-side endpoint for fetching
       const response = await fetch('/api/extract-metadata', {
         method: 'POST',
@@ -217,11 +264,15 @@ export class UrlMetadataService {
         body: JSON.stringify({ url })
       })
 
+      console.log('API response status:', response.status);
+      
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
 
-      return await response.json()
+      const data = await response.json();
+      console.log('API response data:', data);
+      return data;
     } catch (error) {
       console.error('Failed to fetch page metadata:', error)
       return {}
