@@ -67,6 +67,16 @@ const PLATFORM_PATTERNS = {
   stackoverflow: [
     /stackoverflow\.com\/questions\/(\d+)/
   ],
+  audio: [
+    /podcasts\.apple\.com\/.*\/podcast\//,
+    /open\.spotify\.com\/episode\//,
+    /open\.spotify\.com\/show\//,
+    /soundcloud\.com\//,
+    /anchor\.fm\//,
+    /overcast\.fm\//,
+    /pocketcasts\.com\//,
+    /castbox\.fm\//
+  ],
   npm: [
     /npmjs\.com\/package\/([^\/]+)/
   ],
@@ -146,8 +156,8 @@ export class UrlMetadataService {
     if (urlLower.includes('docs.google.com')) return 'documentation'
     if (urlLower.includes('notion.so')) return 'note'
     
-    // Default to link for HTTP(S) URLs
-    return url.startsWith('http') ? 'link' : 'note'
+    // Default to bookmark for HTTP(S) URLs
+    return url.startsWith('http') ? 'bookmark' : 'note'
   }
 
   /**
