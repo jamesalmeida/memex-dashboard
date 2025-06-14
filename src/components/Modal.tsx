@@ -43,6 +43,27 @@ export default function Modal({ isOpen, onClose, children, title, modalId }: Mod
     };
   }, [isOpen, onClose]);
 
+  // Body scroll lock when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Store the current scroll position
+      const scrollY = window.scrollY;
+      
+      // Lock body scroll
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      
+      return () => {
+        // Restore scroll position and unlock body scroll
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (isOpen) {
       // Start rendering the modal
