@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ItemWithMetadata } from '@/types/database';
+import ContentTypeIcon from './ContentTypeIcon';
 
 interface BaseCardProps {
   item: ItemWithMetadata;
@@ -11,6 +12,7 @@ interface BaseCardProps {
   children: React.ReactNode;
   showImage?: boolean;
   className?: string;
+  hideContentLabel?: boolean;
 }
 
 export default function BaseCard({ 
@@ -20,9 +22,10 @@ export default function BaseCard({
   onClick, 
   children,
   showImage = true,
-  className = ''
+  className = '',
+  hideContentLabel = false
 }: BaseCardProps) {
-  const [showActions, setShowActions] = useState(false);
+  const [showHover, setShowHover] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const shouldShowFullImage = () => {
@@ -38,12 +41,29 @@ export default function BaseCard({
     action();
   };
 
+  const getContentTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      'x': 'X',
+      'youtube': 'YouTube',
+      'github': 'GitHub',
+      'amazon': 'Amazon',
+      'article': 'Article',
+      'link': 'Link',
+      'text': 'Note',
+      'pdf': 'PDF',
+      'video': 'Video',
+      'audio': 'Podcast'
+    };
+    return labels[type] || type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
   return (
     <div 
-      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer overflow-hidden flex flex-col ${className}`}
+      id={`base-card-${item.id}`}
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 transform-gpu cursor-pointer overflow-hidden flex flex-col ${className}`}
       onClick={handleCardClick}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseEnter={() => setShowHover(true)}
+      onMouseLeave={() => setShowHover(false)}
     >
       {/* Image/Thumbnail Section */}
       {showImage && item.thumbnail_url && !imageError ? (
@@ -57,53 +77,28 @@ export default function BaseCard({
             onError={() => setImageError(true)}
             loading="lazy"
           />
-          {showActions && (
-            <div className="absolute top-2 right-2 flex gap-1">
-              <button 
-                className="p-1 bg-black bg-opacity-50 text-white rounded hover:bg-opacity-70 transition-opacity"
-                onClick={(e) => handleActionClick(e, () => onArchive?.(item.id))}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8l4 0V6a2 2 0 012-2h2a2 2 0 012 2v2l4 0m-6 12V10m0 0l1-1m-1 1l-1-1" />
-                </svg>
-              </button>
-              <button 
-                className="p-1 bg-black bg-opacity-50 text-white rounded hover:bg-opacity-70 transition-opacity"
-                onClick={(e) => handleActionClick(e, () => onDelete?.(item.id))}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          )}
         </div>
-      ) : (
-        // Show action buttons in top right corner for cards without images
-        showActions && (
-          <div className="absolute top-2 right-2 flex gap-1 z-10">
-            <button 
-              className="p-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              onClick={(e) => handleActionClick(e, () => onArchive?.(item.id))}
-            >
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8l4 0V6a2 2 0 012-2h2a2 2 0 012 2v2l4 0m-6 12V10m0 0l1-1m-1 1l-1-1" />
-              </svg>
-            </button>
-            <button 
-              className="p-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              onClick={(e) => handleActionClick(e, () => onDelete?.(item.id))}
-            >
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-          </div>
-        )
-      )}
+      ) : null}
       
       {/* Content Area - provided by individual card components */}
-      <div className="p-4 flex-1 flex flex-col">
+      <div 
+        className={`p-4 flex-1 flex flex-col ${(item.content_type === 'instagram' || item.content_type === 'tiktok') ? 'relative' : ''}`}
+        style={item.content_type === 'x' ? { borderTop: '5px solid #1E9BF0' } : undefined}
+      >
+        {/* Instagram gradient top border */}
+        {item.content_type === 'instagram' && (
+          <div 
+            className="absolute top-0 left-0 right-0 h-[5px]"
+            style={{ background: 'linear-gradient(90deg, #FF6930 35%, #F80261 55%)' }}
+          />
+        )}
+        {/* TikTok gradient top border */}
+        {item.content_type === 'tiktok' && (
+          <div 
+            className="absolute top-0 left-0 right-0 h-[5px]"
+            style={{ background: 'linear-gradient(90deg, #00F2EA, #FF0050)' }}
+          />
+        )}
         {children}
 
         {/* Footer Section - Tags and Space */}
@@ -130,6 +125,14 @@ export default function BaseCard({
           </div>
         </div>
       </div>
+      
+      {/* Content type label overlay on hover - bottom right */}
+      {!hideContentLabel && (
+        <div className={`absolute bottom-3 right-3 bg-black bg-opacity-75 text-white rounded-lg px-3 py-2 flex items-center gap-2 transition-opacity duration-200 ${showHover ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          <ContentTypeIcon type={item.content_type} className="w-4 h-4" />
+          <span className="text-sm font-medium">{getContentTypeLabel(item.content_type)}</span>
+        </div>
+      )}
     </div>
   );
 }

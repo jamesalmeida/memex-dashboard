@@ -12,15 +12,22 @@ interface XCardProps {
 }
 
 export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps) {
+  const truncateText = (text: string, maxLength: number = 250) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
   return (
     <BaseCard 
       item={item} 
       onArchive={onArchive} 
       onDelete={onDelete} 
       onClick={onClick}
+      showImage={false} // Don't show image at top
+      className="x-card"
     >
       {/* Header with X icon only */}
-      <div className="flex items-start justify-between mb-2">
+      <div id={`x-card-header-${item.id}`} className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm min-w-0 flex-1">
           <ContentTypeIcon type="x" />
         </div>
@@ -38,14 +45,27 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
       </div>
 
       {/* Display name and username */}
-      <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
+      <h3 id={`x-card-author-${item.id}`} className="font-medium text-gray-900 dark:text-gray-100 mb-2 min-w-0 break-words">
         {item.metadata?.display_name || item.metadata?.username || 'Unknown User'} (@{item.metadata?.username || 'unknown'})
       </h3>
       
-      {/* Tweet content */}
-      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 min-w-0 break-words">
-        {item.title}
+      {/* Tweet content - expanded text with 250 char limit */}
+      <p id={`x-card-content-${item.id}`} className="text-sm text-gray-600 dark:text-gray-300 mb-3 min-w-0 break-words whitespace-pre-wrap">
+        {truncateText(item.title || '', 250)}
       </p>
+
+      {/* Image at bottom if present - full height, no cropping */}
+      {item.thumbnail_url && (
+        <div id={`x-card-image-${item.id}`} className="mt-auto mb-2">
+          <img
+            src={item.thumbnail_url}
+            alt={item.title}
+            className="w-full h-auto rounded-lg"
+            style={{ border: '1px solid lightgray' }}
+            loading="lazy"
+          />
+        </div>
+      )}
     </BaseCard>
   );
 }

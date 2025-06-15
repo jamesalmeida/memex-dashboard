@@ -35,9 +35,10 @@ export default function StandardCard({ item, onArchive, onDelete, onClick }: Sta
       onArchive={onArchive} 
       onDelete={onDelete} 
       onClick={onClick}
+      className="standard-card"
     >
       {/* Header with icon and content type name */}
-      <div className="flex items-start justify-between mb-2">
+      <div id={`standard-card-header-${item.id}`} className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm min-w-0 flex-1">
           <ContentTypeIcon type={item.content_type} />
           <span>{getContentTypeName(item.content_type)}</span>
@@ -68,20 +69,20 @@ export default function StandardCard({ item, onArchive, onDelete, onClick }: Sta
       </div>
 
       {/* Title */}
-      <h3 className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
+      <h3 id={`standard-card-title-${item.id}`} className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
         {item.title}
       </h3>
 
       {/* Description */}
       {item.description && (
-        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 min-w-0 break-words">
+        <p id={`standard-card-description-${item.id}`} className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 min-w-0 break-words">
           {item.description}
         </p>
       )}
 
       {/* Author and additional metadata */}
       {item.metadata?.author && (
-        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
+        <div id={`standard-card-author-${item.id}`} className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1">
           <span>by</span>
           <span className="font-medium">{item.metadata.author}</span>
           {(['product', 'amazon', 'etsy'] as const).includes(item.content_type) && item.metadata?.rating && (

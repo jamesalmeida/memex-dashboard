@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ItemWithMetadata } from '@/types/database';
+import ContentTypeIcon from './ContentTypeIcon';
 
 interface BookCardProps {
   item: ItemWithMetadata;
@@ -11,7 +12,7 @@ interface BookCardProps {
 }
 
 export default function BookCard({ item, onArchive, onDelete, onClick }: BookCardProps) {
-  const [showActions, setShowActions] = useState(false);
+  const [showHover, setShowHover] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const handleCardClick = () => {
@@ -25,10 +26,11 @@ export default function BookCard({ item, onArchive, onDelete, onClick }: BookCar
 
   return (
     <div 
-      className="relative cursor-pointer group"
+      id={`book-card-${item.id}`}
+      className="relative cursor-pointer group hover:scale-[1.02] transition-all duration-200 transform-gpu"
       onClick={handleCardClick}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseEnter={() => setShowHover(true)}
+      onMouseLeave={() => setShowHover(false)}
     >
       {/* Book-like 3D effect */}
       <div className="relative transform transition-transform duration-200 hover:scale-105">
@@ -76,27 +78,6 @@ export default function BookCard({ item, onArchive, onDelete, onClick }: BookCar
             </div>
           )}
 
-          {/* Action buttons */}
-          {showActions && (
-            <div className="absolute top-2 right-2 flex gap-1">
-              <button 
-                className="p-1 bg-black bg-opacity-50 text-white rounded hover:bg-opacity-70 transition-opacity"
-                onClick={(e) => handleActionClick(e, () => onArchive?.(item.id))}
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8l4 0V6a2 2 0 012-2h2a2 2 0 012 2v2l4 0m-6 12V10m0 0l1-1m-1 1l-1-1" />
-                </svg>
-              </button>
-              <button 
-                className="p-1 bg-black bg-opacity-50 text-white rounded hover:bg-opacity-70 transition-opacity"
-                onClick={(e) => handleActionClick(e, () => onDelete?.(item.id))}
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          )}
 
           {/* Space tag in corner if present */}
           {item.space && (
@@ -107,6 +88,12 @@ export default function BookCard({ item, onArchive, onDelete, onClick }: BookCar
             </div>
           )}
         </div>
+      </div>
+      
+      {/* Book label overlay on hover - bottom right */}
+      <div className={`absolute bottom-3 right-3 bg-black bg-opacity-75 text-white rounded-lg px-3 py-2 flex items-center gap-2 transition-opacity duration-200 ${showHover ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <ContentTypeIcon type="book" className="w-4 h-4" />
+        <span className="text-sm font-medium">Book</span>
       </div>
     </div>
   );

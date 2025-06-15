@@ -108,8 +108,9 @@ export default function MasonryGrid({ children, className = '', gap = 16 }: Maso
         position: 'relative', 
         width: '100%', 
         maxWidth: '100%',
-        overflow: 'hidden',
-        boxSizing: 'border-box'
+        overflow: 'visible',
+        boxSizing: 'border-box',
+        zIndex: 1
       }}
     >
       {children}

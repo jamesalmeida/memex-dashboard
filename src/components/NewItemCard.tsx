@@ -16,6 +16,7 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lastHeight, setLastHeight] = useState(48); // 3rem = 48px
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   // Auto-resize textarea and trigger grid re-layout if needed
   useEffect(() => {
@@ -417,10 +418,12 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
     <div 
       ref={cardRef} 
       id="new-item-card" 
-      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border-2 border-dashed transition-colors flex flex-col p-4 ${
+      className={`rounded-lg shadow-sm border-2 border-dashed transition-all duration-200 flex flex-col p-4 ${
         isDragOver 
           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-          : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
+          : 'border-gray-300 dark:border-gray-600'
+      } ${
+        isFocused ? 'bg-white dark:bg-gray-800' : 'bg-transparent'
       }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -432,6 +435,8 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder="Type a note or paste something here..."
           className="w-full resize-none border-0 focus:outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 bg-transparent overflow-y-auto"
           style={{
@@ -446,11 +451,11 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
       
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-2">
-          {input.trim() && (
+          <div className={`transition-all duration-300 ${input.trim() ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
             <button
               type="button"
               onClick={handleClear}
-              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1.5 whitespace-nowrap"
               disabled={isSubmitting}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -458,15 +463,15 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
               </svg>
               Clear
             </button>
-          )}
+          </div>
         </div>
         
-        {input.trim() ? (
+        <div className={`transition-opacity duration-300 ${input.trim() ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <button
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-4 py-1.5 text-sm bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-1.5"
+            className="px-4 py-1.5 text-sm bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-1.5 whitespace-nowrap"
           >
             {isSubmitting ? (
               <>
@@ -482,7 +487,9 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
               </>
             )}
           </button>
-        ) : (
+        </div>
+        
+        <div className={`transition-opacity duration-300 ${!input.trim() ? 'opacity-100' : 'opacity-0 hidden'}`}>
           <div className="flex gap-2">
             <button
               type="button"
@@ -507,7 +514,7 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
               Paste
             </button>
           </div>
-        )}
+        </div>
       </div>
       
       {/* Hidden file input */}
