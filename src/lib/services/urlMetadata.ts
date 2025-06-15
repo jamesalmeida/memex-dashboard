@@ -241,6 +241,9 @@ export class UrlMetadataService {
         case 'stackoverflow':
           await this.enhanceStackOverflowMetadata(url, metadata)
           break
+        case 'instagram':
+          await this.enhanceInstagramMetadata(url, metadata)
+          break
       }
       
       console.log('Final metadata after enhancements:', metadata);
@@ -394,6 +397,54 @@ export class UrlMetadataService {
   private async enhanceStackOverflowMetadata(url: string, metadata: ExtractedMetadata): Promise<void> {
     // Stack Overflow has good Open Graph support
     metadata.domain = 'stackoverflow.com'
+  }
+
+  /**
+   * Enhance Instagram metadata
+   */
+  private async enhanceInstagramMetadata(url: string, metadata: ExtractedMetadata): Promise<void> {
+    console.log('=== CLIENT-SIDE INSTAGRAM ENHANCEMENT ===');
+    console.log('Raw Instagram metadata from API:', metadata);
+    
+    // Process Instagram-specific fields from the API response
+    if (metadata.instagram_engagement) {
+      console.log('Processing Instagram engagement data:', metadata.instagram_engagement);
+      
+      // Set author from Instagram username if available
+      if (metadata.instagram_engagement.username && !metadata.author?.includes(metadata.instagram_engagement.username)) {
+        metadata.author = `@${metadata.instagram_engagement.username}`;
+        console.log('Set author from Instagram engagement:', metadata.author);
+      }
+      
+      // Set username and display_name for easier access
+      if (metadata.instagram_engagement.username) {
+        metadata.username = metadata.instagram_engagement.username;
+        metadata.display_name = metadata.instagram_engagement.username;
+        console.log('Set username and display_name:', metadata.username);
+      }
+      
+      // Use clean description as title if available
+      if (metadata.instagram_engagement.clean_description) {
+        metadata.title = metadata.instagram_engagement.clean_description;
+        console.log('Set title from clean description:', metadata.title);
+      }
+    }
+    
+    // Also check for standalone Instagram username/display_name fields
+    if (metadata.instagram_username) {
+      metadata.username = metadata.instagram_username;
+      metadata.display_name = metadata.instagram_display_name || metadata.instagram_username;
+      console.log('Set username from standalone field:', metadata.username);
+      
+      // Update author if not already set correctly
+      if (!metadata.author?.includes(metadata.instagram_username)) {
+        metadata.author = `@${metadata.instagram_username}`;
+        console.log('Set author from standalone Instagram username:', metadata.author);
+      }
+    }
+    
+    metadata.domain = 'instagram.com';
+    console.log('Final enhanced Instagram metadata:', metadata);
   }
 
   /**

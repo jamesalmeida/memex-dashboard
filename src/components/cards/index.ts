@@ -12,6 +12,7 @@ export { default as ImageCard } from './ImageCard';
 export { default as YoutubeCard } from './YoutubeCard';
 export { default as PodcastCard } from './PodcastCard';
 export { default as GithubCard } from './GithubCard';
+export { default as InstagramCard } from './InstagramCard';
 export { default as StandardCard } from './StandardCard';
 
 // Export all for easy importing

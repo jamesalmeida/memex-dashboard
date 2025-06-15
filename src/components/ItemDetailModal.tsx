@@ -263,7 +263,7 @@ export default function ItemDetailModal({
           {/* Left Column - Main Content */}
           <div className="flex-1 overflow-y-auto p-6">
           {/* Thumbnail - Hide for X/Twitter, YouTube, and images since they have special displays */}
-          {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && (
+          {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && (
             <div className="mb-6">
               <img 
                 src={currentItem.thumbnail_url} 
@@ -273,30 +273,20 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* URL - Only show for non-X, non-YouTube, and non-image content */}
-          {currentItem.url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                URL
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 p-3 bg-gray-50 rounded-lg text-sm text-gray-600 break-all">
-                  {currentItem.url}
-                </div>
-                <button
-                  onClick={handleOpenUrl}
-                  className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  Open
-                </button>
-              </div>
+          {/* Instagram Thumbnail - Fit modal height */}
+          {currentItem.content_type === 'instagram' && currentItem.thumbnail_url && (
+            <div className="mb-6">
+              <img 
+                src={currentItem.thumbnail_url} 
+                alt={currentItem.title}
+                className="w-full max-h-[500px] object-contain rounded-lg bg-gray-100"
+              />
             </div>
           )}
 
+
           {/* Content-Type Specific Sections */}
+          
           {currentItem.content_type === 'youtube' && (
             <div className="mb-6">
               {/* YouTube Video Embed */}
@@ -618,8 +608,8 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* Description - Hide for X/Twitter and images since they're shown in right column */}
-          {currentItem.description && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && (
+          {/* Description - Hide for X/Twitter, images, and Instagram since they're shown in right column */}
+          {currentItem.description && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description
@@ -653,6 +643,94 @@ export default function ItemDetailModal({
                 ))}
               </select>
             </div>
+
+            {/* Instagram Metadata */}
+            {currentItem.content_type === 'instagram' && (
+              <>
+                {/* Instagram Post Type */}
+                {currentItem.metadata?.instagram_post_type && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Post Type
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm capitalize">
+                      {currentItem.metadata.instagram_post_type}
+                      {currentItem.metadata.instagram_post_type === 'carousel' && ' (Multiple Images)'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Instagram Username */}
+                {(currentItem.metadata?.instagram_username || currentItem.metadata?.instagram_engagement?.username) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Username
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      @{currentItem.metadata?.instagram_username || currentItem.metadata?.instagram_engagement?.username}
+                    </span>
+                  </div>
+                )}
+
+                {/* Instagram Engagement */}
+                {currentItem.metadata?.instagram_engagement?.likes && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Likes
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {currentItem.metadata.instagram_engagement.likes.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {currentItem.metadata?.instagram_engagement?.comments && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Comments
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {currentItem.metadata.instagram_engagement.comments.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {currentItem.metadata?.instagram_engagement?.post_date && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Posted
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {currentItem.metadata.instagram_engagement.post_date}
+                    </span>
+                  </div>
+                )}
+
+                {/* Instagram Description */}
+                {currentItem.description && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Description
+                    </label>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                      {currentItem.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Carousel Indicator */}
+                {currentItem.metadata?.instagram_post_type === 'carousel' && (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-md p-3">
+                    <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                      <span className="text-xs font-medium">Multiple Images</span>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
             {/* X/Twitter URL */}
             {currentItem.content_type === 'x' && currentItem.url && (
@@ -958,6 +1036,40 @@ export default function ItemDetailModal({
                 </span>
               </div>
             )}
+
+            {/* General URL for all content types not already handled */}
+            {currentItem.url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  URL
+                </label>
+                <div className="space-y-2">
+                  <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md text-xs text-gray-600 dark:text-gray-400 break-all">
+                    {currentItem.url}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCopyUrl}
+                      className="flex-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                      Copy
+                    </button>
+                    <button
+                      onClick={handleOpenUrl}
+                      className="flex-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Open
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Tags */}
@@ -1024,7 +1136,7 @@ export default function ItemDetailModal({
         </div>
 
         {/* Fixed Actions Bar */}
-        <div id="modal-actions" className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+        <div id="modal-actions" className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
           <div className="flex gap-2">
             {onEdit && (
               <button

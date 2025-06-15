@@ -592,7 +592,7 @@ export default function Dashboard() {
 
         {/* Masonry Grid */}
         <div id="content-grid">
-          <MasonryGrid gap={16}>
+          <MasonryGrid gap={24}>
           {viewMode === 'everything' && (
             <>
               <NewItemCard onAdd={(item) => handleAddItem(item, false)} />

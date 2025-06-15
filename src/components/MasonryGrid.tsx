@@ -8,13 +8,14 @@ interface MasonryGridProps {
   gap?: number;
 }
 
-export default function MasonryGrid({ children, className = '', gap = 16 }: MasonryGridProps) {
+export default function MasonryGrid({ children, className = '', gap = 24 }: MasonryGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const getColumnCount = () => {
     if (!containerRef.current) return 1;
     const width = containerRef.current.offsetWidth;
     
+    if (width >= 2000) return 5; // 2xl+
     if (width >= 1280) return 4; // xl
     if (width >= 1024) return 3; // lg
     if (width >= 768) return 2;  // md

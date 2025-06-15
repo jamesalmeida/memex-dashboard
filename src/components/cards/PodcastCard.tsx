@@ -12,8 +12,6 @@ interface PodcastCardProps {
 }
 
 export default function PodcastCard({ item, onArchive, onDelete, onClick }: PodcastCardProps) {
-  console.log(`PodcastCard: Rendering card for item ${item.id}`);
-  
   const [showActions, setShowActions] = useState(false);
   const [imageError, setImageError] = useState(false);
 

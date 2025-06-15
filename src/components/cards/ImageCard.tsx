@@ -27,7 +27,8 @@ export default function ImageCard({ item, onArchive, onDelete, onClick }: ImageC
     return (
       <div 
         id={`image-card-fallback-${item.id}`}
-        className="bg-gray-100 dark:bg-gray-800 aspect-square flex items-center justify-center cursor-pointer relative shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 transform-gpu"
+        className="bg-gray-100 dark:bg-gray-800 aspect-square flex items-center justify-center cursor-pointer relative shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-200 transform-gpu rounded-lg"
+        style={{ border: '10px solid var(--image-frame-color)' }}
         onClick={handleCardClick}
       >
         <div className="text-gray-400 dark:text-gray-600 text-center">
@@ -37,11 +38,6 @@ export default function ImageCard({ item, onArchive, onDelete, onClick }: ImageC
           <p className="text-sm">No Image</p>
         </div>
         
-        {/* Image label overlay on hover - bottom right */}
-        <div className={`absolute bottom-3 right-3 bg-black bg-opacity-75 text-white rounded-lg px-3 py-2 flex items-center gap-2 transition-opacity duration-200 ${showHover ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          <ContentTypeIcon type="image" className="w-4 h-4" />
-          <span className="text-sm font-medium">Image</span>
-        </div>
       </div>
     );
   }
@@ -49,7 +45,8 @@ export default function ImageCard({ item, onArchive, onDelete, onClick }: ImageC
   return (
     <div 
       id={`image-card-${item.id}`}
-      className="relative cursor-pointer group overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 transform-gpu"
+      className="relative cursor-pointer group overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-200 transform-gpu rounded-lg"
+      style={{ border: '10px solid var(--image-frame-color)' }}
       onClick={handleCardClick}
     >
       {/* Image - full natural size with sharp corners */}

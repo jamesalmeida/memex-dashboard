@@ -7,6 +7,7 @@ import ImageCard from './ImageCard';
 import YoutubeCard from './YoutubeCard';
 import PodcastCard from './PodcastCard';
 import GithubCard from './GithubCard';
+import InstagramCard from './InstagramCard';
 import StandardCard from './StandardCard';
 
 interface CardRouterProps {
@@ -17,9 +18,6 @@ interface CardRouterProps {
 }
 
 export default function CardRouter({ item, onArchive, onDelete, onClick }: CardRouterProps) {
-  // Debug logging to help identify routing issues
-  console.log(`CardRouter: Routing item ${item.id} with content_type: "${item.content_type}"`);
-  
   // Route to specific card components based on content type
   switch (item.content_type) {
     case 'x':
@@ -75,6 +73,16 @@ export default function CardRouter({ item, onArchive, onDelete, onClick }: CardR
     case 'github':
       return (
         <GithubCard 
+          item={item}
+          onArchive={onArchive}
+          onDelete={onDelete}
+          onClick={onClick}
+        />
+      );
+    
+    case 'instagram':
+      return (
+        <InstagramCard 
           item={item}
           onArchive={onArchive}
           onDelete={onDelete}
