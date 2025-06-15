@@ -197,11 +197,11 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
         console.log('Created fallback item:', newItem);
       }
     } else {
-      // Handle text notes
+      // Handle text notes - save text in description, leave title blank
       newItem = {
-        title: input.substring(0, 50) + (input.length > 50 ? '...' : ''),
+        title: '',
         content_type: 'note',
-        description: input.length > 50 ? input : undefined,
+        description: input,
         metadata: {
           tags: ['quick-add']
         }

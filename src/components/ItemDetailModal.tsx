@@ -84,10 +84,16 @@ export default function ItemDetailModal({
   const [tags, setTags] = useState<string[]>([]);
   const [showTagInput, setShowTagInput] = useState(false);
   const [currentItem, setCurrentItem] = useState<MockItem | ItemWithMetadata | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState('');
 
   useEffect(() => {
     if (item && isOpen) {
       setCurrentItem(item);
+      setEditedTitle(item.title || '');
+      setEditedDescription(item.description || '');
       
       // Handle tags from both mock data (metadata.tags) and real data (tags array)
       const tagNames = item.tags && Array.isArray(item.tags) 
@@ -118,8 +124,10 @@ export default function ItemDetailModal({
         : item.space?.name || 'none';
       setSelectedSpace(newSpaceName);
       
-      // Update current item
+      // Update current item and edited title/description
       setCurrentItem(item);
+      setEditedTitle(item.title || '');
+      setEditedDescription(item.description || '');
     }
   }, [item, currentItem]);
 
@@ -232,6 +240,56 @@ export default function ItemDetailModal({
     // Placeholder for future implementation
   };
 
+  const handleTitleEdit = () => {
+    setIsEditingTitle(true);
+  };
+
+  const handleTitleSave = () => {
+    if (editedTitle.trim() !== currentItem.title) {
+      onUpdateItem?.(currentItem.id, { title: editedTitle.trim() });
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleCancel = () => {
+    setEditedTitle(currentItem.title || '');
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      handleTitleCancel();
+    }
+  };
+
+  const handleDescriptionEdit = () => {
+    setIsEditingDescription(true);
+  };
+
+  const handleDescriptionSave = () => {
+    if (editedDescription.trim() !== currentItem.description) {
+      onUpdateItem?.(currentItem.id, { description: editedDescription.trim() });
+    }
+    setIsEditingDescription(false);
+  };
+
+  const handleDescriptionCancel = () => {
+    setEditedDescription(currentItem.description || '');
+    setIsEditingDescription(false);
+  };
+
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault();
+      handleDescriptionSave();
+    } else if (e.key === 'Escape') {
+      handleDescriptionCancel();
+    }
+  };
+
   return (
     <Modal 
       isOpen={isOpen} 
@@ -240,10 +298,54 @@ export default function ItemDetailModal({
       title={
         <div className="flex items-center gap-3">
           <ContentTypeIcon type={currentItem.content_type} />
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
-              {currentItem.title}
-            </h2>
+          <div className="flex-1 min-w-0">
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onKeyDown={handleTitleKeyDown}
+                  onBlur={handleTitleSave}
+                  className="flex-1 text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter title..."
+                  autoFocus
+                />
+                <button
+                  onClick={handleTitleSave}
+                  className="text-green-600 hover:text-green-700 p-1"
+                  title="Save"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={handleTitleCancel}
+                  className="text-red-600 hover:text-red-700 p-1"
+                  title="Cancel"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 group">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 flex-1">
+                  {currentItem.title || 'Untitled'}
+                </h2>
+                <button
+                  onClick={handleTitleEdit}
+                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity"
+                  title="Edit title"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              </div>
+            )}
             <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
               {currentItem.content_type}
               {currentItem.metadata?.domain && (
@@ -524,9 +626,49 @@ export default function ItemDetailModal({
 
                 {/* Tweet Content */}
                 <div className="mb-3">
-                  <p className="text-gray-900 dark:text-gray-100 leading-relaxed">
-                    {currentItem.description || currentItem.title}
-                  </p>
+                  {isEditingDescription ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editedDescription}
+                        onChange={(e) => setEditedDescription(e.target.value)}
+                        onKeyDown={handleDescriptionKeyDown}
+                        className="w-full min-h-20 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                        placeholder="Enter tweet content..."
+                        autoFocus
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={handleDescriptionCancel}
+                          className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleDescriptionSave}
+                          className="px-2 py-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="group">
+                      <div className="flex items-start gap-2">
+                        <p className="text-gray-900 dark:text-gray-100 leading-relaxed flex-1">
+                          {currentItem.description || currentItem.title}
+                        </p>
+                        <button
+                          onClick={handleDescriptionEdit}
+                          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity flex-shrink-0"
+                          title="Edit tweet content"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Tweet Media - Video or Image */}
@@ -609,14 +751,54 @@ export default function ItemDetailModal({
           )}
 
           {/* Description - Hide for X/Twitter, images, and Instagram since they're shown in right column */}
-          {currentItem.description && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && (
+          {(currentItem.description || currentItem.content_type === 'note') && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && (
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description
               </label>
-              <p className="text-gray-600 leading-relaxed">
-                {currentItem.description}
-              </p>
+              {isEditingDescription ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    onKeyDown={handleDescriptionKeyDown}
+                    className="w-full min-h-24 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                    placeholder="Enter description..."
+                    autoFocus
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={handleDescriptionCancel}
+                      className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDescriptionSave}
+                      className="px-3 py-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                    >
+                      Save (Ctrl+Enter)
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="group">
+                  <div className="flex items-start gap-2">
+                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed flex-1">
+                      {currentItem.description || 'No description'}
+                    </p>
+                    <button
+                      onClick={handleDescriptionEdit}
+                      className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity flex-shrink-0"
+                      title="Edit description"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           </div>
@@ -1138,6 +1320,17 @@ export default function ItemDetailModal({
         {/* Fixed Actions Bar */}
         <div id="modal-actions" className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
           <div className="flex gap-2">
+            {onDelete && (
+              <button
+                onClick={() => onDelete(currentItem.id)}
+                className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                title="Delete"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
             {onEdit && (
               <button
                 onClick={() => onEdit(currentItem)}
@@ -1161,16 +1354,8 @@ export default function ItemDetailModal({
               onClick={onClose}
               className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
-              Close
+              Done
             </button>
-            {onDelete && (
-              <button
-                onClick={() => onDelete(currentItem.id)}
-                className="px-4 py-2 text-sm text-white bg-red-600 dark:bg-red-700 rounded-md hover:bg-red-700 dark:hover:bg-red-800 transition-colors"
-              >
-                Delete
-              </button>
-            )}
           </div>
         </div>
       </div>
