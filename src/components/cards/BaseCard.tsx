@@ -82,7 +82,7 @@ export default function BaseCard({
       
       {/* Content Area - provided by individual card components */}
       <div 
-        className={`p-4 flex-1 flex flex-col ${(item.content_type === 'instagram' || item.content_type === 'tiktok') ? 'relative' : ''}`}
+        className={`p-3 md:p-4 flex-1 flex flex-col ${(item.content_type === 'instagram' || item.content_type === 'tiktok') ? 'relative' : ''}`}
         style={item.content_type === 'x' ? { borderTop: '5px solid #1E9BF0' } : undefined}
       >
         {/* Instagram gradient top border */}

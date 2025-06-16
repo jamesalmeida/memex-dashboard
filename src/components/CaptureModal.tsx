@@ -21,6 +21,7 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [extractedMetadata, setExtractedMetadata] = useState<UrlAnalysisResult | null>(null);
+  const [isPasting, setIsPasting] = useState(false);
 
   const detectContentType = (url: string): MockItem['content_type'] => {
     if (!url) return 'note';
@@ -148,6 +149,44 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
     handleQuickAdd();
   };
 
+  const handlePaste = async () => {
+    setIsPasting(true);
+    setError('');
+    
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) {
+        setError('Nothing to paste from clipboard');
+        setIsPasting(false);
+        return;
+      }
+
+      // Check if it's a URL
+      const urlPattern = /^(https?:\/\/)|(www\.)|([a-zA-Z0-9-]+\.(com|org|net|io|dev|app|co|edu|gov|mil|info|biz|me|tv|fm|ai|cloud|xyz|tech|site|online|store|shop|blog|news|media|social|network|community|platform|service|solutions|digital|global|world|international|[a-z]{2,3}))/i;
+      
+      if (text.startsWith('http') || urlPattern.test(text)) {
+        // It's a URL - put it in the URL field
+        setUrl(text.trim());
+      } else {
+        // It's text - create a note
+        const lines = text.trim().split('\n');
+        const firstLine = lines[0].substring(0, 100);
+        
+        // Set title to first line (max 100 chars)
+        setTitle(firstLine + (firstLine.length < lines[0].length ? '...' : ''));
+        
+        // Set description to full text
+        setDescription(text);
+      }
+      
+      setIsPasting(false);
+    } catch (err) {
+      console.error('Failed to read clipboard:', err);
+      setError('Failed to paste from clipboard. Please check permissions.');
+      setIsPasting(false);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} modalId="capture-modal" title="Add New Item">
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -156,6 +195,32 @@ export default function CaptureModal({ isOpen, onClose, onAdd }: CaptureModalPro
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
+
+          {/* Paste Button */}
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={handlePaste}
+              disabled={isPasting}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isPasting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Pasting...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                  Paste from clipboard
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="text-center text-sm text-gray-500">or</div>
 
           <div>
             <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">

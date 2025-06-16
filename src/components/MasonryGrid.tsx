@@ -12,14 +12,14 @@ export default function MasonryGrid({ children, className = '', gap = 24 }: Maso
   const containerRef = useRef<HTMLDivElement>(null);
 
   const getColumnCount = () => {
-    if (!containerRef.current) return 1;
+    if (!containerRef.current) return 2;
     const width = containerRef.current.offsetWidth;
     
     if (width >= 2000) return 5; // 2xl+
     if (width >= 1280) return 4; // xl
-    if (width >= 1024) return 3; // lg
-    if (width >= 768) return 2;  // md
-    return 1; // sm
+    if (width >= 1000) return 3; // lg (starts at 1000px)
+    if (width >= 768) return 2;  // md (768px - 999px)
+    return 2; // sm - changed from 1 to 2 columns on mobile
   };
 
   const updateLayout = useCallback(() => {
@@ -27,11 +27,20 @@ export default function MasonryGrid({ children, className = '', gap = 24 }: Maso
     
     const newColumns = getColumnCount();
     
+    // Calculate responsive gap inside the callback
+    const width = containerRef.current.offsetWidth;
+    const responsiveGap = width >= 768 ? gap : 10; // 10px gap for mobile, provided gap for tablet+
+    
     const container = containerRef.current;
-    const items = Array.from(container.children) as HTMLElement[];
+    const allItems = Array.from(container.children) as HTMLElement[];
+    // Filter out hidden items (like hidden NewItemCard on mobile)
+    const items = allItems.filter(item => {
+      const computedStyle = window.getComputedStyle(item);
+      return computedStyle.display !== 'none';
+    });
     
     // Calculate exact column width
-    const totalGapWidth = gap * (newColumns - 1);
+    const totalGapWidth = responsiveGap * (newColumns - 1);
     const columnWidthPercentage = 100 / newColumns;
     const gapPercentage = (totalGapWidth / container.offsetWidth) * 100;
     const actualColumnWidth = columnWidthPercentage - (gapPercentage / newColumns);
@@ -41,44 +50,50 @@ export default function MasonryGrid({ children, className = '', gap = 24 }: Maso
       item.style.position = 'absolute';
       item.style.width = `${actualColumnWidth}%`;
       item.style.boxSizing = 'border-box';
+      item.style.margin = '0'; // Reset any margin that might cause alignment issues
     });
     
     // Track column heights
     const columnHeights = new Array(newColumns).fill(0);
     
-    items.forEach((item, index) => {
-      // For first row, position items left to right
-      if (index < newColumns) {
-        const leftPercentage = index * actualColumnWidth;
-        const gapOffset = index * gap;
+    // First, position all first-row items with consistent baseline
+    for (let i = 0; i < Math.min(items.length, newColumns); i++) {
+      const item = items[i];
+      const leftPercentage = i * actualColumnWidth;
+      const gapOffset = i * responsiveGap;
+      item.style.left = `calc(${leftPercentage}% + ${gapOffset}px)`;
+      item.style.top = '0px';
+      item.style.marginTop = '0px'; // Ensure no margin interference
+      item.style.transform = 'translateY(0px)'; // Reset any transforms
+    }
+    
+    // Wait for first row to be positioned, then measure heights
+    setTimeout(() => {
+      // Update column heights for first row
+      for (let i = 0; i < Math.min(items.length, newColumns); i++) {
+        columnHeights[i] = items[i].offsetHeight;
+      }
+      
+      // Position remaining items
+      for (let i = newColumns; i < items.length; i++) {
+        const item = items[i];
+        const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+        const leftPercentage = shortestColumnIndex * actualColumnWidth;
+        const gapOffset = shortestColumnIndex * responsiveGap;
+        
         item.style.left = `calc(${leftPercentage}% + ${gapOffset}px)`;
-        item.style.top = '0px';
+        item.style.top = `${columnHeights[shortestColumnIndex] + responsiveGap}px`;
         
         // Update column height
-        setTimeout(() => {
-          columnHeights[index] = item.offsetHeight;
-        }, 0);
-      } else {
-        // For subsequent items, place in shortest column
-        setTimeout(() => {
-          const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
-          const leftPercentage = shortestColumnIndex * actualColumnWidth;
-          const gapOffset = shortestColumnIndex * gap;
-          
-          item.style.left = `calc(${leftPercentage}% + ${gapOffset}px)`;
-          item.style.top = `${columnHeights[shortestColumnIndex] + gap}px`;
-          
-          // Update column height
-          columnHeights[shortestColumnIndex] += item.offsetHeight + gap;
-        }, 100);
+        columnHeights[shortestColumnIndex] += item.offsetHeight + responsiveGap;
       }
-    });
-    
-    // Set container height
-    setTimeout(() => {
-      const maxHeight = Math.max(...columnHeights);
-      container.style.height = `${maxHeight}px`;
-    }, 200);
+      
+      // Set container height
+      setTimeout(() => {
+        const maxHeight = Math.max(...columnHeights);
+        container.style.height = `${maxHeight}px`;
+      }, 50);
+    }, 50);
   }, [gap]);
 
   useEffect(() => {

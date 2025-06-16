@@ -555,9 +555,9 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <div className="px-4 md:pl-20 md:pr-20 pb-8">
+      <div className="px-2.5 md:pl-20 md:pr-20 pb-4 md:pb-8">
         {/* Search Bar */}
-        <div id="search-section" className="mb-6 pt-5">
+        <div id="search-section" className="mb-2.5 md:mb-6 pt-5">
           <div className="flex gap-3 items-center">
             {selectedContentType && (
               <div id="selected-filter-pill" className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 whitespace-nowrap">
@@ -575,7 +575,7 @@ export default function Dashboard() {
             )}
             
             <div className="relative flex-1">
-              <div className={`absolute left-0 top-0 text-4xl font-serif pb-2 pointer-events-none w-full overflow-hidden whitespace-nowrap transition-opacity duration-200 ease-in-out ${
+              <div className={`absolute left-0 top-0 text-2xl md:text-4xl font-serif pb-2 pointer-events-none w-full overflow-hidden whitespace-nowrap transition-opacity duration-200 ease-in-out ${
                 !searchQuery && !isSearchFocused ? 'opacity-100' : 'opacity-0'
               }`}>
                 <span className="font-light text-gray-500 dark:text-gray-600">Search </span>
@@ -593,7 +593,7 @@ export default function Dashboard() {
               <input
                 id="global-search"
                 type="text"
-                className="w-full text-4xl font-light bg-transparent outline-none text-gray-900 dark:text-gray-100 font-serif border-b border-gray-400 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 focus:border-gray-700 dark:focus:border-gray-300 transition-colors pb-2"
+                className="w-full text-2xl md:text-4xl font-light bg-transparent outline-none text-gray-900 dark:text-gray-100 font-serif border-b border-gray-400 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 focus:border-gray-700 dark:focus:border-gray-300 transition-colors pb-2"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
@@ -647,7 +647,10 @@ export default function Dashboard() {
           <MasonryGrid gap={24}>
           {viewMode === 'everything' && (
             <>
-              <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
+              {/* NewItemCard inside grid on desktop */}
+              <div className="hidden md:block">
+                <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
+              </div>
               
               {filteredItems.map((item) => (
                 <ItemCard
@@ -678,7 +681,10 @@ export default function Dashboard() {
 
           {viewMode === 'space-detail' && (
             <>
-              <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
+              {/* NewItemCard inside grid on desktop */}
+              <div className="hidden md:block">
+                <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
+              </div>
               
               {filteredItems.map((item) => (
                 <ItemCard

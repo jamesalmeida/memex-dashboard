@@ -455,13 +455,13 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             <button
               type="button"
               onClick={handleClear}
-              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+              className="px-2 md:px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1.5 whitespace-nowrap"
               disabled={isSubmitting}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
-              Clear
+              <span className="hidden md:inline">Clear</span>
             </button>
           </div>
         </div>
@@ -471,7 +471,7 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-4 py-1.5 text-sm bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-1.5 whitespace-nowrap"
+            className="px-2 md:px-4 py-1.5 text-sm bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-1.5 whitespace-nowrap"
           >
             {isSubmitting ? (
               <>
@@ -483,7 +483,7 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Add
+                <span className="hidden md:inline">Add</span>
               </>
             )}
           </button>
@@ -494,24 +494,24 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             <button
               type="button"
               onClick={handleFileSelect}
-              className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+              className="px-2 md:px-4 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1.5"
               disabled={isSubmitting}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              Image
+              <span className="hidden md:inline">Image</span>
             </button>
             <button
               type="button"
               onClick={handlePaste}
-              className="px-4 py-1.5 text-sm bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-1.5"
+              className="px-2 md:px-4 py-1.5 text-sm bg-[rgb(255,77,6)] text-white rounded-md hover:bg-[rgb(230,69,5)] transition-colors flex items-center gap-1.5"
               disabled={isSubmitting}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
               </svg>
-              Paste
+              <span className="hidden md:inline">Paste</span>
             </button>
           </div>
         </div>
