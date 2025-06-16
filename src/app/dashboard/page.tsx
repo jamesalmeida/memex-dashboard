@@ -40,6 +40,9 @@ export default function Dashboard() {
   const [items, setItems] = useState<ItemWithMetadata[]>([]);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [spacesWithCounts, setSpacesWithCounts] = useState<(Space & { item_count: number })[]>([]);
+  
+  // Transition state for fade effect
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Load data from Supabase
   useEffect(() => {
@@ -158,9 +161,21 @@ export default function Dashboard() {
   };
 
   const handleSpaceClick = (space: Space) => {
-    setSelectedSpace(space.id);
-    setViewMode('space-detail');
-    setSelectedContentType(null);
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    
+    // Fade out current grid
+    setTimeout(() => {
+      setSelectedSpace(space.id);
+      setViewMode('space-detail');
+      setSelectedContentType(null);
+      
+      // Fade back in
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 50);
+    }, 150); // Fade out duration
   };
 
   const handleEditSpace = (space: Space & { item_count: number }) => {
@@ -227,22 +242,64 @@ export default function Dashboard() {
   };
 
   const handleBackToEverything = useCallback(() => {
-    setViewMode('everything');
-    setSelectedSpace(null);
-    setSelectedContentType(null);
-  }, []);
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    
+    // Fade out current grid
+    setTimeout(() => {
+      setViewMode('everything');
+      setSelectedSpace(null);
+      setSelectedContentType(null);
+      
+      // Fade back in
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 50);
+    }, 150); // Fade out duration
+  }, [isTransitioning]);
 
   const handleShowSpaces = useCallback(() => {
-    setViewMode('spaces');
-    setSelectedSpace(null);
-    setSelectedContentType(null);
-  }, []);
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    
+    // Fade out current grid
+    setTimeout(() => {
+      setViewMode('spaces');
+      setSelectedSpace(null);
+      setSelectedContentType(null);
+      
+      // Fade back in
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 50);
+    }, 150); // Fade out duration
+  }, [isTransitioning]);
 
   const handleHomeClick = () => {
-    setViewMode('everything');
-    setSelectedSpace(null);
-    setSelectedContentType(null);
-    setSearchQuery('');
+    if (isTransitioning) return;
+    
+    if (viewMode !== 'everything') {
+      setIsTransitioning(true);
+      
+      // Fade out current grid
+      setTimeout(() => {
+        setViewMode('everything');
+        setSelectedSpace(null);
+        setSelectedContentType(null);
+        setSearchQuery('');
+        
+        // Fade back in
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 50);
+      }, 150); // Fade out duration
+    } else {
+      // Already on everything view, just clear search
+      setSearchQuery('');
+    }
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -659,7 +716,12 @@ export default function Dashboard() {
         </div>
 
         {/* Masonry Grid */}
-        <div id="content-grid">
+        <div 
+          id="content-grid" 
+          className={`transition-opacity duration-150 ease-in-out ${
+            isTransitioning ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
           <MasonryGrid gap={24} mobileColumns={viewMode === 'spaces' ? 1 : 2}>
           {viewMode === 'everything' && (
             <>
