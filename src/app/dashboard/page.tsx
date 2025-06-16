@@ -567,7 +567,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <div className="px-2.5 md:pl-20 md:pr-20 pb-4 md:pb-8">
+      <div className="px-2.5 md:pl-20 md:pr-20 pb-25 md:pb-8">
         {/* Search Bar */}
         <div id="search-section" className="mb-2.5 md:mb-6 pt-5">
           <div className="flex gap-3 items-center">
@@ -656,7 +656,7 @@ export default function Dashboard() {
 
         {/* Masonry Grid */}
         <div id="content-grid">
-          <MasonryGrid gap={24}>
+          <MasonryGrid gap={24} mobileColumns={viewMode === 'spaces' ? 1 : 2}>
           {viewMode === 'everything' && (
             <>
               {/* NewItemCard inside grid on desktop */}

@@ -22,7 +22,7 @@ export default function SpaceCard({ space, onClick, onEdit, onDelete }: SpaceCar
 
   return (
     <div 
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all cursor-pointer h-48 flex flex-col p-6 relative group"
+      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all cursor-pointer flex flex-col p-6 relative group"
       onClick={() => onClick(space)}
     >
       <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -56,7 +56,7 @@ export default function SpaceCard({ space, onClick, onEdit, onDelete }: SpaceCar
       </div>
 
       {space.description && (
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 flex-1">
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
           {space.description}
         </p>
       )}

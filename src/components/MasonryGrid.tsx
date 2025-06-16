@@ -6,9 +6,10 @@ interface MasonryGridProps {
   children: React.ReactNode[];
   className?: string;
   gap?: number;
+  mobileColumns?: number; // Override mobile column count
 }
 
-export default function MasonryGrid({ children, className = '', gap = 24 }: MasonryGridProps) {
+export default function MasonryGrid({ children, className = '', gap = 24, mobileColumns = 2 }: MasonryGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const getColumnCount = () => {
@@ -19,7 +20,7 @@ export default function MasonryGrid({ children, className = '', gap = 24 }: Maso
     if (width >= 1280) return 4; // xl
     if (width >= 1000) return 3; // lg (starts at 1000px)
     if (width >= 768) return 2;  // md (768px - 999px)
-    return 2; // sm - changed from 1 to 2 columns on mobile
+    return mobileColumns; // sm - use prop value for mobile columns
   };
 
   const updateLayout = useCallback(() => {
@@ -94,7 +95,7 @@ export default function MasonryGrid({ children, className = '', gap = 24 }: Maso
         container.style.height = `${maxHeight}px`;
       }, 50);
     }, 50);
-  }, [gap]);
+  }, [gap, mobileColumns]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -114,7 +115,7 @@ export default function MasonryGrid({ children, className = '', gap = 24 }: Maso
       window.removeEventListener('resize', handleResize);
       observer.disconnect();
     };
-  }, [children.length, gap, updateLayout]);
+  }, [children.length, gap, mobileColumns, updateLayout]);
 
   return (
     <div 
