@@ -114,10 +114,10 @@ export default function ItemDetailModal({
       setTags(tagNames);
       
       // Handle both string (mock) and object (real) space data
-      const spaceName = typeof item.space === 'string' 
+      const spaceId = typeof item.space === 'string' 
         ? item.space 
-        : item.space?.name || 'none';
-      setSelectedSpace(spaceName);
+        : item.space?.id || 'none';
+      setSelectedSpace(spaceId);
     }
   }, [item, isOpen]);
 
@@ -137,11 +137,11 @@ export default function ItemDetailModal({
       }
       
       // Update selected space if it's changed
-      const newSpaceName = typeof item.space === 'string' 
+      const newSpaceId = typeof item.space === 'string' 
         ? item.space 
-        : item.space?.name || 'none';
-      if (selectedSpace !== newSpaceName) {
-        setSelectedSpace(newSpaceName);
+        : item.space?.id || 'none';
+      if (selectedSpace !== newSpaceId) {
+        setSelectedSpace(newSpaceId);
       }
       
       // Update current item and edited title/description
@@ -237,10 +237,14 @@ export default function ItemDetailModal({
     }
   };
 
-  const handleSpaceChange = (newSpace: string) => {
-    setSelectedSpace(newSpace);
+  const handleSpaceChange = (newSpaceId: string) => {
+    setSelectedSpace(newSpaceId);
+    
+    // Find the space name by ID for the update
+    const spaceName = newSpaceId === 'none' ? undefined : spaces.find(s => s.id === newSpaceId)?.name;
+    
     onUpdateItem?.(currentItem.id, { 
-      space: newSpace === 'none' ? undefined : newSpace 
+      space: spaceName 
     });
   };
 
@@ -909,7 +913,7 @@ export default function ItemDetailModal({
               >
                 <option value="none">No space</option>
                 {spaces.map((space) => (
-                  <option key={space.id} value={space.name}>
+                  <option key={space.id} value={space.id}>
                     {space.name}
                   </option>
                 ))}

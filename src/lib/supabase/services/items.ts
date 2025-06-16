@@ -48,6 +48,17 @@ export const itemsService = {
       tagsList = data
     }
     
+    // Fetch spaces for all items
+    const uniqueSpaceIds = [...new Set((items || []).map(item => item.space_id).filter(Boolean))]
+    let spacesList = null
+    if (uniqueSpaceIds.length > 0) {
+      const { data } = await supabase
+        .from('spaces')
+        .select('*')
+        .in('id', uniqueSpaceIds)
+      spacesList = data
+    }
+    
     // Create a map of item_id -> metadata
     const metadataMap = new Map()
     metadataList?.forEach(metadata => {
@@ -65,11 +76,17 @@ export const itemsService = {
       }
     })
     
+    // Create a map of space_id -> space
+    const spacesMap = new Map()
+    spacesList?.forEach(space => {
+      spacesMap.set(space.id, space)
+    })
+    
     return (items || []).map(item => ({
       ...item,
       metadata: metadataMap.get(item.id) || null,
       tags: tagsMap.get(item.id) || [],
-      space: null
+      space: item.space_id ? spacesMap.get(item.space_id) || null : null
     }))
   },
 
@@ -285,11 +302,22 @@ export const itemsService = {
     // Fetch tags for all items
     let tagsList = null
     if (itemIds.length > 0) {
-      const { data } = await supabase
+      const { data: tagsData } = await supabase
         .from('items_tags')
         .select('item_id, tag:tags(*)')
         .in('item_id', itemIds)
-      tagsList = data
+      tagsList = tagsData
+    }
+    
+    // Fetch spaces for all items
+    const uniqueSpaceIds = [...new Set((data || []).map(item => item.space_id).filter(Boolean))]
+    let spacesList = null
+    if (uniqueSpaceIds.length > 0) {
+      const { data: spacesData } = await supabase
+        .from('spaces')
+        .select('*')
+        .in('id', uniqueSpaceIds)
+      spacesList = spacesData
     }
     
     // Create a map of item_id -> metadata
@@ -309,11 +337,17 @@ export const itemsService = {
       }
     })
     
+    // Create a map of space_id -> space
+    const spacesMap = new Map()
+    spacesList?.forEach(space => {
+      spacesMap.set(space.id, space)
+    })
+    
     return (data || []).map(item => ({
       ...item,
       metadata: metadataMap.get(item.id) || null,
       tags: tagsMap.get(item.id) || [],
-      space: null
+      space: item.space_id ? spacesMap.get(item.space_id) || null : null
     }))
   }
 }
