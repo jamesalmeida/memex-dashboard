@@ -385,9 +385,12 @@ export default function ItemDetailModal({
     >
       <div className="flex flex-col h-full">
         {/* Two-Column Layout */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {/* Left Column - Main Content */}
-          <div className={`flex-1 flex flex-col p-6 ${currentItem?.content_type === 'note' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+          <div className="flex-1 flex flex-col items-center overflow-y-auto p-6">
+            <div className={`w-full max-w-[1000px] flex flex-col ${
+              currentItem?.content_type === 'note' ? '' : 'justify-center'
+            }`}>
           {/* Thumbnail - Hide for X/Twitter, YouTube, images, Instagram, TikTok, and movies since they have special displays, but show for TV shows */}
           {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && currentItem.content_type !== 'tiktok' && currentItem.content_type !== 'movie' && !(currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id) && !currentItem.metadata?.is_tv_show) && (
             <div className="mb-6">
@@ -895,6 +898,7 @@ export default function ItemDetailModal({
               )}
             </div>
           )}
+            </div>
           </div>
 
           {/* Right Column - Metadata & Actions */}
