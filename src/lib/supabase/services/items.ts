@@ -38,16 +38,37 @@ export const itemsService = {
       metadataList = data
     }
     
+    // Fetch tags for all items
+    let tagsList = null
+    if (itemIds.length > 0) {
+      const { data } = await supabase
+        .from('items_tags')
+        .select('item_id, tag:tags(*)')
+        .in('item_id', itemIds)
+      tagsList = data
+    }
+    
     // Create a map of item_id -> metadata
     const metadataMap = new Map()
     metadataList?.forEach(metadata => {
       metadataMap.set(metadata.item_id, metadata)
     })
     
+    // Create a map of item_id -> tags
+    const tagsMap = new Map()
+    tagsList?.forEach((itemTag: any) => {
+      if (!tagsMap.has(itemTag.item_id)) {
+        tagsMap.set(itemTag.item_id, [])
+      }
+      if (itemTag.tag) {
+        tagsMap.get(itemTag.item_id).push(itemTag.tag)
+      }
+    })
+    
     return (items || []).map(item => ({
       ...item,
       metadata: metadataMap.get(item.id) || null,
-      tags: [],
+      tags: tagsMap.get(item.id) || [],
       space: null
     }))
   },
@@ -261,16 +282,37 @@ export const itemsService = {
       metadataList = metadata
     }
     
+    // Fetch tags for all items
+    let tagsList = null
+    if (itemIds.length > 0) {
+      const { data } = await supabase
+        .from('items_tags')
+        .select('item_id, tag:tags(*)')
+        .in('item_id', itemIds)
+      tagsList = data
+    }
+    
     // Create a map of item_id -> metadata
     const metadataMap = new Map()
     metadataList?.forEach(metadata => {
       metadataMap.set(metadata.item_id, metadata)
     })
     
+    // Create a map of item_id -> tags
+    const tagsMap = new Map()
+    tagsList?.forEach((itemTag: any) => {
+      if (!tagsMap.has(itemTag.item_id)) {
+        tagsMap.set(itemTag.item_id, [])
+      }
+      if (itemTag.tag) {
+        tagsMap.get(itemTag.item_id).push(itemTag.tag)
+      }
+    })
+    
     return (data || []).map(item => ({
       ...item,
       metadata: metadataMap.get(item.id) || null,
-      tags: [],
+      tags: tagsMap.get(item.id) || [],
       space: null
     }))
   }

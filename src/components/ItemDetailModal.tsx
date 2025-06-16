@@ -124,24 +124,32 @@ export default function ItemDetailModal({
   // Update local state when item changes (after operations like adding tags or moving spaces)
   useEffect(() => {
     if (item && currentItem && item.id === currentItem.id) {
-      // Update tags if they've changed
+      // Update tags if they've changed - only update if the tag arrays are actually different
       const newTagNames = item.tags && Array.isArray(item.tags) 
         ? item.tags.map(tag => typeof tag === 'string' ? tag : tag.name)
         : item.metadata?.tags || [];
-      setTags(newTagNames);
+      
+      // Only update tags if they're actually different to prevent unnecessary re-renders
+      const currentTagsStr = tags.slice().sort().join(',');
+      const newTagsStr = newTagNames.slice().sort().join(',');
+      if (currentTagsStr !== newTagsStr) {
+        setTags(newTagNames);
+      }
       
       // Update selected space if it's changed
       const newSpaceName = typeof item.space === 'string' 
         ? item.space 
         : item.space?.name || 'none';
-      setSelectedSpace(newSpaceName);
+      if (selectedSpace !== newSpaceName) {
+        setSelectedSpace(newSpaceName);
+      }
       
       // Update current item and edited title/description
       setCurrentItem(item);
       setEditedTitle(item.title || '');
       setEditedDescription(item.description || '');
     }
-  }, [item, currentItem]);
+  }, [item, currentItem, tags, selectedSpace]);
 
   // Don't render if never opened or no item data
   if (!currentItem) return null;

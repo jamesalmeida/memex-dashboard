@@ -101,20 +101,8 @@ export default function BaseCard({
         )}
         {children}
 
-        {/* Footer Section - Tags and Space */}
+        {/* Footer Section - Space */}
         <div className="mt-auto">
-          {item.tags && item.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {item.tags.slice(0, 3).map((tag) => (
-                <span 
-                  key={tag.id}
-                  className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full"
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
 
           <div className="flex items-center justify-end text-xs text-gray-500 dark:text-gray-400 min-w-0">
             {item.space && (

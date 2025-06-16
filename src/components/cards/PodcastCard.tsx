@@ -67,22 +67,9 @@ export default function PodcastCard({ item, onArchive, onDelete, onClick }: Podc
       </div>
       
 
-      {/* Tags and space info at bottom */}
-      {(item.tags?.length || item.space) && (
+      {/* Space info at bottom */}
+      {item.space && (
         <div className={`absolute bottom-2 left-2 flex gap-2 transition-opacity duration-200 ${showActions ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          {/* Tags */}
-          {item.tags && item.tags.length > 0 && (
-            <div className="flex gap-1">
-              {item.tags.slice(0, 2).map((tag) => (
-                <span 
-                  key={tag.id}
-                  className="text-xs bg-blue-50/90 dark:bg-blue-900/70 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full backdrop-blur-sm"
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
           
           {/* Space */}
           {item.space && (
