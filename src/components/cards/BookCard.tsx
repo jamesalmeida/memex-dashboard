@@ -79,14 +79,7 @@ export default function BookCard({ item, onArchive, onDelete, onClick }: BookCar
           )}
 
 
-          {/* Space tag in corner if present */}
-          {item.space && (
-            <div className="absolute bottom-2 left-2">
-              <span className="text-xs bg-white/90 dark:bg-black/90 text-gray-800 dark:text-gray-200 px-2 py-1 rounded-full">
-                {item.space.name}
-              </span>
-            </div>
-          )}
+          {/* Space info removed - available in detail modal */}
         </div>
       </div>
       

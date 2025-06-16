@@ -101,16 +101,9 @@ export default function BaseCard({
         )}
         {children}
 
-        {/* Footer Section - Space */}
+        {/* Footer Section */}
         <div className="mt-auto">
-
-          <div className="flex items-center justify-end text-xs text-gray-500 dark:text-gray-400 min-w-0">
-            {item.space && (
-              <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded truncate max-w-20">
-                {item.space.name}
-              </span>
-            )}
-          </div>
+          {/* Space info removed - available in detail modal */}
         </div>
       </div>
       

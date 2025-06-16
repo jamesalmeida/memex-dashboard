@@ -67,18 +67,7 @@ export default function PodcastCard({ item, onArchive, onDelete, onClick }: Podc
       </div>
       
 
-      {/* Space info at bottom */}
-      {item.space && (
-        <div className={`absolute bottom-2 left-2 flex gap-2 transition-opacity duration-200 ${showActions ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          
-          {/* Space */}
-          {item.space && (
-            <span className="text-xs bg-white/90 dark:bg-black/70 text-gray-800 dark:text-gray-200 px-2 py-1 rounded backdrop-blur-sm">
-              {item.space.name}
-            </span>
-          )}
-        </div>
-      )}
+      {/* Space info removed - available in detail modal */}
     </div>
   );
 }
