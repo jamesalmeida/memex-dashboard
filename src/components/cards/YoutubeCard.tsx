@@ -19,6 +19,9 @@ export default function YoutubeCard({ item, onArchive, onDelete, onClick }: Yout
     onClick?.(item);
   };
 
+  // Check if this is a YouTube Short (vertical video)
+  const isYouTubeShort = item.url?.includes('/shorts/') || false;
+
   // Fallback thumbnail if none provided
   const thumbnailUrl = item.thumbnail_url || `https://img.youtube.com/vi/${item.metadata?.video_id || 'default'}/hqdefault.jpg`;
 
@@ -30,7 +33,7 @@ export default function YoutubeCard({ item, onArchive, onDelete, onClick }: Yout
     >
       <div 
         id={`youtube-card-${item.id}`}
-        className="relative rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg cursor-pointer overflow-hidden aspect-video"
+        className={`relative rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg cursor-pointer overflow-hidden ${isYouTubeShort ? 'aspect-square' : 'aspect-video'}`}
         onClick={handleCardClick}
       >
         {/* Thumbnail fills entire card */}
@@ -42,15 +45,27 @@ export default function YoutubeCard({ item, onArchive, onDelete, onClick }: Yout
           loading="lazy"
         />
         
-        {/* YouTube play button overlay */}
+        {/* YouTube play button or Shorts logo overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative" style={{ color: '#FF0000' }}>
-            {/* White background to fill transparent triangle */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="bg-white w-8 h-8"></div>
+          {isYouTubeShort ? (
+            // YouTube Shorts logo
+            <div className="relative">
+              <img 
+                src="/icon_youtube_shorts.svg"
+                alt="YouTube Shorts"
+                className="w-16 h-16 drop-shadow-lg"
+              />
             </div>
-            <ContentTypeIcon type="youtube" className="w-16 h-16 relative z-10" />
-          </div>
+          ) : (
+            // Regular YouTube play button
+            <div className="relative" style={{ color: '#FF0000' }}>
+              {/* White background to fill transparent triangle - always white in all modes */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-8 h-8" style={{ backgroundColor: '#FFFFFF' }}></div>
+              </div>
+              <ContentTypeIcon type="youtube" className="w-16 h-16 relative z-10" />
+            </div>
+          )}
         </div>
 
         {/* Duration badge if available */}
@@ -63,7 +78,7 @@ export default function YoutubeCard({ item, onArchive, onDelete, onClick }: Yout
         {/* YouTube label on hover - bottom right */}
         <div className={`absolute bottom-3 right-3 bg-black bg-opacity-75 text-white rounded-lg px-3 py-2 flex items-center gap-2 transition-opacity duration-200 ${showHover ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <ContentTypeIcon type="youtube" className="w-4 h-4" />
-          <span className="text-sm font-medium">YouTube</span>
+          <span className="text-sm font-medium">{isYouTubeShort ? 'YouTube Short' : 'YouTube'}</span>
         </div>
       </div>
       
