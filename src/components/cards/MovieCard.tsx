@@ -24,14 +24,6 @@ export default function MovieCard({ item, onArchive, onDelete, onClick }: MovieC
     action();
   };
 
-  // Debug logging
-  console.log('MovieCard rendering:', {
-    id: item.id,
-    hasThumb: !!item.thumbnail_url,
-    thumbUrl: item.thumbnail_url,
-    imageError,
-    title: item.title
-  });
 
   // Fallback if no poster image
   if (!item.thumbnail_url || imageError) {
@@ -84,16 +76,7 @@ export default function MovieCard({ item, onArchive, onDelete, onClick }: MovieC
         src={item.thumbnail_url}
         alt={item.title || 'Movie poster'}
         className="w-full h-full object-cover"
-        onError={(e) => {
-          console.log('Movie poster failed to load:', {
-            url: item.thumbnail_url,
-            error: e
-          });
-          setImageError(true);
-        }}
-        onLoad={() => {
-          console.log('Movie poster loaded successfully:', item.thumbnail_url);
-        }}
+        onError={() => setImageError(true)}
         loading="lazy"
       />
       

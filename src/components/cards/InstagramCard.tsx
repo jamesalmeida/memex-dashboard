@@ -24,14 +24,6 @@ export default function InstagramCard({ item, onArchive, onDelete, onClick }: In
     action();
   };
 
-  // Debug logging
-  console.log('InstagramCard rendering:', {
-    id: item.id,
-    hasThumb: !!item.thumbnail_url,
-    thumbUrl: item.thumbnail_url,
-    imageError,
-    title: item.title
-  });
 
   // Fallback if no image
   if (!item.thumbnail_url || imageError) {
@@ -75,16 +67,7 @@ export default function InstagramCard({ item, onArchive, onDelete, onClick }: In
         src={item.thumbnail_url}
         alt={item.title || 'Instagram post'}
         className="w-full h-full object-cover"
-        onError={(e) => {
-          console.log('Instagram image failed to load:', {
-            url: item.thumbnail_url,
-            error: e
-          });
-          setImageError(true);
-        }}
-        onLoad={() => {
-          console.log('Instagram image loaded successfully:', item.thumbnail_url);
-        }}
+        onError={() => setImageError(true)}
         loading="lazy"
       />
       

@@ -24,14 +24,6 @@ export default function TikTokCard({ item, onArchive, onDelete, onClick }: TikTo
     action();
   };
 
-  // Debug logging
-  console.log('TikTokCard rendering:', {
-    id: item.id,
-    hasThumb: !!item.thumbnail_url,
-    thumbUrl: item.thumbnail_url,
-    imageError,
-    title: item.title
-  });
 
   // Fallback if no image (most common for TikTok currently)
   if (!item.thumbnail_url || imageError) {
@@ -93,16 +85,7 @@ export default function TikTokCard({ item, onArchive, onDelete, onClick }: TikTo
         src={item.thumbnail_url}
         alt={item.title || 'TikTok video'}
         className="w-full h-full object-cover"
-        onError={(e) => {
-          console.log('TikTok image failed to load:', {
-            url: item.thumbnail_url,
-            error: e
-          });
-          setImageError(true);
-        }}
-        onLoad={() => {
-          console.log('TikTok image loaded successfully:', item.thumbnail_url);
-        }}
+        onError={() => setImageError(true)}
         loading="lazy"
       />
       
