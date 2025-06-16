@@ -508,7 +508,7 @@ export default function Dashboard() {
       </div>
 
       {/* Floating Navigation Toggle - Mobile only */}
-      <div id="floating-navigation-toggle" className="md:hidden fixed bottom-6 left-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center h-[52px] w-[120px] shadow-lg z-50">
+      <div id="floating-navigation-toggle" className="md:hidden fixed bottom-6 left-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center h-[52px] w-[120px] shadow-2xl drop-shadow-lg z-50">
         <div 
           className="absolute h-[calc(100%-8px)] bg-[rgb(255,77,6)] rounded-full transition-all duration-200 ease-out"
           style={{
@@ -715,11 +715,14 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* Mobile bottom gradient overlay */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50/80 via-gray-50/40 to-transparent dark:from-gray-900/80 dark:via-gray-900/40 pointer-events-none z-40"></div>
+
       {/* Floating Action Button */}
       <button
         id="floating-add-button"
         onClick={handleContextAwareAdd}
-        className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[rgb(255,77,6)] text-white rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 hover:bg-[rgb(230,69,5)] hover:border-gray-400 dark:hover:border-gray-500 transition-colors shadow-lg hover:shadow-xl z-50"
+        className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[rgb(255,77,6)] text-white rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 hover:bg-[rgb(230,69,5)] hover:border-gray-400 dark:hover:border-gray-500 transition-colors shadow-2xl drop-shadow-lg hover:shadow-xl hover:drop-shadow-xl z-50"
         aria-label={
           viewMode === 'everything' ? 'Add new item' :
           viewMode === 'spaces' ? 'Create new space' :
