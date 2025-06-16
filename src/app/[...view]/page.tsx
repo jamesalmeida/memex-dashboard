@@ -47,12 +47,17 @@ export default function Dashboard({ params }: DashboardProps) {
   const extractSpaceId = (urlSegment: string) => {
     if (urlSegment.includes('-')) {
       const parts = urlSegment.split('-');
-      const lastPart = parts[parts.length - 1];
-      // Check if the last part looks like a UUID (has dashes and is long enough)
-      if (lastPart.length > 30 && lastPart.includes('-')) {
-        return lastPart;
+      
+      // Look for UUID pattern: 8-4-4-4-12 characters
+      for (let i = 0; i < parts.length; i++) {
+        const segment = parts.slice(i).join('-');
+        // UUID pattern: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        if (segment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          return segment;
+        }
       }
     }
+    
     // Fallback: assume the whole segment is the ID
     return urlSegment;
   };
@@ -77,6 +82,9 @@ export default function Dashboard({ params }: DashboardProps) {
   
   // Transition state for fade effect
   const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // Flag to prevent recursive hash handling
+  const [isHandlingHash, setIsHandlingHash] = useState(false);
 
   // Handle browser back/forward navigation
   useEffect(() => {
@@ -108,6 +116,56 @@ export default function Dashboard({ params }: DashboardProps) {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+  
+  // Handle hash changes for item modals
+  useEffect(() => {
+    const handleHashChange = async () => {
+      if (isHandlingHash) return; // Skip if we're manually handling hash
+      
+      const hash = window.location.hash.slice(1); // Remove the # symbol
+      
+      if (hash && !showItemDetail) {
+        // Hash exists and modal isn't open - try to open the item
+        try {
+          // First try to find in current items to avoid unnecessary fetches
+          const item = items.find(item => item.id === hash);
+          if (item) {
+            setSelectedItem(item);
+            setShowItemDetail(true);
+          } else {
+            // Item not found in current items, try to fetch it directly
+            const fetchedItem = await itemsService.getItem(hash);
+            if (fetchedItem) {
+              setSelectedItem(fetchedItem);
+              setShowItemDetail(true);
+            } else {
+              // Item doesn't exist, clear the hash
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading item:', error);
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      } else if (!hash && showItemDetail && !isHandlingHash) {
+        // No hash but modal is open - close modal (but don't reset other state)
+        setShowItemDetail(false);
+        setSelectedItem(null);
+      }
+    };
+    
+    // Handle initial hash on page load
+    if (items.length > 0) {
+      handleHashChange();
+    }
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [items, showItemDetail, isHandlingHash]);
 
   // Load data from Supabase
   useEffect(() => {
@@ -541,6 +599,9 @@ export default function Dashboard({ params }: DashboardProps) {
   const handleItemClick = (item: ItemWithMetadata) => {
     setSelectedItem(item);
     setShowItemDetail(true);
+    
+    // Add item ID to URL hash
+    window.location.hash = item.id;
   };
 
   const handleUpdateItem = async (id: string, updates: Partial<MockItem>) => {
@@ -734,8 +795,8 @@ export default function Dashboard({ params }: DashboardProps) {
                     ? 'everything' 
                     : viewMode === 'spaces'
                       ? 'spaces'
-                    : viewMode === 'space-detail' && selectedSpaceDetails 
-                      ? selectedSpaceDetails.name 
+                    : viewMode === 'space-detail' && selectedSpace
+                      ? selectedSpaceDetails?.name || 'this space'
                       : 'memex'
                   }...
                 </span>
@@ -900,8 +961,15 @@ export default function Dashboard({ params }: DashboardProps) {
         item={selectedItem}
         isOpen={showItemDetail}
         onClose={() => {
+          setIsHandlingHash(true);
           setShowItemDetail(false);
           setSelectedItem(null);
+          
+          // Remove hash from URL
+          window.history.replaceState({}, '', window.location.pathname);
+          
+          // Reset flag after a brief delay
+          setTimeout(() => setIsHandlingHash(false), 100);
         }}
         onDelete={handleDelete}
         onArchive={handleArchive}
