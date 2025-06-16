@@ -412,14 +412,18 @@ export default function Dashboard() {
   const handleUpdateItem = async (id: string, updates: Partial<MockItem>) => {
     try {
       // Convert updates to database format
-      const updateInput = {
+      const updateInput: Record<string, any> = {
         title: updates.title,
         url: updates.url,
         content_type: updates.content_type as ContentType,
         description: updates.description,
         thumbnail_url: updates.thumbnail_url || updates.thumbnail,
-        space_id: updates.space ? spaces.find(s => s.name === updates.space)?.id : null
       };
+
+      // Only update space_id if space is explicitly provided in updates
+      if ('space' in updates) {
+        updateInput.space_id = updates.space ? spaces.find(s => s.name === updates.space)?.id : null;
+      }
 
       await itemsService.updateItem(id, updateInput);
       const updatedItem = await itemsService.getItem(id);
