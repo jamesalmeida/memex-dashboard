@@ -8,6 +8,8 @@ import YoutubeCard from './YoutubeCard';
 import PodcastCard from './PodcastCard';
 import GithubCard from './GithubCard';
 import InstagramCard from './InstagramCard';
+import TikTokCard from './TikTokCard';
+import MovieCard from './MovieCard';
 import StandardCard from './StandardCard';
 
 interface CardRouterProps {
@@ -83,6 +85,49 @@ export default function CardRouter({ item, onArchive, onDelete, onClick }: CardR
     case 'instagram':
       return (
         <InstagramCard 
+          item={item}
+          onArchive={onArchive}
+          onDelete={onDelete}
+          onClick={onClick}
+        />
+      );
+    
+    case 'tiktok':
+      return (
+        <TikTokCard 
+          item={item}
+          onArchive={onArchive}
+          onDelete={onDelete}
+          onClick={onClick}
+        />
+      );
+    
+    case 'movie':
+    case 'tv-show':
+      return (
+        <MovieCard 
+          item={item}
+          onArchive={onArchive}
+          onDelete={onDelete}
+          onClick={onClick}
+        />
+      );
+    
+    case 'video':
+      // Check if it's an IMDB movie/TV show
+      if (item.url?.includes('imdb.com/title/') || item.metadata?.imdb_id) {
+        return (
+          <MovieCard 
+            item={item}
+            onArchive={onArchive}
+            onDelete={onDelete}
+            onClick={onClick}
+          />
+        );
+      }
+      // Otherwise use standard card for regular videos
+      return (
+        <StandardCard 
           item={item}
           onArchive={onArchive}
           onDelete={onDelete}

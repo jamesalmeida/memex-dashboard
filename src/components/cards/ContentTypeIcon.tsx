@@ -183,6 +183,12 @@ export default function ContentTypeIcon({ type, className = "w-4 h-4 flex-shrink
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
       );
+    case 'movie':
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V3a1 1 0 011 1v4M7 4H5a1 1 0 00-1 1v10a1 1 0 001 1h2m0-12V4m0 0h8m-8 0v12m8-12v4m0 0v8a1 1 0 01-1 1H7" />
+        </svg>
+      );
 
     // Default fallback
     case 'bookmark':

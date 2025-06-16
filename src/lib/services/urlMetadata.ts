@@ -82,6 +82,12 @@ const PLATFORM_PATTERNS = {
   ],
   wikipedia: [
     /(?:\w+\.)?wikipedia\.org\/wiki\/([^\/]+)/
+  ],
+  video: [
+    /\.(mp4|webm|ogg|avi|mov)(?:\?.*)?$/i
+  ],
+  movie: [
+    /imdb\.com\/title\/(tt\d+)/i  // IMDB movies and TV shows
   ]
 }
 
@@ -120,11 +126,18 @@ export class UrlMetadataService {
       const metadata = await this.extractMetadata(normalizedUrl, contentType)
       console.log('Extracted metadata:', metadata);
       
-      const confidence = this.calculateConfidence(contentType, metadata);
+      // Check if we need to update content type based on metadata (e.g., TV show detection)
+      let finalContentType = contentType;
+      if (contentType === 'movie' && metadata.is_tv_show) {
+        finalContentType = 'tv-show';
+        console.log('Content type changed from movie to tv-show based on metadata');
+      }
+      
+      const confidence = this.calculateConfidence(finalContentType, metadata);
       console.log('Confidence score:', confidence);
       
       const result = {
-        content_type: contentType,
+        content_type: finalContentType,
         metadata,
         confidence
       };
@@ -244,6 +257,19 @@ export class UrlMetadataService {
         case 'instagram':
           await this.enhanceInstagramMetadata(url, metadata)
           break
+        case 'tiktok':
+          await this.enhanceTikTokMetadata(url, metadata)
+          break
+        case 'movie':
+        case 'tv-show':
+          await this.enhanceMovieMetadata(url, metadata)
+          break
+        case 'video':
+          // Check if it's an IMDB URL and enhance as movie
+          if (url.includes('imdb.com/title/')) {
+            await this.enhanceMovieMetadata(url, metadata)
+          }
+          break
       }
       
       console.log('Final metadata after enhancements:', metadata);
@@ -334,7 +360,7 @@ export class UrlMetadataService {
     const profileMatch = url.match(/(?:twitter\.com|x\.com)\/(\w+)(?:\/)?$/)
     
     if (statusMatch) {
-      const [, username, postId] = statusMatch
+      const [, username] = statusMatch
       // Don't override author if it's already set (display name from meta tags)
       if (!metadata.author) {
         metadata.author = `@${username}`
@@ -445,6 +471,336 @@ export class UrlMetadataService {
     
     metadata.domain = 'instagram.com';
     console.log('Final enhanced Instagram metadata:', metadata);
+  }
+
+  /**
+   * Enhance TikTok metadata
+   */
+  private async enhanceTikTokMetadata(url: string, metadata: ExtractedMetadata): Promise<void> {
+    console.log('=== CLIENT-SIDE TIKTOK ENHANCEMENT ===');
+    console.log('Raw TikTok metadata from API:', metadata);
+    
+    // Extract username and video ID from TikTok URL
+    const tikTokMatch = url.match(/tiktok\.com\/@([^\/]+)\/video\/(\d+)/);
+    if (tikTokMatch) {
+      const [, username, videoId] = tikTokMatch;
+      
+      // Set username if not already available
+      if (!metadata.username && username) {
+        metadata.username = username;
+        metadata.display_name = username;
+        console.log('Set username from URL:', username);
+      }
+      
+      // Set author if not already set
+      if (!metadata.author && username) {
+        metadata.author = `@${username}`;
+        console.log('Set author from URL:', metadata.author);
+      }
+      
+      // Try to generate a thumbnail URL (TikTok doesn't have predictable patterns like YouTube)
+      // But we can try some common patterns or use a fallback
+      if (!metadata.thumbnail_url) {
+        // TikTok thumbnails are harder to predict, but we can try some approaches
+        console.log('No thumbnail available from API, using TikTok logo fallback');
+        // For now, we'll leave it undefined and let the card handle the fallback
+      }
+      
+      // Video ID for potential future API integration
+      console.log('TikTok Video ID:', videoId);
+    }
+    
+    // Process TikTok-specific fields from the API response
+    if (metadata.tiktok_engagement) {
+      console.log('Processing TikTok engagement data:', metadata.tiktok_engagement);
+      
+      // Extract engagement metrics
+      if (metadata.tiktok_engagement.likes) {
+        metadata.likes = metadata.tiktok_engagement.likes;
+        console.log('Set likes from TikTok engagement:', metadata.likes);
+      }
+      
+      if (metadata.tiktok_engagement.views) {
+        metadata.views = metadata.tiktok_engagement.views;
+        console.log('Set views from TikTok engagement:', metadata.views);
+      }
+      
+      if (metadata.tiktok_engagement.comments) {
+        metadata.replies = metadata.tiktok_engagement.comments;
+        console.log('Set comments from TikTok engagement:', metadata.replies);
+      }
+      
+      if (metadata.tiktok_engagement.shares) {
+        metadata.retweets = metadata.tiktok_engagement.shares; // Reuse retweets field for shares
+        console.log('Set shares from TikTok engagement:', metadata.retweets);
+      }
+      
+      // Username and display name from engagement data
+      if (metadata.tiktok_engagement.username) {
+        metadata.username = metadata.tiktok_engagement.username;
+        metadata.display_name = metadata.tiktok_engagement.display_name || metadata.tiktok_engagement.username;
+        metadata.author = `@${metadata.tiktok_engagement.username}`;
+        console.log('Updated author from engagement data:', metadata.author);
+      }
+      
+      // Duration for videos
+      if (metadata.tiktok_engagement.duration) {
+        metadata.duration = metadata.tiktok_engagement.duration;
+        console.log('Set duration from TikTok engagement:', metadata.duration);
+      }
+      
+      // Music/sound info
+      if (metadata.tiktok_engagement.music) {
+        metadata.description = metadata.description ? 
+          `${metadata.description}\n\n🎵 ${metadata.tiktok_engagement.music}` : 
+          `🎵 ${metadata.tiktok_engagement.music}`;
+        console.log('Added music info to description');
+      }
+    }
+    
+    // Also check for standalone TikTok fields
+    if (metadata.tiktok_username) {
+      metadata.username = metadata.tiktok_username;
+      metadata.display_name = metadata.tiktok_display_name || metadata.tiktok_username;
+      if (!metadata.author?.includes(metadata.tiktok_username)) {
+        metadata.author = `@${metadata.tiktok_username}`;
+        console.log('Set author from standalone TikTok username:', metadata.author);
+      }
+    }
+    
+    // Extract hashtags from description/title for TikTok context
+    const text = `${metadata.title || ''} ${metadata.description || ''}`;
+    const hashtags = text.match(/#[\w]+/g);
+    if (hashtags && hashtags.length > 0) {
+      console.log('Found hashtags in TikTok content:', hashtags);
+      // Could store hashtags in a tags field if needed
+    }
+    
+    // Clean up generic TikTok title
+    if (metadata.title === 'TikTok - Make Your Day' || metadata.title?.startsWith('TikTok - ')) {
+      // Use a more descriptive title based on username if available
+      if (metadata.username) {
+        metadata.title = `@${metadata.username} on TikTok`;
+        console.log('Cleaned up generic TikTok title:', metadata.title);
+      } else {
+        metadata.title = 'TikTok Video';
+        console.log('Set fallback TikTok title');
+      }
+    }
+    
+    metadata.domain = 'tiktok.com';
+    console.log('Final enhanced TikTok metadata:', metadata);
+  }
+
+  /**
+   * Enhance Movie/IMDB metadata
+   */
+  private async enhanceMovieMetadata(url: string, metadata: ExtractedMetadata): Promise<void> {
+    console.log('=== CLIENT-SIDE MOVIE ENHANCEMENT ===');
+    console.log('Raw Movie metadata from API:', metadata);
+    
+    // Extract IMDB ID from URL
+    const imdbMatch = url.match(/imdb\.com\/title\/([a-z0-9]+)/i);
+    if (imdbMatch) {
+      const [, imdbId] = imdbMatch;
+      console.log('IMDB ID:', imdbId);
+      
+      // Store IMDB ID for potential future API integration
+      metadata.imdb_id = imdbId;
+    }
+    
+    // Process movie-specific fields from the API response
+    if (metadata.movie_data) {
+      console.log('Processing movie data:', metadata.movie_data);
+      
+      // Extract movie details
+      if (metadata.movie_data.year) {
+        metadata.published_date = metadata.movie_data.year;
+        console.log('Set year from movie data:', metadata.published_date);
+      }
+      
+      if (metadata.movie_data.director) {
+        metadata.author = metadata.movie_data.director;
+        console.log('Set director as author:', metadata.author);
+      }
+      
+      if (metadata.movie_data.rating) {
+        metadata.rating = metadata.movie_data.rating;
+        console.log('Set rating from movie data:', metadata.rating);
+      }
+      
+      if (metadata.movie_data.duration) {
+        metadata.duration = metadata.movie_data.duration;
+        console.log('Set duration from movie data:', metadata.duration);
+      }
+      
+      if (metadata.movie_data.genre) {
+        metadata.genre = metadata.movie_data.genre;
+        console.log('Set genre from movie data:', metadata.genre);
+      }
+      
+      if (metadata.movie_data.cast) {
+        metadata.cast = metadata.movie_data.cast;
+        console.log('Set cast from movie data:', metadata.cast);
+      }
+    }
+    
+    // Also check for standalone movie fields
+    if (metadata.imdb_rating) {
+      metadata.rating = metadata.imdb_rating;
+      console.log('Set rating from standalone field:', metadata.rating);
+    }
+    
+    if (metadata.movie_year) {
+      metadata.published_date = metadata.movie_year;
+      console.log('Set year from standalone field:', metadata.published_date);
+    }
+    
+    if (metadata.movie_director) {
+      metadata.author = metadata.movie_director;
+      console.log('Set director from standalone field:', metadata.author);
+    }
+    
+    // Detect if this is a TV show vs movie from content
+    const titleLower = metadata.title?.toLowerCase() || '';
+    const descriptionLower = metadata.description?.toLowerCase() || '';
+    
+    const tvIndicators = [
+      'tv series', 'tv show', 'television series', 'series', 'season', 'episode',
+      'seasons', 'episodes', 'tv-', 'miniseries', 'mini-series'
+    ];
+    
+    const isTvShow = tvIndicators.some(indicator => 
+      titleLower.includes(indicator) || descriptionLower.includes(indicator)
+    );
+    
+    if (isTvShow) {
+      console.log('Detected TV show, changing content type');
+      // We'll need to handle this in the calling code since we can't change content_type here
+      metadata.is_tv_show = true;
+      
+      // Parse TV show title to extract main title and move extra info to description
+      if (metadata.title) {
+        const originalTitle = metadata.title;
+        const originalDescription = metadata.description || '';
+        
+        // Pattern for TV show titles like "Breaking Bad (TV Series 2008–2013) ⭐ 9.5 | Crime, Drama, Thriller"
+        const tvTitleMatch = originalTitle.match(/^([^(]+?)(?:\s*\(([^)]*)\))?\s*(?:⭐|★)?\s*([\d.]+)?\s*(?:\|\s*(.+))?$/);
+        if (tvTitleMatch) {
+          const [, cleanTitle, yearInfo, rating, genres] = tvTitleMatch;
+          
+          // Keep title with years: "Breaking Bad (2008-2013)"
+          if (yearInfo) {
+            // Extract just the years from "TV Series 2008–2013" format
+            const yearMatch = yearInfo.match(/(\d{4}(?:[–-]\d{4})?)/);
+            if (yearMatch) {
+              const years = yearMatch[1].replace('–', '-'); // Replace em-dash with hyphen
+              metadata.title = `${cleanTitle.trim()} (${years})`;
+            } else {
+              metadata.title = cleanTitle.trim();
+            }
+          } else {
+            metadata.title = cleanTitle.trim();
+          }
+          
+          // Move only rating and genres to description
+          const extraInfo = [];
+          
+          // Add rating if available
+          if (rating) {
+            extraInfo.push(`⭐ ${rating}`);
+          }
+          
+          // Add genres
+          if (genres) {
+            extraInfo.push(genres.trim());
+          }
+          
+          // Combine original description with extracted info (only if there's rating or genres)
+          if (extraInfo.length > 0) {
+            const newDescription = [originalDescription, extraInfo.join(' | ')].filter(Boolean).join('\n\n');
+            if (newDescription.trim()) {
+              metadata.description = newDescription;
+            }
+          }
+          
+          console.log('Parsed TV show title:', {
+            original: originalTitle,
+            cleaned: metadata.title,
+            extraInfo: extraInfo,
+            newDescription: metadata.description
+          });
+        } else {
+          // Fallback: just remove common TV show patterns from title
+          metadata.title = metadata.title
+            .replace(/\s*\(TV Series[^)]*\)/i, '')
+            .replace(/\s*⭐\s*[\d.]+/g, '')
+            .replace(/\s*\|\s*.+$/, '')
+            .trim();
+          console.log('Applied fallback TV title cleanup:', metadata.title);
+        }
+      }
+    }
+    
+    // Clean up movie/TV show titles
+    if (metadata.title) {
+      const originalTitle = metadata.title;
+      const originalDescription = metadata.description || '';
+      
+      // Remove "IMDb" suffix if present
+      if (originalTitle.includes(' - IMDb')) {
+        metadata.title = originalTitle.replace(' - IMDb', '');
+      }
+      
+      // Parse movie titles like "PCU (1994) ⭐ 6.6 | Comedy" 
+      // Keep title and year, move rating and genres to description
+      if (!metadata.is_tv_show) {
+        const movieTitleMatch = metadata.title.match(/^([^(]+?)(?:\s*\((\d{4})\))?\s*(?:⭐|★)?\s*([\d.]+)?\s*(?:\|\s*(.+))?$/);
+        if (movieTitleMatch) {
+          const [, cleanTitle, year, rating, genres] = movieTitleMatch;
+          
+          // Keep title with year: "Movie Title (Year)"
+          if (year) {
+            metadata.title = `${cleanTitle.trim()} (${year})`;
+          } else {
+            metadata.title = cleanTitle.trim();
+          }
+          
+          // Move only rating and genres to description
+          const extraInfo = [];
+          
+          // Add rating if available
+          if (rating) {
+            extraInfo.push(`⭐ ${rating}`);
+          }
+          
+          // Add genres
+          if (genres) {
+            extraInfo.push(genres.trim());
+          }
+          
+          // Combine original description with extracted info (only if there's rating or genres)
+          if (extraInfo.length > 0) {
+            const newDescription = [originalDescription, extraInfo.join(' | ')].filter(Boolean).join('\n\n');
+            if (newDescription.trim()) {
+              metadata.description = newDescription;
+            }
+          }
+          
+          console.log('Parsed movie title:', {
+            original: originalTitle,
+            cleaned: metadata.title,
+            extraInfo: extraInfo,
+            newDescription: metadata.description
+          });
+        }
+      }
+      
+      console.log('Final cleaned title:', metadata.title);
+    }
+    
+    metadata.domain = 'imdb.com';
+    console.log('Final enhanced movie metadata:', metadata);
   }
 
   /**

@@ -11,6 +11,8 @@ export type ContentType =
   | 'product' | 'amazon' | 'etsy' | 'app'
   // Knowledge
   | 'wikipedia' | 'paper' | 'book' | 'course'
+  // Entertainment  
+  | 'movie' | 'tv-show'
   // Personal
   | 'note' | 'bookmark' | 'recipe' | 'location';
 
@@ -94,6 +96,7 @@ export interface ItemMetadata {
   journal?: string | null;
   
   // Additional flexible JSON storage
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extra_data?: Record<string, any>;
   
   created_at: string;
@@ -172,5 +175,6 @@ export interface CreateItemMetadataInput {
   citations?: number | null;
   published_date?: string | null;
   journal?: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extra_data?: Record<string, any>;
 }

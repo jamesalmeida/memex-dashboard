@@ -58,6 +58,18 @@ const ContentTypeIcon = ({ type }: { type: MockItem['content_type'] }) => {
           <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
         </svg>
       );
+    case 'movie':
+      return (
+        <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16l13-8L7 4z" />
+        </svg>
+      );
+    case 'tv-show':
+      return (
+        <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      );
     default:
       return (
         <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -364,13 +376,17 @@ export default function ItemDetailModal({
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left Column - Main Content */}
           <div className="flex-1 overflow-y-auto p-6">
-          {/* Thumbnail - Hide for X/Twitter, YouTube, and images since they have special displays */}
-          {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && (
+          {/* Thumbnail - Hide for X/Twitter, YouTube, images, Instagram, TikTok, and movies since they have special displays, but show for TV shows */}
+          {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && currentItem.content_type !== 'tiktok' && currentItem.content_type !== 'movie' && !(currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id) && !currentItem.metadata?.is_tv_show) && (
             <div className="mb-6">
               <img 
                 src={currentItem.thumbnail_url} 
                 alt={currentItem.title}
-                className="w-full h-48 object-cover rounded-lg bg-gray-100"
+                className={
+                  currentItem.content_type === 'tv-show' || (currentItem.content_type === 'video' && currentItem.metadata?.is_tv_show)
+                    ? "w-full max-h-[60vh] object-contain rounded-lg bg-gray-100 !h-auto"
+                    : "w-full h-48 object-cover rounded-lg bg-gray-100"
+                }
               />
             </div>
           )}
@@ -383,6 +399,64 @@ export default function ItemDetailModal({
                 alt={currentItem.title}
                 className="w-full max-h-[500px] object-contain rounded-lg bg-gray-100"
               />
+            </div>
+          )}
+
+          {/* TikTok Thumbnail or Mobile Phone Placeholder */}
+          {currentItem.content_type === 'tiktok' && (
+            <div className="mb-6 flex justify-center">
+              {currentItem.thumbnail_url ? (
+                <img 
+                  src={currentItem.thumbnail_url} 
+                  alt={currentItem.title}
+                  className="max-w-[300px] max-h-[500px] object-contain rounded-2xl bg-gray-100"
+                />
+              ) : (
+                <div 
+                  className="w-[200px] h-[355px] bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-lg"
+                  onClick={() => currentItem.url && window.open(currentItem.url, '_blank')}
+                  title="Open TikTok video"
+                >
+                  <svg className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-.88-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+                  </svg>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm text-center">
+                    Tap to view<br />TikTok video
+                  </p>
+                  {currentItem.metadata?.username && (
+                    <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
+                      @{currentItem.metadata.username}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Movie Poster */}
+          {(currentItem.content_type === 'movie' || (currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id) && !currentItem.metadata?.is_tv_show)) && (
+            <div className="mb-6 flex justify-center">
+              {currentItem.thumbnail_url ? (
+                <img 
+                  src={currentItem.thumbnail_url} 
+                  alt={currentItem.title}
+                  className="max-w-[300px] max-h-[450px] object-contain rounded-lg bg-gray-100 shadow-lg"
+                />
+              ) : (
+                <div className="w-[200px] h-[300px] bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center shadow-lg">
+                  <svg className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V3a1 1 0 011 1v4M7 4H5a1 1 0 00-1 1v10a1 1 0 001 1h2m0-12V4m0 0h8m-8 0v12m8-12v4m0 0v8a1 1 0 01-1 1H7" />
+                  </svg>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm text-center font-medium">
+                    {currentItem.title}
+                  </p>
+                  {currentItem.metadata?.published_date && (
+                    <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+                      ({currentItem.metadata.published_date})
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -750,8 +824,8 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* Description - Hide for X/Twitter, images, and Instagram since they're shown in right column */}
-          {(currentItem.description || currentItem.content_type === 'note') && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && (
+          {/* Description - Hide for X/Twitter, images, Instagram, TikTok, movies, and TV shows since they're shown in right column */}
+          {(currentItem.description || currentItem.content_type === 'note') && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && currentItem.content_type !== 'tiktok' && currentItem.content_type !== 'movie' && currentItem.content_type !== 'tv-show' && !(currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id)) && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description
@@ -909,6 +983,280 @@ export default function ItemDetailModal({
                       </svg>
                       <span className="text-xs font-medium">Multiple Images</span>
                     </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* TikTok Metadata */}
+            {currentItem.content_type === 'tiktok' && (
+              <>
+                {/* TikTok Username */}
+                {(currentItem.metadata?.username || currentItem.metadata?.tiktok_engagement?.username) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Username
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      @{currentItem.metadata?.username || currentItem.metadata?.tiktok_engagement?.username}
+                    </span>
+                  </div>
+                )}
+
+                {/* TikTok Duration */}
+                {currentItem.metadata?.duration && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Duration
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {currentItem.metadata.duration}
+                    </span>
+                  </div>
+                )}
+
+                {/* TikTok Engagement - Likes */}
+                {(currentItem.metadata?.likes || currentItem.metadata?.tiktok_engagement?.likes) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Likes
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {(currentItem.metadata?.likes || currentItem.metadata?.tiktok_engagement?.likes)?.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* TikTok Engagement - Views */}
+                {(currentItem.metadata?.views || currentItem.metadata?.tiktok_engagement?.views) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Views
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {(currentItem.metadata?.views || currentItem.metadata?.tiktok_engagement?.views)?.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* TikTok Engagement - Comments */}
+                {(currentItem.metadata?.replies || currentItem.metadata?.tiktok_engagement?.comments) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Comments
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {(currentItem.metadata?.replies || currentItem.metadata?.tiktok_engagement?.comments)?.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* TikTok Engagement - Shares */}
+                {(currentItem.metadata?.retweets || currentItem.metadata?.tiktok_engagement?.shares) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Shares
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {(currentItem.metadata?.retweets || currentItem.metadata?.tiktok_engagement?.shares)?.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* TikTok Description */}
+                {currentItem.description && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Description
+                    </label>
+                    {isEditingDescription ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editedDescription}
+                          onChange={(e) => setEditedDescription(e.target.value)}
+                          onKeyDown={handleDescriptionKeyDown}
+                          className="w-full min-h-20 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
+                          placeholder="Enter TikTok description..."
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={handleDescriptionCancel}
+                            className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleDescriptionSave}
+                            className="px-2 py-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="group">
+                        <div className="flex items-start gap-2">
+                          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed flex-1">
+                            {currentItem.description}
+                          </p>
+                          <button
+                            onClick={handleDescriptionEdit}
+                            className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity flex-shrink-0"
+                            title="Edit description"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Movie/TV Show Metadata */}
+            {(currentItem.content_type === 'movie' || currentItem.content_type === 'tv-show' || (currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id))) && (
+              <>
+                {/* Movie Type (Movie vs TV Show) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Type
+                  </label>
+                  <span className="text-gray-600 dark:text-gray-300 text-sm">
+                    {currentItem.content_type === 'tv-show' || currentItem.metadata?.is_tv_show ? 'TV Show' : 'Movie'}
+                  </span>
+                </div>
+
+                {/* Movie Year */}
+                {currentItem.metadata?.published_date && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Year
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {currentItem.metadata.published_date}
+                    </span>
+                  </div>
+                )}
+
+                {/* Movie Director */}
+                {currentItem.metadata?.author && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Director
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {currentItem.metadata.author}
+                    </span>
+                  </div>
+                )}
+
+                {/* Movie Rating */}
+                {currentItem.metadata?.rating && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      IMDB Rating
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-500">★</span>
+                      <span className="text-gray-600 dark:text-gray-300 text-sm font-medium">
+                        {currentItem.metadata.rating}/10
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Movie Duration */}
+                {currentItem.metadata?.duration && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Duration
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {currentItem.metadata.duration}
+                    </span>
+                  </div>
+                )}
+
+                {/* Movie Genre */}
+                {currentItem.metadata?.genre && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Genre
+                    </label>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {currentItem.metadata.genre}
+                    </span>
+                  </div>
+                )}
+
+                {/* Movie Cast */}
+                {currentItem.metadata?.cast && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Cast
+                    </label>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                      {Array.isArray(currentItem.metadata.cast) 
+                        ? currentItem.metadata.cast.join(', ')
+                        : currentItem.metadata.cast
+                      }
+                    </p>
+                  </div>
+                )}
+
+                {/* Movie Description */}
+                {currentItem.description && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Plot
+                    </label>
+                    {isEditingDescription ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editedDescription}
+                          onChange={(e) => setEditedDescription(e.target.value)}
+                          onKeyDown={handleDescriptionKeyDown}
+                          className="w-full min-h-20 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
+                          placeholder="Enter movie plot..."
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={handleDescriptionCancel}
+                            className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleDescriptionSave}
+                            className="px-2 py-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="group">
+                        <div className="flex items-start gap-2">
+                          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed flex-1">
+                            {currentItem.description}
+                          </p>
+                          <button
+                            onClick={handleDescriptionEdit}
+                            className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity flex-shrink-0"
+                            title="Edit plot"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>

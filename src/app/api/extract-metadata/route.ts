@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       // Title extraction priority: og:title > title tag > h1
       title: 
         (() => {
-          let title = $('meta[property="og:title"]').attr('content') ||
+          const title = $('meta[property="og:title"]').attr('content') ||
                      $('meta[name="twitter:title"]').attr('content') ||
                      $('title').text().trim() ||
                      $('h1').first().text().trim() ||
