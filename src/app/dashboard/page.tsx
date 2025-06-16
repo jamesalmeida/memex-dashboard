@@ -507,8 +507,20 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Floating Navigation Toggle - Mobile only */}
-      <div id="floating-navigation-toggle" className="md:hidden fixed bottom-6 left-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center h-[52px] w-[120px] shadow-2xl drop-shadow-lg z-50">
+      {/* Mobile Menu Button - Left */}
+      <button
+        id="floating-menu-button"
+        onClick={() => setShowSettingsModal(true)}
+        className="md:hidden fixed bottom-6 left-6 w-[52px] h-[52px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full flex items-center justify-center border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-2xl drop-shadow-lg z-50"
+        aria-label="Settings"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      {/* Floating Navigation Toggle - Mobile only - Centered */}
+      <div id="floating-navigation-toggle" className="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full p-1 flex items-center h-[52px] w-[120px] shadow-2xl drop-shadow-lg z-50">
         <div 
           className="absolute h-[calc(100%-8px)] bg-[rgb(255,77,6)] rounded-full transition-all duration-200 ease-out"
           style={{

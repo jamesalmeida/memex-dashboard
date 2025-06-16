@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react';
 import { SignOutButton } from './SignOutButton';
 import Modal from './Modal';
 
@@ -10,6 +11,35 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose, userEmail }: SettingsModalProps) {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Initialize theme from localStorage or system preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newIsDarkMode = !isDarkMode;
+    setIsDarkMode(newIsDarkMode);
+    
+    if (newIsDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} modalId="settings-modal" title="Settings">
       {/* Content */}
@@ -38,7 +68,27 @@ export default function SettingsModal({ isOpen, onClose, userEmail }: SettingsMo
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700 dark:text-gray-300">Theme</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Light</span>
+                  <button
+                    onClick={toggleTheme}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                  >
+                    {isDarkMode ? (
+                      <>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M21.64 13a1 1 0 0 0-1.05-.14 8.05 8.05 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a10.14 10.14 0 1 0 14 11.69 1 1 0 0 0-.36-1.05z"/>
+                        </svg>
+                        Dark
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2a1 1 0 0 0 1 1v2a1 1 0 0 0-2 0V3a1 1 0 0 0 1-1zm6.364 1.636a1 1 0 0 0-1.414 1.414l1.414 1.414a1 1 0 0 0 1.414-1.414l-1.414-1.414zM21 11a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2h-2zm-1.636 6.364a1 1 0 0 0-1.414-1.414l-1.414 1.414a1 1 0 0 0 1.414 1.414l1.414-1.414zM12 18a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-1-1zM5.636 17.364a1 1 0 0 0-1.414 1.414l1.414 1.414a1 1 0 0 0 1.414-1.414l-1.414-1.414zM2 12a1 1 0 1 0 2 0H2a1 1 0 0 0-2 0zm1.636-6.364a1 1 0 0 0 1.414-1.414L3.636 2.808a1 1 0 0 0-1.414 1.414l1.414 1.414z"/>
+                          <circle cx="12" cy="12" r="4"/>
+                        </svg>
+                        Light
+                      </>
+                    )}
+                  </button>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-700 dark:text-gray-300">Language</span>
