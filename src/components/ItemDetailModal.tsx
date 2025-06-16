@@ -375,7 +375,7 @@ export default function ItemDetailModal({
         {/* Two-Column Layout */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left Column - Main Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className={`flex-1 flex flex-col p-6 ${currentItem?.content_type === 'note' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           {/* Thumbnail - Hide for X/Twitter, YouTube, images, Instagram, TikTok, and movies since they have special displays, but show for TV shows */}
           {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && currentItem.content_type !== 'tiktok' && currentItem.content_type !== 'movie' && !(currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id) && !currentItem.metadata?.is_tv_show) && (
             <div className="mb-6">
@@ -826,17 +826,21 @@ export default function ItemDetailModal({
 
           {/* Description - Hide for X/Twitter, images, Instagram, TikTok, movies, and TV shows since they're shown in right column */}
           {(currentItem.description || currentItem.content_type === 'note') && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && currentItem.content_type !== 'tiktok' && currentItem.content_type !== 'movie' && currentItem.content_type !== 'tv-show' && !(currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id)) && (
-            <div className="mb-4">
+            <div className={currentItem.content_type === 'note' ? "flex-1 flex flex-col" : "mb-4"}>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description
               </label>
               {isEditingDescription ? (
-                <div className="space-y-2">
+                <div className={currentItem.content_type === 'note' ? "flex-1 flex flex-col space-y-2" : "space-y-2"}>
                   <textarea
                     value={editedDescription}
                     onChange={(e) => setEditedDescription(e.target.value)}
                     onKeyDown={handleDescriptionKeyDown}
-                    className="w-full min-h-24 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                    className={
+                      currentItem.content_type === 'note' 
+                        ? "w-full flex-1 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        : "w-full min-h-24 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                    }
                     placeholder="Enter description..."
                     autoFocus
                   />
@@ -856,9 +860,13 @@ export default function ItemDetailModal({
                   </div>
                 </div>
               ) : (
-                <div className="group">
-                  <div className="flex items-start gap-2">
-                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed flex-1">
+                <div className={currentItem.content_type === 'note' ? "group flex-1 flex flex-col" : "group"}>
+                  <div className={currentItem.content_type === 'note' ? "flex items-start gap-2 flex-1" : "flex items-start gap-2"}>
+                    <p className={
+                      currentItem.content_type === 'note' 
+                        ? "text-gray-600 dark:text-gray-300 leading-relaxed flex-1 h-full overflow-y-auto"
+                        : "text-gray-600 dark:text-gray-300 leading-relaxed flex-1"
+                    }>
                       {currentItem.description || 'No description'}
                     </p>
                     <button

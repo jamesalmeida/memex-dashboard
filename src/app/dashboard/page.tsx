@@ -591,7 +591,7 @@ export default function Dashboard() {
             )}
             
             <div className="relative flex-1">
-              <div className={`absolute left-0 top-0 text-4xl font-serif pb-2 pointer-events-none w-full overflow-hidden whitespace-nowrap transition-opacity duration-200 ease-in-out ${
+              <div className={`absolute left-0 top-0 text-4xl font-serif pb-2 pointer-events-none w-full overflow-hidden whitespace-nowrap transition-opacity duration-200 ease-in-out italic ${
                 !searchQuery && !isSearchFocused ? 'opacity-100' : 'opacity-0'
               }`}>
                 <span className="font-light text-gray-500 dark:text-gray-600">Search </span>
@@ -609,7 +609,7 @@ export default function Dashboard() {
               <input
                 id="global-search"
                 type="text"
-                className="w-full text-4xl font-normal bg-transparent outline-none text-gray-900 dark:text-gray-100 font-serif border-b border-gray-400 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 focus:border-gray-700 dark:focus:border-gray-300 transition-colors pb-2"
+                className="w-full text-4xl font-normal bg-transparent outline-none text-gray-900 dark:text-gray-100 font-serif border-b border-gray-400 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 focus:border-gray-700 dark:focus:border-gray-300 transition-colors pb-2 italic placeholder:italic"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
