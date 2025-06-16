@@ -12,7 +12,7 @@ export default function Home() {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
-        router.push('/dashboard')
+        router.push('/everything')
       } else {
         router.push('/login')
       }
@@ -24,7 +24,7 @@ export default function Home() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        router.push('/dashboard')
+        router.push('/everything')
       } else {
         router.push('/login')
       }
