@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import ItemCard from '@/components/ItemCard';
 import CaptureModal from '@/components/CaptureModal';
@@ -226,17 +226,17 @@ export default function Dashboard() {
     }
   };
 
-  const handleBackToEverything = () => {
+  const handleBackToEverything = useCallback(() => {
     setViewMode('everything');
     setSelectedSpace(null);
     setSelectedContentType(null);
-  };
+  }, []);
 
-  const handleShowSpaces = () => {
+  const handleShowSpaces = useCallback(() => {
     setViewMode('spaces');
     setSelectedSpace(null);
     setSelectedContentType(null);
-  };
+  }, []);
 
   const handleHomeClick = () => {
     setViewMode('everything');
@@ -245,6 +245,57 @@ export default function Dashboard() {
     setSearchQuery('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Enhanced ESC key handling
+  useEffect(() => {
+    const handleGlobalEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        // Check if any modal is open first - let modal handlers take precedence
+        const hasOpenModal = showCaptureModal || showItemDetail || showSettingsModal || 
+                           showNewSpaceModal || showEditSpaceModal;
+        
+        if (hasOpenModal) {
+          return; // Let modal ESC handlers take precedence
+        }
+
+        // Check if search bar is focused
+        const activeElement = document.activeElement;
+        const isSearchFocused = activeElement?.id === 'global-search' || 
+                               activeElement?.classList.contains('search-input');
+        
+        if (isSearchFocused && searchQuery) {
+          // Clear search and unfocus
+          setSearchQuery('');
+          (activeElement as HTMLElement)?.blur();
+          event.preventDefault();
+          return;
+        }
+        
+        if (isSearchFocused && !searchQuery) {
+          // Just unfocus if search is empty
+          (activeElement as HTMLElement)?.blur();
+          event.preventDefault();
+          return;
+        }
+
+        // Navigation back functionality
+        if (viewMode === 'space-detail') {
+          // If in a space, go back to spaces view
+          handleShowSpaces();
+        } else if (viewMode === 'spaces') {
+          // If on spaces page, go back to everything
+          handleBackToEverything();
+        }
+        // If on everything page and no modals/search, do nothing
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalEscapeKey);
+    };
+  }, [showCaptureModal, showItemDetail, showSettingsModal, showNewSpaceModal, 
+      showEditSpaceModal, searchQuery, viewMode, handleShowSpaces, handleBackToEverything]);
 
   const handleContextAwareAdd = () => {
     if (viewMode === 'everything') {
@@ -540,6 +591,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <input
+                id="global-search"
                 type="text"
                 className="w-full text-4xl font-light bg-transparent outline-none text-gray-900 dark:text-gray-100 font-serif border-b border-gray-400 dark:border-gray-600 hover:border-gray-600 dark:hover:border-gray-400 focus:border-gray-700 dark:focus:border-gray-300 transition-colors pb-2"
                 value={searchQuery}
