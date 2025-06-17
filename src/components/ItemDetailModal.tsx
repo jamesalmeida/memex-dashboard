@@ -1165,24 +1165,6 @@ export default function ItemDetailModal({
                 </div>
               </div>
 
-            {/* General Content Type */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Type
-              </label>
-              <div className="flex items-center gap-2">
-                <ContentTypeIcon type={currentItem.content_type} />
-                <span className="text-gray-600 dark:text-gray-300 text-sm capitalize">
-                  {currentItem.content_type === 'tv-show' ? 'TV Show' : 
-                   currentItem.content_type === 'x' ? 'X/Twitter Post' :
-                   currentItem.content_type === 'youtube' ? 'YouTube Video' :
-                   currentItem.content_type === 'tiktok' ? 'TikTok Video' :
-                   currentItem.content_type === 'instagram' ? 'Instagram Post' :
-                   currentItem.content_type.replace('-', ' ')}
-                </span>
-              </div>
-            </div>
-
             {/* Metadata */}
             <div className="space-y-4 mb-4">
 
@@ -2144,15 +2126,55 @@ export default function ItemDetailModal({
                 Tags
               </label>
               <div className="flex flex-wrap gap-2">
+                {/* Automatic Content Type Tag(s) - Always First */}
+                {currentItem.content_type === 'youtube' && currentItem.url?.includes('/shorts/') ? (
+                  <>
+                    {/* YouTube Tag */}
+                    <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full text-sm flex items-center gap-1.5 border border-purple-200 dark:border-purple-700">
+                      <ContentTypeIcon type={currentItem.content_type} />
+                      <span className="font-medium">YouTube</span>
+                    </span>
+                    {/* Shorts Tag */}
+                    <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full text-sm flex items-center gap-1.5 border border-purple-200 dark:border-purple-700">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                      </svg>
+                      <span className="font-medium">Shorts</span>
+                    </span>
+                  </>
+                ) : (
+                  /* Regular Single Content Type Tag */
+                  <span className="px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full text-sm flex items-center gap-1.5 border border-purple-200 dark:border-purple-700">
+                    <ContentTypeIcon type={currentItem.content_type} />
+                    <span className="font-medium">
+                      {currentItem.content_type === 'tv-show' ? 'TV Show' : 
+                       currentItem.content_type === 'x' ? 'X Post' :
+                       currentItem.content_type === 'youtube' ? 'YouTube' :
+                       currentItem.content_type === 'tiktok' ? 'TikTok' :
+                       currentItem.content_type === 'instagram' ? 'Instagram' :
+                       currentItem.content_type === 'movie' ? 'Movie' :
+                       currentItem.content_type === 'article' ? 'Article' :
+                       currentItem.content_type === 'bookmark' ? 'Bookmark' :
+                       currentItem.content_type === 'note' ? 'Note' :
+                       currentItem.content_type === 'pdf' ? 'PDF' :
+                       currentItem.content_type === 'image' ? 'Image' :
+                       currentItem.content_type === 'video' ? 'Video' :
+                       currentItem.content_type === 'audio' ? 'Audio' :
+                       currentItem.content_type.charAt(0).toUpperCase() + currentItem.content_type.slice(1).replace('-', ' ')}
+                    </span>
+                  </span>
+                )}
+                
+                {/* User Tags */}
                 {tags.map((tag) => (
                   <span 
                     key={tag}
-                    className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm flex items-center gap-1"
+                    className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-sm flex items-center gap-1"
                   >
                     {tag}
                     <button
                       onClick={() => handleRemoveTag(tag)}
-                      className="ml-1 text-blue-500 hover:text-blue-700"
+                      className="ml-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-200"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2160,6 +2182,8 @@ export default function ItemDetailModal({
                     </button>
                   </span>
                 ))}
+                
+                {/* Add Tag Input/Button */}
                 {showTagInput ? (
                   <div className="flex items-center gap-1">
                     <input
@@ -2170,13 +2194,13 @@ export default function ItemDetailModal({
                       onBlur={() => {
                         if (!newTag.trim()) setShowTagInput(false);
                       }}
-                      className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       placeholder="Add tag..."
                       autoFocus
                     />
                     <button
                       onClick={handleAddTag}
-                      className="p-1 text-blue-600 hover:text-blue-700"
+                      className="p-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -2186,7 +2210,7 @@ export default function ItemDetailModal({
                 ) : (
                   <button
                     onClick={() => setShowTagInput(true)}
-                    className="px-3 py-1 border border-dashed border-gray-300 text-gray-500 rounded-full text-sm hover:border-gray-400 hover:text-gray-600"
+                    className="px-3 py-1 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 rounded-full text-sm hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     + Add tag
                   </button>
