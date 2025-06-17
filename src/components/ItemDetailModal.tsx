@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { MockItem } from '@/utils/mockData';
 import { Space, ItemWithMetadata } from '@/types/database';
 import Modal from './Modal';
+import Image from 'next/image';
 
 interface ItemDetailModalProps {
   item: MockItem | ItemWithMetadata | null;
@@ -699,122 +700,6 @@ export default function ItemDetailModal({
                   );
                 })()}
               </div>
-
-              {/* Enhanced YouTube Metadata */}
-              <div className="mt-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-                <h3 className="font-medium text-orange-900 dark:text-orange-100 mb-3 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'rgb(255,77,6)' }}>
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                  </svg>
-                  YouTube Video
-                </h3>
-
-                {/* Channel Information */}
-                {(currentItem.metadata?.extra_data?.youtube?.channel_id || currentItem.metadata?.author) && (
-                  <div className="mb-4 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      Channel
-                    </h4>
-                    <div className="flex items-center gap-3">
-                      {currentItem.metadata?.profile_image && (
-                        <img 
-                          src={currentItem.metadata.profile_image} 
-                          alt="Channel avatar"
-                          className="w-10 h-10 rounded-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">
-                          {currentItem.metadata?.author || 'Unknown Channel'}
-                        </div>
-                        {currentItem.metadata?.extra_data?.youtube?.channel_subscribers && (
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {typeof currentItem.metadata.extra_data.youtube.channel_subscribers === 'number' 
-                              ? currentItem.metadata.extra_data.youtube.channel_subscribers.toLocaleString() 
-                              : currentItem.metadata.extra_data.youtube.channel_subscribers} subscribers
-                          </div>
-                        )}
-                      </div>
-                      {currentItem.metadata?.extra_data?.youtube?.channel_url && (
-                        <button
-                          onClick={() => window.open(currentItem.metadata?.extra_data?.youtube?.channel_url, '_blank')}
-                          className="px-3 py-1 text-sm text-white rounded-md transition-colors"
-                          style={{ backgroundColor: 'rgb(255,77,6)' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgb(230,69,5)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(255,77,6)'}
-                        >
-                          Visit Channel
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Video Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                  {currentItem.metadata?.views && (
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Views:</span>
-                      <span className="ml-2 font-medium">{typeof currentItem.metadata.views === 'number' ? currentItem.metadata.views.toLocaleString() : currentItem.metadata.views}</span>
-                    </div>
-                  )}
-                  {currentItem.metadata?.likes && (
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Likes:</span>
-                      <span className="ml-2 font-medium">{typeof currentItem.metadata.likes === 'number' ? currentItem.metadata.likes.toLocaleString() : currentItem.metadata.likes}</span>
-                    </div>
-                  )}
-                  {currentItem.metadata?.duration && (
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Duration:</span>
-                      <span className="ml-2 font-medium">{currentItem.metadata.duration}</span>
-                    </div>
-                  )}
-                  {currentItem.metadata?.published_date && (
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Published:</span>
-                      <span className="ml-2 font-medium">{new Date(currentItem.metadata.published_date).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Category and Tags */}
-                {(currentItem.metadata?.extra_data?.youtube?.category || currentItem.metadata?.extra_data?.youtube?.tags) && (
-                  <div className="mb-4">
-                    {currentItem.metadata.extra_data.youtube.category && (
-                      <div className="mb-2">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Category:</span>
-                        <span className="ml-2 text-sm font-medium">{currentItem.metadata.extra_data.youtube.category}</span>
-                      </div>
-                    )}
-                    {currentItem.metadata.extra_data.youtube.tags && Array.isArray(currentItem.metadata.extra_data.youtube.tags) && currentItem.metadata.extra_data.youtube.tags.length > 0 && (
-                      <div>
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Tags:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {currentItem.metadata.extra_data.youtube.tags.slice(0, 8).map((tag: string, index: number) => (
-                            <span key={index} className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
-                              {tag}
-                            </span>
-                          ))}
-                          {currentItem.metadata.extra_data.youtube.tags.length > 8 && (
-                            <span className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
-                              +{currentItem.metadata.extra_data.youtube.tags.length - 8} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-
-              </div>
             </div>
           )}
 
@@ -1242,7 +1127,7 @@ export default function ItemDetailModal({
           </div>
 
           {/* Right Column - Metadata & Actions */}
-          <div className="w-full md:w-80 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-800/50">
+          <div className="w-full md:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-800/50">
           {/* Metadata */}
           <div className="space-y-4 mb-4">
             {/* Space */}
@@ -1748,13 +1633,30 @@ export default function ItemDetailModal({
                   {(currentItem.metadata?.author || currentItem.metadata?.profile_image) && (
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                       <div className="flex items-center gap-3">
-                        {currentItem.metadata.profile_image && (
-                          <img 
-                            src={currentItem.metadata.profile_image} 
-                            alt="Channel avatar"
-                            className="w-10 h-10 rounded-full bg-gray-100"
-                          />
-                        )}
+                        <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                          {currentItem.metadata.profile_image ? (
+                            <Image 
+                              src={currentItem.metadata.profile_image} 
+                              alt="Channel avatar"
+                              width={40}
+                              height={40}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <svg 
+                            className={`w-6 h-6 text-gray-400 dark:text-gray-500 ${currentItem.metadata.profile_image ? 'hidden' : 'flex'}`}
+                            fill="currentColor" 
+                            viewBox="0 0 24 24"
+                            style={{ display: currentItem.metadata.profile_image ? 'none' : 'flex' }}
+                          >
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                          </svg>
+                        </div>
                         <div className="flex-1">
                           <div className="font-medium text-gray-900 dark:text-gray-100">
                             {currentItem.metadata.author}
@@ -1942,13 +1844,6 @@ export default function ItemDetailModal({
                         {directVideoUrl ? 'Regenerate' : 'Get'} Direct URL
                       </>
                     )}
-                  </button>
-                  
-                  <button className="w-full px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Watch Later
                   </button>
                 </div>
               </>
@@ -2276,13 +2171,9 @@ export default function ItemDetailModal({
           <div className="text-sm text-gray-500 border-t pt-4">
             Added on {formatDate(currentItem.created_at)}
           </div>
-          </div>
-        </div>
 
-        {/* Fixed Actions Bar */}
-        <div id="modal-actions" className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-          <div className="flex gap-2">
-            {onDelete && (
+          <div className="flex gap-2 justify-end">
+          {onDelete && (
               <button
                 onClick={() => onDelete(currentItem.id)}
                 className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
@@ -2293,31 +2184,7 @@ export default function ItemDetailModal({
                 </svg>
               </button>
             )}
-            {onEdit && (
-              <button
-                onClick={() => onEdit(currentItem)}
-                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              >
-                Edit
-              </button>
-            )}
-            {onArchive && (
-              <button
-                onClick={() => onArchive(currentItem.id)}
-                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              >
-                Archive
-              </button>
-            )}
-          </div>
-          
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-            >
-              Done
-            </button>
+            </div>
           </div>
         </div>
       </div>
