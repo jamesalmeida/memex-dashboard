@@ -438,6 +438,7 @@ export default function Dashboard({ params }: DashboardProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+
   // Enhanced ESC key handling
   useEffect(() => {
     const handleGlobalEscapeKey = (event: KeyboardEvent) => {
@@ -456,16 +457,30 @@ export default function Dashboard({ params }: DashboardProps) {
                                activeElement?.classList.contains('search-input');
         
         if (isSearchFocused && searchQuery) {
-          // Clear search and unfocus
+          // Clear search but keep focus
           setSearchQuery('');
+          event.preventDefault();
+          return;
+        }
+        
+        if (isSearchFocused && !searchQuery && selectedContentType) {
+          // Clear selected filter pill and lose focus
+          setSelectedContentType(null);
           (activeElement as HTMLElement)?.blur();
           event.preventDefault();
           return;
         }
         
         if (isSearchFocused && !searchQuery) {
-          // Just unfocus if search is empty
+          // Just unfocus if search is empty and no filter selected
           (activeElement as HTMLElement)?.blur();
+          event.preventDefault();
+          return;
+        }
+
+        // If not focused on search but has selected filter, clear it
+        if (!isSearchFocused && selectedContentType) {
+          setSelectedContentType(null);
           event.preventDefault();
           return;
         }
@@ -487,7 +502,7 @@ export default function Dashboard({ params }: DashboardProps) {
       document.removeEventListener('keydown', handleGlobalEscapeKey);
     };
   }, [showCaptureModal, showItemDetail, showSettingsModal, showNewSpaceModal, 
-      showEditSpaceModal, searchQuery, viewMode, handleShowSpaces, handleBackToEverything]);
+      showEditSpaceModal, searchQuery, selectedContentType, viewMode, handleShowSpaces, handleBackToEverything]);
 
   const handleContextAwareAdd = () => {
     if (viewMode === 'everything') {
@@ -770,9 +785,18 @@ export default function Dashboard({ params }: DashboardProps) {
         {/* Search Bar */}
         <div id="search-section" className="mb-2.5 md:mb-6 pt-5">
           <div className="flex gap-3 items-center">
-            {selectedContentType && (
-              <div id="selected-filter-pill" className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 whitespace-nowrap">
-                <span className="capitalize">{selectedContentType.replace(/([A-Z])/g, ' $1').trim()}</span>
+            <div 
+              className={`overflow-hidden transition-all duration-300 ease-out ${
+                selectedContentType !== null
+                  ? 'max-w-xs opacity-100'
+                  : 'max-w-0 opacity-0'
+              }`}
+            >
+              <div 
+                id="selected-filter-pill" 
+                className="bg-[rgb(255,77,6)] text-white px-3 py-2 rounded-full text-sm flex items-center gap-2 whitespace-nowrap"
+              >
+                <span className="capitalize">{selectedContentType?.replace(/([A-Z])/g, ' $1').trim()}</span>
                 <button
                   onClick={() => setSelectedContentType(null)}
                   className="hover:bg-black hover:bg-opacity-20 rounded-full p-0.5 transition-colors"
@@ -783,9 +807,9 @@ export default function Dashboard({ params }: DashboardProps) {
                   </svg>
                 </button>
               </div>
-            )}
+            </div>
             
-            <div className="relative flex-1">
+            <div className="relative flex-1 transition-all duration-300">
               <div className={`absolute left-0 top-0 text-4xl font-serif pb-2 pointer-events-none w-full overflow-hidden whitespace-nowrap transition-opacity duration-200 ease-in-out italic ${
                 !searchQuery && !isSearchFocused ? 'opacity-100' : 'opacity-0'
               }`}>
