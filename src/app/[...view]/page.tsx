@@ -267,17 +267,19 @@ export default function Dashboard({ params }: DashboardProps) {
   const handleMoveToSpace = async (id: string, spaceId: string) => {
     try {
       await itemsService.updateItem(id, { space_id: spaceId });
-      const updatedItem = await itemsService.getItem(id);
-      if (updatedItem) {
-        setItems(items.map(item => item.id === id ? updatedItem : item));
-        if (selectedItem?.id === id) {
+      
+      // Update local selected item if it's the same one
+      if (selectedItem?.id === id) {
+        const updatedItem = await itemsService.getItem(id);
+        if (updatedItem) {
           setSelectedItem(updatedItem);
         }
-        
-        // Update spaces with counts
-        const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
-        setSpacesWithCounts(updatedSpacesWithCounts);
       }
+      
+      // Invalidate caches to reflect the move
+      queryClient.invalidateQueries({ queryKey: itemKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: itemKeys.infinite() });
+      queryClient.invalidateQueries({ queryKey: spaceKeys.withCounts() });
     } catch (error) {
       console.error('Error moving item to space:', error);
     }
@@ -321,9 +323,9 @@ export default function Dashboard({ params }: DashboardProps) {
     try {
       await spacesService.deleteSpace(space.id);
       
-      // Update local state
-      setSpaces(spaces.filter(s => s.id !== space.id));
-      setSpacesWithCounts(spacesWithCounts.filter(s => s.id !== space.id));
+      // Invalidate and refetch spaces to remove deleted space
+      queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: spaceKeys.withCounts() });
       
       // If we're viewing this space, go back to spaces view
       if (selectedSpace === space.id) {
@@ -346,14 +348,9 @@ export default function Dashboard({ params }: DashboardProps) {
     try {
       await spacesService.updateSpace(editingSpace.id, data);
       
-      // Reload spaces to get updated data
-      const [updatedSpaces, updatedSpacesWithCounts] = await Promise.all([
-        spacesService.getSpaces(),
-        spacesService.getSpacesWithCounts()
-      ]);
-      
-      setSpaces(updatedSpaces);
-      setSpacesWithCounts(updatedSpacesWithCounts);
+      // Invalidate and refetch spaces to show updates
+      queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: spaceKeys.withCounts() });
       
       setShowEditSpaceModal(false);
       setEditingSpace(null);
@@ -517,11 +514,10 @@ export default function Dashboard({ params }: DashboardProps) {
   const handleCreateSpace = async (newSpaceData: { name: string; color: string; description?: string }) => {
     try {
       const newSpace = await spacesService.createSpace(newSpaceData);
-      setSpaces([...spaces, newSpace]);
       
-      // Update spaces with counts
-      const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
-      setSpacesWithCounts(updatedSpacesWithCounts);
+      // Invalidate and refetch spaces to show the new space
+      queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: spaceKeys.withCounts() });
       
       setNotification('Space created successfully!');
       setTimeout(() => setNotification(null), 3000);
@@ -646,12 +642,38 @@ export default function Dashboard({ params }: DashboardProps) {
           }
         });
 
-        // Use cached mutation - automatically handles cache updates
-        const updatedItem = await updateItemMutation.mutateAsync({ id, updates: updateInput });
-        
-        // Update local selected item if it's the same one
+        // Optimistically update the local selectedItem immediately
         if (selectedItem?.id === id) {
-          setSelectedItem(updatedItem);
+          const optimisticItem = { ...selectedItem };
+          
+          // Update the space relationship optimistically
+          if ('space' in updates) {
+            const spaceId = updates.space ? spaces.find(s => s.name === updates.space)?.id : null;
+            const spaceObj = spaceId ? spaces.find(s => s.id === spaceId) : null;
+            optimisticItem.space_id = spaceId;
+            optimisticItem.space = spaceObj || null;
+          }
+          
+          // Update other fields optimistically
+          if (updates.title) optimisticItem.title = updates.title;
+          if (updates.description !== undefined) optimisticItem.description = updates.description;
+          
+          // Apply optimistic update immediately
+          setSelectedItem(optimisticItem);
+        }
+        
+        // Perform the actual database update
+        try {
+          await updateItemMutation.mutateAsync({ id, updates: updateInput });
+        } catch (error) {
+          // If the update fails, revert to the original item
+          if (selectedItem?.id === id) {
+            const freshItem = await itemsService.getItem(id);
+            if (freshItem) {
+              setSelectedItem(freshItem);
+            }
+          }
+          throw error; // Re-throw to be caught by outer try-catch
         }
       }
       // Note: For refresh-only cases (empty updates), React Query will automatically 
@@ -889,22 +911,16 @@ export default function Dashboard({ params }: DashboardProps) {
           }`}
         >
           {viewMode === 'everything' ? (
-            <>
-              {/* NewItemCard at the top */}
-              <div className="hidden md:block mb-6">
-                <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
-              </div>
-              
-              {/* Infinite scroll grid */}
-              <InfiniteScrollGrid
-                searchQuery={searchQuery}
-                selectedContentType={selectedContentType}
-                onItemClick={handleItemClick}
-                onArchive={handleArchive}
-                onDelete={handleDelete}
-                spaces={spaces}
-              />
-            </>
+            /* Infinite scroll grid with integrated NewItemCard */
+            <InfiniteScrollGrid
+              searchQuery={searchQuery}
+              selectedContentType={selectedContentType}
+              onItemClick={handleItemClick}
+              onArchive={handleArchive}
+              onDelete={handleDelete}
+              onAddItem={handleAddItem}
+              spaces={spaces}
+            />
           ) : viewMode === 'spaces' ? (
             <MasonryGrid gap={24} mobileColumns={1}>
               {spacesWithCounts.map((space) => (
@@ -918,23 +934,17 @@ export default function Dashboard({ params }: DashboardProps) {
               ))}
             </MasonryGrid>
           ) : viewMode === 'space-detail' ? (
-            <>
-              {/* NewItemCard at the top */}
-              <div className="hidden md:block mb-6">
-                <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
-              </div>
-              
-              {/* Infinite scroll grid for space items */}
-              <InfiniteScrollGrid
-                spaceId={selectedSpace || undefined}
-                searchQuery={searchQuery}
-                selectedContentType={selectedContentType}
-                onItemClick={handleItemClick}
-                onArchive={handleArchive}
-                onDelete={handleDelete}
-                spaces={spaces}
-              />
-            </>
+            /* Infinite scroll grid for space items with integrated NewItemCard */
+            <InfiniteScrollGrid
+              spaceId={selectedSpace || undefined}
+              searchQuery={searchQuery}
+              selectedContentType={selectedContentType}
+              onItemClick={handleItemClick}
+              onArchive={handleArchive}
+              onDelete={handleDelete}
+              onAddItem={handleAddItem}
+              spaces={spaces}
+            />
           ) : null}
         </div>
         

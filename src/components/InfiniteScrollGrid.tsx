@@ -3,8 +3,10 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useInfiniteItems } from '@/hooks/useItems'
 import ItemCard from './ItemCard'
+import NewItemCard from './NewItemCard'
 import MasonryGrid from './MasonryGrid'
 import type { ItemWithMetadata, Space, ContentType } from '@/types/database'
+import type { MockItem } from '@/utils/mockData'
 
 interface InfiniteScrollGridProps {
   spaceId?: string
@@ -13,6 +15,7 @@ interface InfiniteScrollGridProps {
   onItemClick: (item: ItemWithMetadata) => void
   onArchive: (id: string) => void
   onDelete: (id: string) => void
+  onAddItem?: (item: Omit<MockItem, 'id' | 'created_at'>, openDetail?: boolean) => void
   spaces: Space[]
 }
 
@@ -23,6 +26,7 @@ export default function InfiniteScrollGrid({
   onItemClick,
   onArchive,
   onDelete,
+  onAddItem,
   spaces
 }: InfiniteScrollGridProps) {
   const {
@@ -111,6 +115,13 @@ export default function InfiniteScrollGrid({
   return (
     <div>
       <MasonryGrid>
+        {/* NewItemCard as first item in grid on desktop */}
+        {onAddItem && (
+          <div className="hidden md:block">
+            <NewItemCard onAdd={(item) => onAddItem(item, false)} />
+          </div>
+        )}
+        
         {filteredItems.map((item) => (
           <ItemCard
             key={item.id}
