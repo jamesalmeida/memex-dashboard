@@ -38,6 +38,61 @@ export default function Dashboard({ params }: DashboardProps) {
   const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'everything' | 'spaces' | 'space-detail'>('everything');
   const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
+  const [spaceOrderBy, setSpaceOrderBy] = useState<'alphabetical' | 'created' | 'updated' | 'items' | 'custom'>('alphabetical');
+  const [alphabeticalDirection, setAlphabeticalDirection] = useState<'asc' | 'desc'>('asc');
+  const [createdDirection, setCreatedDirection] = useState<'asc' | 'desc'>('desc'); // newest first by default
+  const [updatedDirection, setUpdatedDirection] = useState<'asc' | 'desc'>('desc'); // most recent first by default
+  const [itemsDirection, setItemsDirection] = useState<'asc' | 'desc'>('desc'); // most items first by default
+  
+  // Load space ordering preference from localStorage on mount
+  useEffect(() => {
+    const savedSpaceOrder = localStorage.getItem('memex-space-order') as typeof spaceOrderBy | null;
+    if (savedSpaceOrder && ['alphabetical', 'created', 'updated', 'items', 'custom'].includes(savedSpaceOrder)) {
+      setSpaceOrderBy(savedSpaceOrder);
+    }
+    
+    const savedAlphabeticalDirection = localStorage.getItem('memex-alphabetical-direction') as typeof alphabeticalDirection | null;
+    if (savedAlphabeticalDirection && ['asc', 'desc'].includes(savedAlphabeticalDirection)) {
+      setAlphabeticalDirection(savedAlphabeticalDirection);
+    }
+    
+    const savedCreatedDirection = localStorage.getItem('memex-created-direction') as typeof createdDirection | null;
+    if (savedCreatedDirection && ['asc', 'desc'].includes(savedCreatedDirection)) {
+      setCreatedDirection(savedCreatedDirection);
+    }
+    
+    const savedUpdatedDirection = localStorage.getItem('memex-updated-direction') as typeof updatedDirection | null;
+    if (savedUpdatedDirection && ['asc', 'desc'].includes(savedUpdatedDirection)) {
+      setUpdatedDirection(savedUpdatedDirection);
+    }
+    
+    const savedItemsDirection = localStorage.getItem('memex-items-direction') as typeof itemsDirection | null;
+    if (savedItemsDirection && ['asc', 'desc'].includes(savedItemsDirection)) {
+      setItemsDirection(savedItemsDirection);
+    }
+  }, []);
+
+  // Save space ordering preference to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('memex-space-order', spaceOrderBy);
+  }, [spaceOrderBy]);
+
+  // Save direction preferences to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('memex-alphabetical-direction', alphabeticalDirection);
+  }, [alphabeticalDirection]);
+  
+  useEffect(() => {
+    localStorage.setItem('memex-created-direction', createdDirection);
+  }, [createdDirection]);
+  
+  useEffect(() => {
+    localStorage.setItem('memex-updated-direction', updatedDirection);
+  }, [updatedDirection]);
+  
+  useEffect(() => {
+    localStorage.setItem('memex-items-direction', itemsDirection);
+  }, [itemsDirection]);
   
   // Helper function to create readable space URLs
   const createSpaceUrl = (space: Space) => {
@@ -722,6 +777,27 @@ export default function Dashboard({ params }: DashboardProps) {
   // Get selected space details
   const selectedSpaceDetails = selectedSpace ? spaces.find(s => s.id === selectedSpace) : null;
 
+  // Sort spaces based on selected ordering
+  const sortedSpacesWithCounts = [...spacesWithCounts].sort((a, b) => {
+    switch (spaceOrderBy) {
+      case 'alphabetical':
+        const alphabeticalSort = a.name.localeCompare(b.name);
+        return alphabeticalDirection === 'asc' ? alphabeticalSort : -alphabeticalSort;
+      case 'created':
+        const createdSort = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return createdDirection === 'desc' ? createdSort : -createdSort;
+      case 'updated':
+        const updatedSort = new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        return updatedDirection === 'desc' ? updatedSort : -updatedSort;
+      case 'items':
+        const itemsSort = b.item_count - a.item_count;
+        return itemsDirection === 'desc' ? itemsSort : -itemsSort;
+      case 'custom':
+      default:
+        return a.sort_order - b.sort_order;
+    }
+  });
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -901,6 +977,149 @@ export default function Dashboard({ params }: DashboardProps) {
               ))}
             </div>
           </div>
+
+          {/* Space Ordering Pills - Only show on spaces page */}
+          <div 
+            id="space-ordering-container" 
+            className={`overflow-hidden transition-all duration-300 ease-out ${
+              viewMode === 'spaces'
+                ? 'max-h-20 opacity-100 mt-4'
+                : 'max-h-0 opacity-0 mt-0'
+            }`}
+          >
+            <div id="space-ordering-pills" className="flex gap-2 pb-2 overflow-x-auto">
+              <button
+                onClick={() => {
+                  if (spaceOrderBy === 'alphabetical') {
+                    // Toggle direction if already selected
+                    setAlphabeticalDirection(alphabeticalDirection === 'asc' ? 'desc' : 'asc');
+                  } else {
+                    // Select alphabetical ordering
+                    setSpaceOrderBy('alphabetical');
+                  }
+                }}
+                className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
+                  spaceOrderBy === 'alphabetical'
+                    ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }`}
+              >
+                <span>Alphabetical</span>
+                {spaceOrderBy === 'alphabetical' && (
+                  <svg 
+                    className="w-3 h-3 transition-transform duration-200" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    style={{ transform: alphabeticalDirection === 'desc' ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                )}
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (spaceOrderBy === 'created') {
+                    // Toggle direction if already selected
+                    setCreatedDirection(createdDirection === 'desc' ? 'asc' : 'desc');
+                  } else {
+                    // Select created ordering
+                    setSpaceOrderBy('created');
+                  }
+                }}
+                className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
+                  spaceOrderBy === 'created'
+                    ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }`}
+              >
+                <span>{createdDirection === 'desc' ? 'Newest First' : 'Oldest First'}</span>
+                {spaceOrderBy === 'created' && (
+                  <svg 
+                    className="w-3 h-3 transition-transform duration-200" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    style={{ transform: createdDirection === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                )}
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (spaceOrderBy === 'updated') {
+                    // Toggle direction if already selected
+                    setUpdatedDirection(updatedDirection === 'desc' ? 'asc' : 'desc');
+                  } else {
+                    // Select updated ordering
+                    setSpaceOrderBy('updated');
+                  }
+                }}
+                className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
+                  spaceOrderBy === 'updated'
+                    ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }`}
+              >
+                <span>{updatedDirection === 'desc' ? 'Recently Updated' : 'Least Recently Updated'}</span>
+                {spaceOrderBy === 'updated' && (
+                  <svg 
+                    className="w-3 h-3 transition-transform duration-200" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    style={{ transform: updatedDirection === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                )}
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (spaceOrderBy === 'items') {
+                    // Toggle direction if already selected
+                    setItemsDirection(itemsDirection === 'desc' ? 'asc' : 'desc');
+                  } else {
+                    // Select items ordering
+                    setSpaceOrderBy('items');
+                  }
+                }}
+                className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
+                  spaceOrderBy === 'items'
+                    ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }`}
+              >
+                <span>{itemsDirection === 'desc' ? 'Most Items' : 'Fewest Items'}</span>
+                {spaceOrderBy === 'items' && (
+                  <svg 
+                    className="w-3 h-3 transition-transform duration-200" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    style={{ transform: itemsDirection === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                )}
+              </button>
+              
+              <button
+                onClick={() => setSpaceOrderBy('custom')}
+                className={`px-3 py-1.5 text-sm rounded-full border transition-colors whitespace-nowrap flex-shrink-0 ${
+                  spaceOrderBy === 'custom'
+                    ? 'bg-[rgb(255,77,6)] text-white border-[rgb(255,77,6)]'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }`}
+              >
+                Custom Order
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Masonry Grid */}
@@ -923,7 +1142,7 @@ export default function Dashboard({ params }: DashboardProps) {
             />
           ) : viewMode === 'spaces' ? (
             <MasonryGrid gap={24} mobileColumns={1}>
-              {spacesWithCounts.map((space) => (
+              {sortedSpacesWithCounts.map((space) => (
                 <SpaceCard
                   key={space.id}
                   space={space}
