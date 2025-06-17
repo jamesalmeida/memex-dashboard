@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MockItem } from '@/utils/mockData';
 import { Space, ItemWithMetadata } from '@/types/database';
 import Modal from './Modal';
@@ -107,6 +107,8 @@ export default function ItemDetailModal({
   const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
   const [directVideoUrl, setDirectVideoUrl] = useState<string | null>(null);
   const [isLoadingDirectUrl, setIsLoadingDirectUrl] = useState(false);
+  const [showSpaceSelector, setShowSpaceSelector] = useState(false);
+  const spaceSelectorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (item && isOpen) {
@@ -171,6 +173,23 @@ export default function ItemDetailModal({
       }
     }
   }, [item, currentItem, tags, selectedSpace, transcript]);
+
+  // Close space selector when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (spaceSelectorRef.current && !spaceSelectorRef.current.contains(event.target as Node)) {
+        setShowSpaceSelector(false);
+      }
+    };
+
+    if (showSpaceSelector) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSpaceSelector]);
 
   // Don't render if never opened or no item data
   if (!currentItem) return null;
@@ -260,6 +279,7 @@ export default function ItemDetailModal({
 
   const handleSpaceChange = (newSpaceId: string) => {
     setSelectedSpace(newSpaceId);
+    setShowSpaceSelector(false); // Close the dropdown
     
     // Find the space name by ID for the update
     const spaceName = newSpaceId === 'none' ? undefined : spaces.find(s => s.id === newSpaceId)?.name;
@@ -582,14 +602,14 @@ export default function ItemDetailModal({
         {/* Two-Column Layout */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {/* Left Column - Main Content */}
-          <div className="flex-1 flex flex-col items-center overflow-y-auto p-6">
+          <div id="modal-left-column" className="flex-1 flex flex-col items-center overflow-y-auto p-6">
             <div className={`w-full max-w-[1000px] flex flex-col ${
               currentItem?.content_type === 'note' ? '' : 'justify-center'
             }`}>
           {/* Thumbnail - Hide for X/Twitter, YouTube, images, Instagram, TikTok, and movies since they have special displays, but show for TV shows */}
           {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && currentItem.content_type !== 'tiktok' && currentItem.content_type !== 'movie' && !(currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id) && !currentItem.metadata?.is_tv_show) && (
             <div className="mb-6">
-              <img 
+              <Image 
                 src={currentItem.thumbnail_url} 
                 alt={currentItem.title}
                 className={
@@ -1127,27 +1147,11 @@ export default function ItemDetailModal({
           </div>
 
           {/* Right Column - Metadata & Actions */}
-          <div className="w-full md:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-800/50">
-          {/* Metadata */}
-          <div className="space-y-4 mb-4">
-            {/* Space */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Space
-              </label>
-              <select
-                value={selectedSpace}
-                onChange={(e) => handleSpaceChange(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="none">No space</option>
-                {spaces.map((space) => (
-                  <option key={space.id} value={space.id}>
-                    {space.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div id="modal-right-column" className="w-full md:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 relative flex flex-col">
+            {/* Scrollable content area */}
+            <div className="flex-1 overflow-y-auto p-6 pb-20">
+            {/* Metadata */}
+            <div className="space-y-4 mb-4">
 
             {/* Instagram Metadata */}
             {currentItem.content_type === 'instagram' && (
@@ -2109,85 +2113,147 @@ export default function ItemDetailModal({
                 </div>
               </div>
             )}
-          </div>
+            </div>
 
-          {/* Tags */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Tags
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <span 
-                  key={tag}
-                  className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm flex items-center gap-1"
-                >
-                  {tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="ml-1 text-blue-500 hover:text-blue-700"
+            {/* Tags */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tags
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <span 
+                    key={tag}
+                    className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm flex items-center gap-1"
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    {tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-1 text-blue-500 hover:text-blue-700"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+                {showTagInput ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                      onBlur={() => {
+                        if (!newTag.trim()) setShowTagInput(false);
+                      }}
+                      className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="Add tag..."
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleAddTag}
+                      className="p-1 text-blue-600 hover:text-blue-700"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowTagInput(true)}
+                    className="px-3 py-1 border border-dashed border-gray-300 text-gray-500 rounded-full text-sm hover:border-gray-400 hover:text-gray-600"
+                  >
+                    + Add tag
+                  </button>
+                )}
+              </div>
+            </div>
+
+              {/* Created date */}
+              <div className="text-sm text-gray-500 border-t pt-4">
+                Added on {formatDate(currentItem.created_at)}
+              </div>
+            </div>
+            {/* Fixed Bottom Bar - spans only the right column */}
+            <div id="modal-right-column-bottom-bar" className="absolute bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between gap-3">
+                {/* Space Selector Button */}
+                <div ref={spaceSelectorRef} className="relative flex-1">
+                  <button
+                    onClick={() => setShowSpaceSelector(!showSpaceSelector)}
+                    className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <span className="text-gray-900 dark:text-gray-100">
+                      {selectedSpace === 'none' 
+                        ? 'No space' 
+                        : spaces.find(s => s.id === selectedSpace)?.name || 'No space'
+                      }
+                    </span>
+                    <svg 
+                      className={`w-4 h-4 text-gray-500 transition-transform ${showSpaceSelector ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                </span>
-              ))}
-              {showTagInput ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    type="text"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                    onBlur={() => {
-                      if (!newTag.trim()) setShowTagInput(false);
-                    }}
-                    className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    placeholder="Add tag..."
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleAddTag}
-                    className="p-1 text-blue-600 hover:text-blue-700"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </button>
+
+                  {/* Floating Space Selector */}
+                  {showSpaceSelector && (
+                    <div className="absolute bottom-full mb-2 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto z-50">
+                      <div className="p-1">
+                        <button
+                          onClick={() => handleSpaceChange('none')}
+                          className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                            selectedSpace === 'none' 
+                              ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
+                              : 'text-gray-900 dark:text-gray-100'
+                          }`}
+                        >
+                          No space
+                        </button>
+                        {spaces.map((space) => (
+                          <button
+                            key={space.id}
+                            onClick={() => handleSpaceChange(space.id)}
+                            className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                              selectedSpace === space.id 
+                                ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
+                                : 'text-gray-900 dark:text-gray-100'
+                            }`}
+                          >
+                            {space.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <button
-                  onClick={() => setShowTagInput(true)}
-                  className="px-3 py-1 border border-dashed border-gray-300 text-gray-500 rounded-full text-sm hover:border-gray-400 hover:text-gray-600"
-                >
-                  + Add tag
-                </button>
-              )}
+
+                {/* Delete Button */}
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(currentItem.id)}
+                    className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                    title="Delete item"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
+
+
           </div>
 
-          {/* Created date */}
-          <div className="text-sm text-gray-500 border-t pt-4">
-            Added on {formatDate(currentItem.created_at)}
-          </div>
 
-          <div className="flex gap-2 justify-end">
-          {onDelete && (
-              <button
-                onClick={() => onDelete(currentItem.id)}
-                className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                title="Delete"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            )}
-            </div>
           </div>
         </div>
-      </div>
     </Modal>
   );
 }
