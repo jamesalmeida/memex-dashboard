@@ -1,5 +1,6 @@
 import './globals.css';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import QueryProvider from '@/components/QueryProvider';
 
 export const metadata = {
   title: 'Memex',
@@ -14,9 +15,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

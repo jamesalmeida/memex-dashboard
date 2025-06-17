@@ -8,8 +8,8 @@ import type {
 } from '@/types/database'
 
 export const itemsService = {
-  // Fetch all items for the current user
-  async getItems(spaceId?: string): Promise<ItemWithMetadata[]> {
+  // Fetch all items for the current user with pagination support
+  async getItems(spaceId?: string, limit?: number, offset?: number): Promise<ItemWithMetadata[]> {
     const supabase = createClient()
     
     let query = supabase
@@ -20,6 +20,10 @@ export const itemsService = {
     
     if (spaceId) {
       query = query.eq('space_id', spaceId)
+    }
+    
+    if (limit) {
+      query = query.range(offset || 0, (offset || 0) + limit - 1)
     }
     
     const { data: items, error } = await query

@@ -10,6 +10,7 @@ import SpaceCard from '@/components/SpaceCard';
 import NewSpaceModal from '@/components/NewSpaceModal';
 import EditSpaceModal from '@/components/EditSpaceModal';
 import MasonryGrid from '@/components/MasonryGrid';
+import InfiniteScrollGrid from '@/components/InfiniteScrollGrid';
 import LeftRail from '@/components/LeftRail';
 import SettingsModal from '@/components/SettingsModal';
 import { useRouter } from 'next/navigation';
@@ -17,6 +18,10 @@ import type { User } from '@supabase/supabase-js';
 import { itemsService, spacesService, tagsService } from '@/lib/supabase/services';
 import type { ItemWithMetadata, Space, ContentType } from '@/types/database';
 import type { MockItem } from '@/utils/mockData';
+import { useItems, useInfiniteItems, useUpdateItem, useArchiveItem, useDeleteItem, itemKeys } from '@/hooks/useItems';
+import { useSpaces, useSpacesWithCounts, spaceKeys } from '@/hooks/useSpaces';
+import { useAddTagToItem, useRemoveTagFromItem } from '@/hooks/useTags';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface DashboardProps {
   params: Promise<{
@@ -28,7 +33,6 @@ export default function Dashboard({ params }: DashboardProps) {
   // Unwrap the async params
   const resolvedParams = use(params);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedContentType, setSelectedContentType] = useState<string | null>(null);
@@ -75,10 +79,27 @@ export default function Dashboard({ params }: DashboardProps) {
   const [notification, setNotification] = useState<string | null>(null);
   const router = useRouter();
 
-  // Real data from Supabase
-  const [items, setItems] = useState<ItemWithMetadata[]>([]);
-  const [spaces, setSpaces] = useState<Space[]>([]);
-  const [spacesWithCounts, setSpacesWithCounts] = useState<(Space & { item_count: number })[]>([]);
+  // Cached data from React Query hooks
+  const spaceIdForItems = viewMode === 'space-detail' ? selectedSpace : undefined;
+  const { data: items = [], isLoading: itemsLoading, error: itemsError } = useItems(spaceIdForItems);
+  const { data: spaces = [], isLoading: spacesLoading } = useSpaces();
+  const { data: spacesWithCounts = [], isLoading: spacesWithCountsLoading } = useSpacesWithCounts();
+  
+  // Mutations for optimistic updates
+  const updateItemMutation = useUpdateItem();
+  const archiveItemMutation = useArchiveItem();
+  const deleteItemMutation = useDeleteItem();
+  const addTagMutation = useAddTagToItem();
+  const removeTagMutation = useRemoveTagFromItem();
+  const queryClient = useQueryClient();
+  
+  // Combined loading state from all queries
+  const loading = itemsLoading || spacesLoading || spacesWithCountsLoading;
+  
+  // Handle any query errors
+  if (itemsError) {
+    console.error('Error loading items:', itemsError);
+  }
   
   // Transition state for fade effect
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -167,9 +188,9 @@ export default function Dashboard({ params }: DashboardProps) {
     };
   }, [items, showItemDetail, isHandlingHash]);
 
-  // Load data from Supabase
+  // Check authentication
   useEffect(() => {
-    const loadData = async () => {
+    const checkUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -179,34 +200,19 @@ export default function Dashboard({ params }: DashboardProps) {
         }
 
         setUser(user);
-
-        // Load spaces and items
-        const [spacesData, spacesWithCountsData, itemsData] = await Promise.all([
-          spacesService.getSpaces(),
-          spacesService.getSpacesWithCounts(),
-          itemsService.getItems()
-        ]);
-
-        setSpaces(spacesData);
-        setSpacesWithCounts(spacesWithCountsData);
-        setItems(itemsData);
-        setLoading(false);
       } catch (error) {
-        console.error('Error loading data:', error);
-        setLoading(false);
+        console.error('Error checking user:', error);
+        router.push('/login');
       }
     };
 
-    loadData();
+    checkUser();
   }, [router]);
 
   // Get unique content types from current items
   const getAvailableContentTypes = () => {
-    const relevantItems = viewMode === 'space-detail' && selectedSpace 
-      ? items.filter(item => item.space_id === selectedSpace)
-      : items;
-    
-    const types = [...new Set(relevantItems.map(item => item.content_type))];
+    // For infinite scroll views, we use all items since filtering happens client-side
+    const types = [...new Set(items.map(item => item.content_type))];
     return types.sort();
   };
 
@@ -230,14 +236,11 @@ export default function Dashboard({ params }: DashboardProps) {
 
   const handleArchive = async (id: string) => {
     try {
-      await itemsService.archiveItem(id);
-      setItems(items.filter(item => item.id !== id));
+      // Use cached mutation - automatically handles cache updates
+      await archiveItemMutation.mutateAsync(id);
+      
       setShowItemDetail(false);
       setSelectedItem(null);
-      
-      // Update spaces with counts
-      const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
-      setSpacesWithCounts(updatedSpacesWithCounts);
       
       setNotification('Item archived successfully!');
       setTimeout(() => setNotification(null), 3000);
@@ -248,14 +251,11 @@ export default function Dashboard({ params }: DashboardProps) {
 
   const handleDelete = async (id: string) => {
     try {
-      await itemsService.deleteItem(id);
-      setItems(items.filter(item => item.id !== id));
+      // Use cached mutation - automatically handles cache updates
+      await deleteItemMutation.mutateAsync(id);
+      
       setShowItemDetail(false);
       setSelectedItem(null);
-      
-      // Update spaces with counts
-      const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
-      setSpacesWithCounts(updatedSpacesWithCounts);
       
       setNotification('Item deleted successfully!');
       setTimeout(() => setNotification(null), 3000);
@@ -587,25 +587,24 @@ export default function Dashboard({ params }: DashboardProps) {
         await itemsService.updateItemMetadata(newItem.id, metadataInput);
       }
       
-      // Fetch the full item with metadata
-      const fullItem = await itemsService.getItem(newItem.id);
-      if (fullItem) {
-        setItems([fullItem, ...items]);
-        
-        // Update spaces with counts
-        const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
-        setSpacesWithCounts(updatedSpacesWithCounts);
-        
-        setNotification('Item added successfully!');
-        setTimeout(() => setNotification(null), 3000);
-        
-        if (openDetail) {
+      // Invalidate and refetch items to show the new item
+      queryClient.invalidateQueries({ queryKey: itemKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: itemKeys.infinite() });
+      queryClient.invalidateQueries({ queryKey: spaceKeys.withCounts() });
+      
+      setNotification('Item added successfully!');
+      setTimeout(() => setNotification(null), 3000);
+      
+      if (openDetail) {
+        // Fetch the full item with metadata for the detail view
+        const fullItem = await itemsService.getItem(newItem.id);
+        if (fullItem) {
           setSelectedItem(fullItem);
           setShowItemDetail(true);
         }
-        
-        return fullItem;
       }
+      
+      return newItem;
     } catch (error) {
       console.error('Error adding item:', error);
     }
@@ -647,34 +646,16 @@ export default function Dashboard({ params }: DashboardProps) {
           }
         });
 
-        await itemsService.updateItem(id, updateInput);
+        // Use cached mutation - automatically handles cache updates
+        const updatedItem = await updateItemMutation.mutateAsync({ id, updates: updateInput });
         
-        // Always fetch fresh data (for both updates and refreshes)
-        const updatedItem = await itemsService.getItem(id);
-        
-        if (updatedItem) {
-          setItems(items.map(item => item.id === id ? updatedItem : item));
-          if (selectedItem?.id === id) {
-            setSelectedItem(updatedItem);
-          }
-          
-          // Update spaces with counts if space changed
-          if (updateInput.space_id !== undefined) {
-            const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
-            setSpacesWithCounts(updatedSpacesWithCounts);
-          }
-        }
-      } else {
-        // Just refresh the item data without updating
-        const updatedItem = await itemsService.getItem(id);
-        
-        if (updatedItem) {
-          setItems(items.map(item => item.id === id ? updatedItem : item));
-          if (selectedItem?.id === id) {
-            setSelectedItem(updatedItem);
-          }
+        // Update local selected item if it's the same one
+        if (selectedItem?.id === id) {
+          setSelectedItem(updatedItem);
         }
       }
+      // Note: For refresh-only cases (empty updates), React Query will automatically 
+      // refetch when needed, so no manual refresh required
     } catch (error) {
       console.error('Error updating item:', error);
     }
@@ -682,17 +663,14 @@ export default function Dashboard({ params }: DashboardProps) {
 
   const handleAddTagToItem = async (itemId: string, tagName: string) => {
     try {
-      // Create or get the tag
-      const tag = await tagsService.getOrCreateTag(tagName);
+      // Use cached mutation - automatically handles cache updates
+      await addTagMutation.mutateAsync({ itemId, tagName });
       
-      // Add the tag to the item
-      await itemsService.addTagsToItem(itemId, [tag.id]);
-      
-      // Refresh the item data
-      const updatedItem = await itemsService.getItem(itemId);
-      if (updatedItem) {
-        setItems(items.map(item => item.id === itemId ? updatedItem : item));
-        if (selectedItem?.id === itemId) {
+      // Update local selected item if needed
+      if (selectedItem?.id === itemId) {
+        // React Query will automatically refetch the item, but we can optimistically update
+        const updatedItem = await itemsService.getItem(itemId);
+        if (updatedItem) {
           setSelectedItem(updatedItem);
         }
       }
@@ -703,13 +681,14 @@ export default function Dashboard({ params }: DashboardProps) {
 
   const handleRemoveTagFromItem = async (itemId: string, tagId: string) => {
     try {
-      await itemsService.removeTagsFromItem(itemId, [tagId]);
+      // Use cached mutation - automatically handles cache updates
+      await removeTagMutation.mutateAsync({ itemId, tagId });
       
-      // Refresh the item data
-      const updatedItem = await itemsService.getItem(itemId);
-      if (updatedItem) {
-        setItems(items.map(item => item.id === itemId ? updatedItem : item));
-        if (selectedItem?.id === itemId) {
+      // Update local selected item if needed
+      if (selectedItem?.id === itemId) {
+        // React Query will automatically refetch the item, but we can optimistically update
+        const updatedItem = await itemsService.getItem(itemId);
+        if (updatedItem) {
           setSelectedItem(updatedItem);
         }
       }
@@ -909,29 +888,25 @@ export default function Dashboard({ params }: DashboardProps) {
             isTransitioning ? 'opacity-0' : 'opacity-100'
           }`}
         >
-          <MasonryGrid gap={24} mobileColumns={viewMode === 'spaces' ? 1 : 2}>
-          {viewMode === 'everything' && (
+          {viewMode === 'everything' ? (
             <>
-              {/* NewItemCard inside grid on desktop */}
-              <div className="hidden md:block">
+              {/* NewItemCard at the top */}
+              <div className="hidden md:block mb-6">
                 <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
               </div>
               
-              {filteredItems.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  onArchive={handleArchive}
-                  onDelete={handleDelete}
-                  onMoveToProject={handleMoveToSpace}
-                  onClick={handleItemClick}
-                />
-              ))}
+              {/* Infinite scroll grid */}
+              <InfiniteScrollGrid
+                searchQuery={searchQuery}
+                selectedContentType={selectedContentType}
+                onItemClick={handleItemClick}
+                onArchive={handleArchive}
+                onDelete={handleDelete}
+                spaces={spaces}
+              />
             </>
-          )}
-
-          {viewMode === 'spaces' && (
-            <>
+          ) : viewMode === 'spaces' ? (
+            <MasonryGrid gap={24} mobileColumns={1}>
               {spacesWithCounts.map((space) => (
                 <SpaceCard
                   key={space.id}
@@ -941,43 +916,28 @@ export default function Dashboard({ params }: DashboardProps) {
                   onDelete={handleDeleteSpace}
                 />
               ))}
-            </>
-          )}
-
-          {viewMode === 'space-detail' && (
+            </MasonryGrid>
+          ) : viewMode === 'space-detail' ? (
             <>
-              {/* NewItemCard inside grid on desktop */}
-              <div className="hidden md:block">
+              {/* NewItemCard at the top */}
+              <div className="hidden md:block mb-6">
                 <NewItemCard onAdd={(item) => handleAddItem(item, false)} />
               </div>
               
-              {filteredItems.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  onArchive={handleArchive}
-                  onDelete={handleDelete}
-                  onMoveToProject={handleMoveToSpace}
-                  onClick={handleItemClick}
-                />
-              ))}
+              {/* Infinite scroll grid for space items */}
+              <InfiniteScrollGrid
+                spaceId={selectedSpace || undefined}
+                searchQuery={searchQuery}
+                selectedContentType={selectedContentType}
+                onItemClick={handleItemClick}
+                onArchive={handleArchive}
+                onDelete={handleDelete}
+                spaces={spaces}
+              />
             </>
-          )}
-          </MasonryGrid>
+          ) : null}
         </div>
         
-        {/* Empty state */}
-        {viewMode !== 'spaces' && filteredItems.length === 0 && searchQuery && (
-          <div id="empty-state" className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No items found</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              No items match &ldquo;{searchQuery}&rdquo;. Try a different search term.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Mobile bottom gradient overlay */}
