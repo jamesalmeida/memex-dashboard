@@ -621,33 +621,58 @@ export default function Dashboard({ params }: DashboardProps) {
 
   const handleUpdateItem = async (id: string, updates: Partial<MockItem>) => {
     try {
-      // Convert updates to database format
-      const updateInput: Record<string, any> = {
-        title: updates.title,
-        url: updates.url,
-        content_type: updates.content_type as ContentType,
-        description: updates.description,
-        thumbnail_url: updates.thumbnail_url || updates.thumbnail,
-      };
+      // Check if there are any actual updates to apply
+      const hasUpdates = Object.keys(updates).length > 0 && 
+        Object.values(updates).some(value => value !== undefined);
 
-      // Only update space_id if space is explicitly provided in updates
-      if ('space' in updates) {
-        updateInput.space_id = updates.space ? spaces.find(s => s.name === updates.space)?.id : null;
-      }
+      if (hasUpdates) {
+        // Convert updates to database format
+        const updateInput: Record<string, any> = {
+          title: updates.title,
+          url: updates.url,
+          content_type: updates.content_type as ContentType,
+          description: updates.description,
+          thumbnail_url: updates.thumbnail_url || updates.thumbnail,
+        };
 
-      await itemsService.updateItem(id, updateInput);
-      const updatedItem = await itemsService.getItem(id);
-      
-      if (updatedItem) {
-        setItems(items.map(item => item.id === id ? updatedItem : item));
-        if (selectedItem?.id === id) {
-          setSelectedItem(updatedItem);
+        // Only update space_id if space is explicitly provided in updates
+        if ('space' in updates) {
+          updateInput.space_id = updates.space ? spaces.find(s => s.name === updates.space)?.id : null;
         }
+
+        // Remove undefined values
+        Object.keys(updateInput).forEach(key => {
+          if (updateInput[key] === undefined) {
+            delete updateInput[key];
+          }
+        });
+
+        await itemsService.updateItem(id, updateInput);
         
-        // Update spaces with counts if space changed
-        if (updateInput.space_id !== undefined) {
-          const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
-          setSpacesWithCounts(updatedSpacesWithCounts);
+        // Always fetch fresh data (for both updates and refreshes)
+        const updatedItem = await itemsService.getItem(id);
+        
+        if (updatedItem) {
+          setItems(items.map(item => item.id === id ? updatedItem : item));
+          if (selectedItem?.id === id) {
+            setSelectedItem(updatedItem);
+          }
+          
+          // Update spaces with counts if space changed
+          if (updateInput.space_id !== undefined) {
+            const updatedSpacesWithCounts = await spacesService.getSpacesWithCounts();
+            setSpacesWithCounts(updatedSpacesWithCounts);
+          }
+        }
+      } else {
+        // Just refresh the item data without updating
+        const updatedItem = await itemsService.getItem(id);
+        
+        if (updatedItem) {
+          setItems(items.map(item => item.id === id ? updatedItem : item));
+          if (selectedItem?.id === id) {
+            setSelectedItem(updatedItem);
+          }
         }
       }
     } catch (error) {

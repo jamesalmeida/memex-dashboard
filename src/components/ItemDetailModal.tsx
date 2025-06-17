@@ -159,8 +159,14 @@ export default function ItemDetailModal({
       setCurrentItem(item);
       setEditedTitle(item.title || '');
       setEditedDescription(item.description || '');
+      
+      // Update transcript if it's been added to the item metadata
+      const itemTranscript = 'metadata' in item ? item.metadata?.extra_data?.transcript : null;
+      if (itemTranscript && itemTranscript !== transcript) {
+        setTranscript(itemTranscript);
+      }
     }
-  }, [item, currentItem, tags, selectedSpace]);
+  }, [item, currentItem, tags, selectedSpace, transcript]);
 
   // Don't render if never opened or no item data
   if (!currentItem) return null;
@@ -271,14 +277,15 @@ export default function ItemDetailModal({
   };
 
   const handleGenerateTranscript = async () => {
-    if (!currentItem) return;
+    if (!currentItem) {
+      return;
+    }
     
     // If transcript already exists, toggle show/hide
     if (transcript) {
       setShowTranscript(!showTranscript);
       return;
     }
-    
     setIsLoadingTranscript(true);
     
     try {
@@ -299,40 +306,61 @@ export default function ItemDetailModal({
         mediaId = currentItem.url || currentItem.id;
       }
       
-      // Here we would call an API to get the transcript
-      // For now, I'll add a TODO comment for the actual implementation
-      // TODO: Implement actual transcript fetching from YouTube API or service
+      // Call API to get transcript
+      const response = await fetch('/api/transcript', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: currentItem.id,
+          url: currentItem.url,
+          contentType: currentItem.content_type
+        })
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const data = await response.json();
       
-      // For demo purposes, show a placeholder transcript
-      const mediaTypeText = mediaType === 'audio' ? 'podcast/audio' : 'YouTube video';
-      const placeholderTranscript = `This is a placeholder transcript for the ${mediaTypeText} "${currentItem.title}".
-
-In a real implementation, this would fetch the actual transcript from ${mediaType === 'audio' ? 'an audio transcription service' : "YouTube's API or a transcript service"}.
-
-The transcript would include:
-- Timestamped text segments
-- Speaker identification (if available)
-- Properly formatted paragraphs
-
-For now, this serves as a demonstration of the transcript feature.`;
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate transcript');
+      }
       
-      setTranscript(placeholderTranscript);
+      setTranscript(data.transcript);
       setShowTranscript(true);
       
-      // TODO: Save transcript to database via API
-      // await updateItemMetadata(currentItem.id, {
-      //   extra_data: {
-      //     ...currentItem.metadata?.extra_data,
-      //     transcript: transcriptText
-      //   }
-      // });
+      // Update local state if transcript was newly generated
+      if (!data.cached && 'metadata' in currentItem) {
+        // Update the current item's metadata with the transcript
+        const updatedItem = {
+          ...currentItem,
+          metadata: {
+            ...currentItem.metadata,
+            extra_data: {
+              ...currentItem.metadata?.extra_data,
+              transcript: data.transcript
+            }
+          }
+        };
+        setCurrentItem(updatedItem);
+        
+        // Notify parent component to refresh the item data
+        // This ensures when modal reopens, it has the transcript
+        if (onUpdateItem) {
+          onUpdateItem(currentItem.id, {});
+        }
+      }
       
     } catch (error) {
       console.error('Failed to generate transcript:', error);
-      // TODO: Show error toast/notification
+      
+      // Show error message to user
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate transcript';
+      
+      if (errorMessage.includes('temporarily unavailable') || errorMessage.includes('interface')) {
+        alert(`⚠️ ${errorMessage}\n\nYouTube frequently updates their interface which can temporarily break transcript extraction. The YouTube.js library maintainers usually fix these issues quickly.`);
+      } else {
+        alert(`❌ ${errorMessage}\n\nThis video may not have captions available, or captions may be auto-generated only.`);
+      }
     } finally {
       setIsLoadingTranscript(false);
     }
