@@ -726,7 +726,7 @@ export default function Dashboard({ params }: DashboardProps) {
           }
           
           // Update other fields optimistically
-          if (updates.title) optimisticItem.title = updates.title;
+          if ('title' in updates) optimisticItem.title = updates.title;
           if (updates.description !== undefined) optimisticItem.description = updates.description;
           
           // Apply optimistic update immediately

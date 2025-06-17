@@ -149,7 +149,7 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
         console.log('URL metadata extraction result:', result);
         
         newItem = {
-          title: result.metadata.title || 'Quick Link',
+          title: result.metadata.title || '',  // Empty string instead of 'Quick Link'
           url: normalizedUrl,
           content_type: result.content_type,
           description: result.metadata.description || 'Added via quick capture',
@@ -184,7 +184,7 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
         }
 
         newItem = {
-          title: domain ? 'Quick Link' : input.substring(0, 50) + (input.length > 50 ? '...' : ''),
+          title: '',  // Always empty string, no fallback titles
           url: domain ? normalizedUrl : undefined,
           content_type: contentType,
           description: domain ? 'Added via quick capture' : undefined,
@@ -224,9 +224,9 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
       // In a production app, you'd want to upload to a storage service like Supabase Storage
       
       const newItem: Omit<MockItem, 'id' | 'created_at'> = {
-        title: `Pasted Image - ${file.name}`,
+        title: '', // No title for images
         content_type: 'image',
-        description: `Image pasted from clipboard (${Math.round(file.size / 1024)}KB)`,
+        description: file.name, // Save filename in description
         thumbnail_url: dataUrl, // Using data URL for now
         metadata: {
           file_size: `${Math.round(file.size / 1024)}KB`,
@@ -371,9 +371,9 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
         const dataUrl = e.target?.result as string;
         
         const newItem: Omit<MockItem, 'id' | 'created_at'> = {
-          title: file.name.replace(/\.[^/.]+$/, ''), // Remove file extension
+          title: '', // No title for images
           content_type: 'image',
-          description: `Uploaded image (${Math.round(file.size / 1024)}KB)`,
+          description: file.name, // Save filename in description
           thumbnail_url: dataUrl,
           metadata: {
             file_size: `${Math.round(file.size / 1024)}KB`,

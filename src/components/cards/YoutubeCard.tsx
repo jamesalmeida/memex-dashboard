@@ -83,7 +83,7 @@ export default function YoutubeCard({ item, onArchive, onDelete, onClick }: Yout
       </div>
       
       {/* Title below the card */}
-      <h3 id={`youtube-card-title-${item.id}`} className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100 text-left truncate">
+      <h3 id={`youtube-card-title-${item.id}`} className="mt-1 text-sm font-normal text-gray-900 dark:text-gray-100 text-center truncate">
         {item.title}
       </h3>
     </div>

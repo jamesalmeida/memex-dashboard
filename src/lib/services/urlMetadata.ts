@@ -221,9 +221,12 @@ export class UrlMetadataService {
     console.log('Extracting metadata for URL:', url, 'Content type:', contentType);
     const domain = this.extractDomain(url)
     
-    // Base metadata
+    // Content types that should get automatic titles
+    const contentTypesWithAutoTitle = ['youtube', 'audio', 'amazon', 'movie', 'tv-show'];
+    
+    // Base metadata - only add fallback title for specific content types
     const metadata: ExtractedMetadata = {
-      title: this.generateFallbackTitle(url),
+      title: contentTypesWithAutoTitle.includes(contentType) ? this.generateFallbackTitle(url) : '',
       domain
     }
     console.log('Base metadata:', metadata);
@@ -234,6 +237,12 @@ export class UrlMetadataService {
       const pageData = await this.fetchPageMetadata(url)
       console.log('Page metadata from API:', pageData);
       Object.assign(metadata, pageData)
+      
+      // Clear title for non-whitelisted content types (even if API returned one)
+      if (!contentTypesWithAutoTitle.includes(contentType)) {
+        metadata.title = '';
+        console.log('Cleared title for non-whitelisted content type:', contentType);
+      }
 
       // Platform-specific enhancements
       console.log('Applying platform-specific enhancements for:', contentType);
@@ -272,6 +281,16 @@ export class UrlMetadataService {
             await this.enhanceMovieMetadata(url, metadata)
           }
           break
+        case 'image':
+          // For images, extract filename and put it in description
+          this.enhanceImageMetadata(url, metadata)
+          break
+      }
+      
+      // Final cleanup: Ensure title is empty for non-whitelisted content types
+      // (in case platform-specific enhancements added it back)
+      if (!contentTypesWithAutoTitle.includes(contentType)) {
+        metadata.title = '';
       }
       
       console.log('Final metadata after enhancements:', metadata);
@@ -941,6 +960,35 @@ export class UrlMetadataService {
     if (metadata.author) score += 0.1
     
     return Math.min(score, 1.0)
+  }
+
+  /**
+   * Enhance image metadata by extracting filename
+   */
+  private enhanceImageMetadata(url: string, metadata: ExtractedMetadata): void {
+    console.log('Enhancing image metadata for:', url);
+    
+    try {
+      const urlObj = new URL(this.normalizeUrl(url));
+      const pathname = urlObj.pathname;
+      
+      // Extract filename from path
+      const filename = pathname.split('/').pop() || '';
+      
+      // Clean up filename by removing query params and decoding
+      const cleanFilename = decodeURIComponent(filename.split('?')[0]);
+      
+      // Clear title and set filename as description
+      metadata.title = '';
+      metadata.description = cleanFilename;
+      
+      // Set the image URL as thumbnail
+      metadata.thumbnail_url = url;
+      
+      console.log('Enhanced image metadata:', metadata);
+    } catch (error) {
+      console.error('Error enhancing image metadata:', error);
+    }
   }
 }
 

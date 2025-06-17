@@ -514,8 +514,13 @@ export default function ItemDetailModal({
   };
 
   const handleTitleSave = () => {
-    if (editedTitle.trim() !== currentItem.title) {
-      onUpdateItem?.(currentItem.id, { title: editedTitle.trim() });
+    // Allow clearing title - if input is empty, save as empty string
+    const newTitle = editedTitle.trim();
+    const currentTitle = currentItem.title || '';
+    
+    // Only update if actually changed
+    if (newTitle !== currentTitle) {
+      onUpdateItem?.(currentItem.id, { title: newTitle || null });
     }
     setIsEditingTitle(false);
   };
@@ -1135,50 +1140,35 @@ export default function ItemDetailModal({
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex-1 min-w-0">
                     {isEditingTitle ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editedTitle}
-                          onChange={(e) => setEditedTitle(e.target.value)}
-                          onKeyDown={handleTitleKeyDown}
-                          onBlur={handleTitleSave}
-                          className="flex-1 text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Enter title..."
-                          autoFocus
-                        />
-                        <button
-                          onClick={handleTitleSave}
-                          className="text-green-600 hover:text-green-700 p-1"
-                          title="Save"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={handleTitleCancel}
-                          className="text-red-600 hover:text-red-700 p-1"
-                          title="Cancel"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
+                      <input
+                        type="text"
+                        value={editedTitle}
+                        onChange={(e) => setEditedTitle(e.target.value)}
+                        onKeyDown={handleTitleKeyDown}
+                        onBlur={handleTitleSave}
+                        className="w-full text-lg font-semibold text-gray-900 dark:text-gray-100 bg-transparent border-0 border-b border-gray-300 dark:border-gray-600 px-0 py-1 focus:outline-none focus:border-blue-500 transition-colors"
+                        placeholder="Enter title..."
+                        autoFocus
+                      />
                     ) : (
-                      <div className="flex items-center gap-2 group">
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 flex-1">
-                          {currentItem.title || 'Untitled'}
-                        </h2>
-                        <button
-                          onClick={handleTitleEdit}
-                          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity"
-                          title="Edit title"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
+                      <div className="flex-1">
+                        {currentItem.title ? (
+                          <h2 
+                            className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            onClick={handleTitleEdit}
+                            title="Click to edit title"
+                          >
+                            {currentItem.title}
+                          </h2>
+                        ) : (
+                          <span 
+                            className="text-lg font-semibold text-gray-400 dark:text-gray-500 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            onClick={handleTitleEdit}
+                            title="Click to add title"
+                          >
+                            Add title
+                          </span>
+                        )}
                       </div>
                     )}
                     <p className="text-sm text-gray-500 dark:text-gray-400 capitalize mt-1">
@@ -1974,16 +1964,54 @@ export default function ItemDetailModal({
             {currentItem.content_type === 'image' && (
               <>
                 {/* Image Description */}
-                {currentItem.description && (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Description
-                    </label>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-                      {currentItem.description}
-                    </p>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Description
+                  </label>
+                  <div className="group relative">
+                    {isEditingDescription ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editedDescription}
+                          onChange={(e) => setEditedDescription(e.target.value)}
+                          onKeyDown={handleDescriptionKeyDown}
+                          className="w-full min-h-20 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
+                          placeholder="Enter description..."
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={handleDescriptionCancel}
+                            className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleDescriptionSave}
+                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed flex-1">
+                          {currentItem.description || 'No description'}
+                        </p>
+                        <button
+                          onClick={handleDescriptionEdit}
+                          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity flex-shrink-0"
+                          title="Edit description"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* Image URL (if exists) */}
                 {currentItem.url && (
