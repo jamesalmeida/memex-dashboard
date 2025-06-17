@@ -108,6 +108,7 @@ export default function ItemDetailModal({
   const [directVideoUrl, setDirectVideoUrl] = useState<string | null>(null);
   const [isLoadingDirectUrl, setIsLoadingDirectUrl] = useState(false);
   const [showSpaceSelector, setShowSpaceSelector] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true);
   const spaceSelectorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -534,73 +535,11 @@ export default function ItemDetailModal({
       isOpen={isOpen} 
       onClose={onClose}
       modalId="item-detail-modal"
-      title={
-        <div className="flex items-center gap-3">
-          <ContentTypeIcon type={currentItem.content_type} />
-          <div className="flex-1 min-w-0">
-            {isEditingTitle ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
-                  onKeyDown={handleTitleKeyDown}
-                  onBlur={handleTitleSave}
-                  className="flex-1 text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter title..."
-                  autoFocus
-                />
-                <button
-                  onClick={handleTitleSave}
-                  className="text-green-600 hover:text-green-700 p-1"
-                  title="Save"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </button>
-                <button
-                  onClick={handleTitleCancel}
-                  className="text-red-600 hover:text-red-700 p-1"
-                  title="Cancel"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 group">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 flex-1">
-                  {currentItem.title || 'Untitled'}
-                </h2>
-                <button
-                  onClick={handleTitleEdit}
-                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity"
-                  title="Edit title"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-              </div>
-            )}
-            <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-              {currentItem.content_type}
-              {currentItem.metadata?.domain && (
-                <>
-                  <span className="mx-1">•</span>
-                  {currentItem.metadata.domain}
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-      }
+      isFullscreen={isFullscreen}
     >
-      <div className="flex flex-col h-full">
+      <div id="modal-container" className="flex flex-col h-full">
         {/* Two-Column Layout */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+        <div id="modal-content" className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {/* Left Column - Main Content */}
           <div id="modal-left-column" className="flex-1 flex flex-col items-center overflow-y-auto p-6">
             <div className={`w-full max-w-[1000px] flex flex-col ${
@@ -609,7 +548,7 @@ export default function ItemDetailModal({
           {/* Thumbnail - Hide for X/Twitter, YouTube, images, Instagram, TikTok, and movies since they have special displays, but show for TV shows */}
           {currentItem.thumbnail_url && currentItem.content_type !== 'x' && currentItem.content_type !== 'youtube' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && currentItem.content_type !== 'tiktok' && currentItem.content_type !== 'movie' && !(currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id) && !currentItem.metadata?.is_tv_show) && (
             <div className="mb-6">
-              <Image 
+              <img 
                 src={currentItem.thumbnail_url} 
                 alt={currentItem.title}
                 className={
@@ -1148,8 +1087,102 @@ export default function ItemDetailModal({
 
           {/* Right Column - Metadata & Actions */}
           <div id="modal-right-column" className="w-full md:w-96 flex-shrink-0 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 relative flex flex-col">
+            {/* Close button - positioned in top right corner */}
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 z-10 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors modal-close-button"
+              aria-label="Close modal"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
             {/* Scrollable content area */}
             <div className="flex-1 overflow-y-auto p-6 pb-20">
+              
+              {/* Title Section */}
+              <div className="title-section mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    {isEditingTitle ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editedTitle}
+                          onChange={(e) => setEditedTitle(e.target.value)}
+                          onKeyDown={handleTitleKeyDown}
+                          onBlur={handleTitleSave}
+                          className="flex-1 text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter title..."
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleTitleSave}
+                          className="text-green-600 hover:text-green-700 p-1"
+                          title="Save"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={handleTitleCancel}
+                          className="text-red-600 hover:text-red-700 p-1"
+                          title="Cancel"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 flex-1">
+                          {currentItem.title || 'Untitled'}
+                        </h2>
+                        <button
+                          onClick={handleTitleEdit}
+                          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity"
+                          title="Edit title"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-sm text-gray-500 dark:text-gray-400 capitalize mt-1">
+                      {currentItem.content_type}
+                      {currentItem.metadata?.domain && (
+                        <>
+                          <span className="mx-1">•</span>
+                          {currentItem.metadata.domain}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+            {/* General Content Type */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Type
+              </label>
+              <div className="flex items-center gap-2">
+                <ContentTypeIcon type={currentItem.content_type} />
+                <span className="text-gray-600 dark:text-gray-300 text-sm capitalize">
+                  {currentItem.content_type === 'tv-show' ? 'TV Show' : 
+                   currentItem.content_type === 'x' ? 'X/Twitter Post' :
+                   currentItem.content_type === 'youtube' ? 'YouTube Video' :
+                   currentItem.content_type === 'tiktok' ? 'TikTok Video' :
+                   currentItem.content_type === 'instagram' ? 'Instagram Post' :
+                   currentItem.content_type.replace('-', ' ')}
+                </span>
+              </div>
+            </div>
+
             {/* Metadata */}
             <div className="space-y-4 mb-4">
 
@@ -1373,16 +1406,6 @@ export default function ItemDetailModal({
             {/* Movie/TV Show Metadata */}
             {(currentItem.content_type === 'movie' || currentItem.content_type === 'tv-show' || (currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id))) && (
               <>
-                {/* Movie Type (Movie vs TV Show) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Type
-                  </label>
-                  <span className="text-gray-600 dark:text-gray-300 text-sm">
-                    {currentItem.content_type === 'tv-show' || currentItem.metadata?.is_tv_show ? 'TV Show' : 'Movie'}
-                  </span>
-                </div>
-
                 {/* Movie Year */}
                 {currentItem.metadata?.published_date && (
                   <div>
@@ -2178,7 +2201,20 @@ export default function ItemDetailModal({
             </div>
             {/* Fixed Bottom Bar - spans only the right column */}
             <div id="modal-right-column-bottom-bar" className="absolute bottom-0 inset-x-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex items-center justify-between gap-3">
+              <div className="space-selector-button-container flex items-center gap-3">
+                {/* Delete Button */}
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(currentItem.id)}
+                    className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors flex-shrink-0"
+                    title="Delete item"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+
                 {/* Space Selector Button */}
                 <div ref={spaceSelectorRef} className="relative flex-1">
                   <button
@@ -2233,18 +2269,25 @@ export default function ItemDetailModal({
                   )}
                 </div>
 
-                {/* Delete Button */}
-                {onDelete && (
-                  <button
-                    onClick={() => onDelete(currentItem.id)}
-                    className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                    title="Delete item"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                {/* Fullscreen Toggle Button */}
+                <button
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="modal-fullscreen-toggle-button hidden md:block p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
+                  aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                >
+                  {isFullscreen ? (
+                    /* Minimize icon */
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
                     </svg>
-                  </button>
-                )}
+                  ) : (
+                    /* Maximize icon */
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
 
