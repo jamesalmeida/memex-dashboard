@@ -103,6 +103,7 @@ export default function ItemDetailModal({
   const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
 
   useEffect(() => {
     if (item && isOpen) {
@@ -363,6 +364,57 @@ export default function ItemDetailModal({
       }
     } finally {
       setIsLoadingTranscript(false);
+    }
+  };
+
+  const handleDownloadVideo = async () => {
+    if (!currentItem || currentItem.content_type !== 'youtube' || !currentItem.url) {
+      return;
+    }
+    
+    setIsDownloadingVideo(true);
+    
+    try {
+      // Get the direct download URL from YouTube - server just provides the URL
+      const response = await fetch('/api/get-download-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: currentItem.url
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to get download URL');
+      }
+      
+      const data = await response.json();
+      
+      // Create a download link that downloads directly from YouTube's servers
+      const link = document.createElement('a');
+      link.href = data.downloadUrl;
+      link.download = data.filename;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.style.display = 'none';
+      
+      // Add to DOM, trigger download, and cleanup
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Show success message with video details
+      alert(`✅ Download started!\n\nFile: ${data.filename}\nQuality: ${data.quality}\n${data.size ? `Size: ${Math.round(parseInt(data.size) / 1024 / 1024)}MB` : ''}\n\nCheck your Downloads folder.`);
+      
+    } catch (error) {
+      console.error('Failed to download video:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download video';
+      alert(`❌ ${errorMessage}\n\nPossible reasons:\n• Video is private or restricted\n• Video requires sign-in\n• Video is too large\n• YouTube blocked the request`);
+    } finally {
+      setIsDownloadingVideo(false);
     }
   };
 
@@ -1579,6 +1631,28 @@ export default function ItemDetailModal({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         {transcript ? (showTranscript ? 'Hide' : 'Show') : 'Get'} Transcript
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleDownloadVideo}
+                    disabled={isDownloadingVideo}
+                    className="w-full px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDownloadingVideo ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download Video
                       </>
                     )}
                   </button>
