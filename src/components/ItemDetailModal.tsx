@@ -1634,6 +1634,8 @@ export default function ItemDetailModal({
                       </>
                     )}
                   </button>
+                  {/* Download Video - Temporarily disabled due to ytdl-core issues */}
+                  {/*
                   <button
                     onClick={handleDownloadVideo}
                     disabled={isDownloadingVideo}
@@ -1656,6 +1658,7 @@ export default function ItemDetailModal({
                       </>
                     )}
                   </button>
+                  */}
                   <button className="w-full px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
