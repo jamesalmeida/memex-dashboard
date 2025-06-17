@@ -149,6 +149,57 @@ export const tagsService = {
     return []
   },
 
+  // Add a tag to an item
+  async addTagToItem(itemId: string, tagName: string): Promise<void> {
+    console.log('=== TAGS SERVICE: addTagToItem ===');
+    console.log('itemId:', itemId);
+    console.log('tagName:', tagName);
+    
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) throw new Error('User not authenticated')
+    console.log('User authenticated:', user.id);
+    
+    // First get or create the tag
+    console.log('Getting or creating tag...');
+    const tag = await this.getOrCreateTag(tagName)
+    console.log('Tag result:', tag);
+    
+    // Then create the relationship (ignore if it already exists)
+    console.log('Creating items_tags relationship...');
+    const { data, error } = await supabase
+      .from('items_tags')
+      .upsert({
+        item_id: itemId,
+        tag_id: tag.id
+      }, {
+        onConflict: 'item_id,tag_id',
+        ignoreDuplicates: true
+      })
+      .select()
+    
+    console.log('Upsert result data:', data);
+    console.log('Upsert result error:', error);
+    
+    if (error) throw error
+    
+    console.log('=== TAGS SERVICE: addTagToItem COMPLETE ===');
+  },
+
+  // Remove a tag from an item
+  async removeTagFromItem(itemId: string, tagId: string): Promise<void> {
+    const supabase = createClient()
+    
+    const { error } = await supabase
+      .from('items_tags')
+      .delete()
+      .eq('item_id', itemId)
+      .eq('tag_id', tagId)
+    
+    if (error) throw error
+  },
+
   // Suggest tags based on content
   async suggestTags(content: string): Promise<Tag[]> {
     // This is a placeholder for future ML-based tag suggestions

@@ -203,21 +203,17 @@ export default function Dashboard({ params }: DashboardProps) {
       if (hash && !showItemDetail) {
         // Hash exists and modal isn't open - try to open the item
         try {
-          // First try to find in current items to avoid unnecessary fetches
-          const item = items.find(item => item.id === hash);
-          if (item) {
-            setSelectedItem(item);
+          // Always fetch fresh data from database to ensure we have latest tags/data
+          console.log('Fetching fresh item data for hash:', hash);
+          const fetchedItem = await itemsService.getItem(hash);
+          if (fetchedItem) {
+            console.log('Fresh item fetched with tags:', fetchedItem.tags);
+            setSelectedItem(fetchedItem);
             setShowItemDetail(true);
           } else {
-            // Item not found in current items, try to fetch it directly
-            const fetchedItem = await itemsService.getItem(hash);
-            if (fetchedItem) {
-              setSelectedItem(fetchedItem);
-              setShowItemDetail(true);
-            } else {
-              // Item doesn't exist, clear the hash
-              window.history.replaceState({}, '', window.location.pathname);
-            }
+            // Item doesn't exist, clear the hash
+            console.log('Item not found, clearing hash');
+            window.history.replaceState({}, '', window.location.pathname);
           }
         } catch (error) {
           console.error('Error loading item:', error);
@@ -661,12 +657,32 @@ export default function Dashboard({ params }: DashboardProps) {
     }
   };
 
-  const handleItemClick = (item: ItemWithMetadata) => {
-    setSelectedItem(item);
-    setShowItemDetail(true);
-    
-    // Add item ID to URL hash
-    window.location.hash = item.id;
+  const handleItemClick = async (item: ItemWithMetadata) => {
+    try {
+      // Always fetch fresh data to ensure we have latest tags/updates
+      console.log('Item clicked, fetching fresh data for:', item.id);
+      const freshItem = await itemsService.getItem(item.id);
+      if (freshItem) {
+        console.log('Fresh item loaded with tags:', freshItem.tags);
+        setSelectedItem(freshItem);
+        setShowItemDetail(true);
+        
+        // Add item ID to URL hash
+        window.location.hash = item.id;
+      } else {
+        console.error('Could not fetch fresh item data');
+        // Fallback to cached item if fresh fetch fails
+        setSelectedItem(item);
+        setShowItemDetail(true);
+        window.location.hash = item.id;
+      }
+    } catch (error) {
+      console.error('Error fetching fresh item:', error);
+      // Fallback to cached item if fresh fetch fails
+      setSelectedItem(item);
+      setShowItemDetail(true);
+      window.location.hash = item.id;
+    }
   };
 
   const handleUpdateItem = async (id: string, updates: Partial<MockItem>) => {
@@ -740,17 +756,32 @@ export default function Dashboard({ params }: DashboardProps) {
 
   const handleAddTagToItem = async (itemId: string, tagName: string) => {
     try {
+      console.log('=== ADD TAG START ===');
+      console.log('Adding tag:', tagName, 'to item:', itemId);
+      console.log('Current selectedItem tags before:', selectedItem?.tags);
+      
       // Use cached mutation - automatically handles cache updates
       await addTagMutation.mutateAsync({ itemId, tagName });
+      console.log('Tag mutation completed');
       
       // Update local selected item if needed
       if (selectedItem?.id === itemId) {
-        // React Query will automatically refetch the item, but we can optimistically update
-        const updatedItem = await itemsService.getItem(itemId);
+        console.log('Fetching updated item from database...');
+        
+        // Force a refetch of the item from React Query cache
+        const updatedItem = await queryClient.fetchQuery({
+          queryKey: itemKeys.detail(itemId),
+          queryFn: () => itemsService.getItem(itemId),
+        });
+        
+        console.log('Updated item tags from database:', updatedItem?.tags);
+        
         if (updatedItem) {
           setSelectedItem(updatedItem);
+          console.log('Updated selectedItem state with new tags');
         }
       }
+      console.log('=== ADD TAG END ===');
     } catch (error) {
       console.error('Error adding tag to item:', error);
     }
@@ -763,8 +794,11 @@ export default function Dashboard({ params }: DashboardProps) {
       
       // Update local selected item if needed
       if (selectedItem?.id === itemId) {
-        // React Query will automatically refetch the item, but we can optimistically update
-        const updatedItem = await itemsService.getItem(itemId);
+        // Force a refetch of the item from React Query cache
+        const updatedItem = await queryClient.fetchQuery({
+          queryKey: itemKeys.detail(itemId),
+          queryFn: () => itemsService.getItem(itemId),
+        });
         if (updatedItem) {
           setSelectedItem(updatedItem);
         }

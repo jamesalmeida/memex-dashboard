@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MockItem } from '@/utils/mockData';
 import { Space, ItemWithMetadata } from '@/types/database';
+import { tagsService } from '@/lib/supabase/services';
 import Modal from './Modal';
 import Image from 'next/image';
 
@@ -112,7 +113,12 @@ export default function ItemDetailModal({
   const spaceSelectorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    console.log('=== MODAL OPENING/LOADING ===');
+    console.log('isOpen:', isOpen);
+    console.log('item exists:', !!item);
+    
     if (item && isOpen) {
+      console.log('Modal opening with item:', item.id);
       setCurrentItem(item);
       setEditedTitle(item.title || '');
       setEditedDescription(item.description || '');
@@ -126,10 +132,17 @@ export default function ItemDetailModal({
       setShowTranscript(false);
       
       // Handle tags from both mock data (metadata.tags) and real data (tags array)
+      console.log('Raw item.tags:', item.tags);
+      console.log('Item.tags is array:', Array.isArray(item.tags));
+      console.log('Item.metadata?.tags:', item.metadata?.tags);
+      
       const tagNames = item.tags && Array.isArray(item.tags) 
         ? item.tags.map(tag => typeof tag === 'string' ? tag : tag.name)
         : item.metadata?.tags || [];
+      
+      console.log('Processed tagNames:', tagNames);
       setTags(tagNames);
+      console.log('Set tags state to:', tagNames);
       
       // Handle both string (mock) and object (real) space data
       const spaceId = typeof item.space === 'string' 
@@ -137,6 +150,7 @@ export default function ItemDetailModal({
         : item.space?.id || 'none';
       setSelectedSpace(spaceId);
     }
+    console.log('=== MODAL LOADING COMPLETE ===');
   }, [item, isOpen]);
 
   // Update local state when item changes (after operations like adding tags or moving spaces)
@@ -261,19 +275,34 @@ export default function ItemDetailModal({
   };
 
   const handleRemoveTag = async (tagToRemove: string) => {
-    if (onRemoveTag && currentItem && 'tags' in currentItem && Array.isArray(currentItem.tags)) {
-      // Find the tag object with the matching name to get its ID
-      const tagToDelete = currentItem.tags.find(tag => 
-        typeof tag === 'object' && tag.name === tagToRemove
-      );
-      
-      if (tagToDelete && typeof tagToDelete === 'object' && 'id' in tagToDelete) {
-        try {
-          await onRemoveTag(currentItem.id, tagToDelete.id);
-          // Don't optimistically update - let the parent update the item prop
-        } catch (error) {
-          console.error('Failed to remove tag:', error);
+    if (onRemoveTag && currentItem) {
+      try {
+        // Check if we have tag objects with IDs in the current item
+        if ('tags' in currentItem && Array.isArray(currentItem.tags)) {
+          const tagToDelete = currentItem.tags.find(tag => 
+            (typeof tag === 'object' && tag !== null && 'name' in tag && tag.name === tagToRemove) ||
+            (typeof tag === 'string' && tag === tagToRemove)
+          );
+          
+          if (tagToDelete && typeof tagToDelete === 'object' && 'id' in tagToDelete) {
+            // We have a tag object with an ID
+            await onRemoveTag(currentItem.id, tagToDelete.id);
+          } else {
+            // We need to find the tag ID by name using the tags service
+            console.log('Looking up tag ID for:', tagToRemove);
+            const allTags = await tagsService.getTags();
+            const tagObject = allTags.find(tag => tag.name.toLowerCase() === tagToRemove.toLowerCase());
+            
+            if (tagObject) {
+              await onRemoveTag(currentItem.id, tagObject.id);
+            } else {
+              console.error('Could not find tag with name:', tagToRemove);
+            }
+          }
         }
+        // Don't optimistically update - let the parent update the item prop
+      } catch (error) {
+        console.error('Failed to remove tag:', error);
       }
     }
   };
