@@ -104,6 +104,8 @@ export default function ItemDetailModal({
   const [transcript, setTranscript] = useState<string | null>(null);
   const [showTranscript, setShowTranscript] = useState(false);
   const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
+  const [directVideoUrl, setDirectVideoUrl] = useState<string | null>(null);
+  const [isLoadingDirectUrl, setIsLoadingDirectUrl] = useState(false);
 
   useEffect(() => {
     if (item && isOpen) {
@@ -418,6 +420,44 @@ export default function ItemDetailModal({
     }
   };
 
+  const handleGetDirectUrl = async () => {
+    if (!currentItem || currentItem.content_type !== 'youtube' || !currentItem.url) {
+      return;
+    }
+    
+    setIsLoadingDirectUrl(true);
+    
+    try {
+      const response = await fetch('/api/get-download-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: currentItem.url
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to get direct URL');
+      }
+      
+      const data = await response.json();
+      setDirectVideoUrl(data.downloadUrl);
+      
+      // Show success message
+      alert(`✅ Direct URL generated!\n\nQuality: ${data.quality}\n${data.size ? `Size: ${Math.round(parseInt(data.size) / 1024 / 1024)}MB` : ''}\n\nNote: This URL is temporary and will expire in a few hours.`);
+      
+    } catch (error) {
+      console.error('Failed to get direct URL:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get direct URL';
+      alert(`❌ ${errorMessage}\n\nThis is often due to YouTube's restrictions or the video being private/restricted.`);
+    } finally {
+      setIsLoadingDirectUrl(false);
+    }
+  };
+
   const handleTitleEdit = () => {
     setIsEditingTitle(true);
   };
@@ -643,7 +683,7 @@ export default function ItemDetailModal({
                   if (videoId) {
                     return (
                       <iframe
-                        src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0`}
+                        src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0&showinfo=0&controls=1&disablekb=0&fs=1&iv_load_policy=3&cc_load_policy=0&playsinline=1`}
                         title={currentItem.title}
                         className="w-full h-full"
                         frameBorder="0"
@@ -658,6 +698,122 @@ export default function ItemDetailModal({
                     </div>
                   );
                 })()}
+              </div>
+
+              {/* Enhanced YouTube Metadata */}
+              <div className="mt-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                <h3 className="font-medium text-orange-900 dark:text-orange-100 mb-3 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'rgb(255,77,6)' }}>
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  YouTube Video
+                </h3>
+
+                {/* Channel Information */}
+                {(currentItem.metadata?.extra_data?.youtube?.channel_id || currentItem.metadata?.author) && (
+                  <div className="mb-4 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Channel
+                    </h4>
+                    <div className="flex items-center gap-3">
+                      {currentItem.metadata?.profile_image && (
+                        <img 
+                          src={currentItem.metadata.profile_image} 
+                          alt="Channel avatar"
+                          className="w-10 h-10 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {currentItem.metadata?.author || 'Unknown Channel'}
+                        </div>
+                        {currentItem.metadata?.extra_data?.youtube?.channel_subscribers && (
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {typeof currentItem.metadata.extra_data.youtube.channel_subscribers === 'number' 
+                              ? currentItem.metadata.extra_data.youtube.channel_subscribers.toLocaleString() 
+                              : currentItem.metadata.extra_data.youtube.channel_subscribers} subscribers
+                          </div>
+                        )}
+                      </div>
+                      {currentItem.metadata?.extra_data?.youtube?.channel_url && (
+                        <button
+                          onClick={() => window.open(currentItem.metadata?.extra_data?.youtube?.channel_url, '_blank')}
+                          className="px-3 py-1 text-sm text-white rounded-md transition-colors"
+                          style={{ backgroundColor: 'rgb(255,77,6)' }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgb(230,69,5)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgb(255,77,6)'}
+                        >
+                          Visit Channel
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Video Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                  {currentItem.metadata?.views && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Views:</span>
+                      <span className="ml-2 font-medium">{typeof currentItem.metadata.views === 'number' ? currentItem.metadata.views.toLocaleString() : currentItem.metadata.views}</span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.likes && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Likes:</span>
+                      <span className="ml-2 font-medium">{typeof currentItem.metadata.likes === 'number' ? currentItem.metadata.likes.toLocaleString() : currentItem.metadata.likes}</span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.duration && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Duration:</span>
+                      <span className="ml-2 font-medium">{currentItem.metadata.duration}</span>
+                    </div>
+                  )}
+                  {currentItem.metadata?.published_date && (
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-400">Published:</span>
+                      <span className="ml-2 font-medium">{new Date(currentItem.metadata.published_date).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Category and Tags */}
+                {(currentItem.metadata?.extra_data?.youtube?.category || currentItem.metadata?.extra_data?.youtube?.tags) && (
+                  <div className="mb-4">
+                    {currentItem.metadata.extra_data.youtube.category && (
+                      <div className="mb-2">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Category:</span>
+                        <span className="ml-2 text-sm font-medium">{currentItem.metadata.extra_data.youtube.category}</span>
+                      </div>
+                    )}
+                    {currentItem.metadata.extra_data.youtube.tags && Array.isArray(currentItem.metadata.extra_data.youtube.tags) && currentItem.metadata.extra_data.youtube.tags.length > 0 && (
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Tags:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {currentItem.metadata.extra_data.youtube.tags.slice(0, 8).map((tag: string, index: number) => (
+                            <span key={index} className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                              {tag}
+                            </span>
+                          ))}
+                          {currentItem.metadata.extra_data.youtube.tags.length > 8 && (
+                            <span className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                              +{currentItem.metadata.extra_data.youtube.tags.length - 8} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+
               </div>
             </div>
           )}
@@ -1586,29 +1742,159 @@ export default function ItemDetailModal({
                   </div>
                 )}
 
-                {/* YouTube Video Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  {currentItem.metadata?.duration && (
+                {/* Enhanced YouTube Video Stats */}
+                <div className="space-y-4 mb-4">
+                  {/* Channel Information */}
+                  {(currentItem.metadata?.author || currentItem.metadata?.profile_image) && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                      <div className="flex items-center gap-3">
+                        {currentItem.metadata.profile_image && (
+                          <img 
+                            src={currentItem.metadata.profile_image} 
+                            alt="Channel avatar"
+                            className="w-10 h-10 rounded-full bg-gray-100"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900 dark:text-gray-100">
+                            {currentItem.metadata.author}
+                          </div>
+                          {currentItem.metadata?.extra_data?.youtube?.channel_subscribers && (
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {parseInt(currentItem.metadata.extra_data.youtube.channel_subscribers).toLocaleString()} subscribers
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Video Stats Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {currentItem.metadata?.duration && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Duration
+                        </label>
+                        <span className="text-gray-600 dark:text-gray-300 text-sm">
+                          {currentItem.metadata.duration}
+                        </span>
+                      </div>
+                    )}
+                    {(currentItem.metadata?.views || currentItem.metadata?.extra_data?.views) && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Views
+                        </label>
+                        <span className="text-gray-600 dark:text-gray-300 text-sm">
+                          {parseInt(currentItem.metadata.views || currentItem.metadata.extra_data.views).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {(currentItem.metadata?.likes || currentItem.metadata?.extra_data?.likes) && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Likes
+                        </label>
+                        <span className="text-gray-600 dark:text-gray-300 text-sm">
+                          {parseInt(currentItem.metadata.likes || currentItem.metadata.extra_data.likes).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {currentItem.metadata?.published_date && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Published
+                        </label>
+                        <span className="text-gray-600 dark:text-gray-300 text-sm">
+                          {new Date(currentItem.metadata.published_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Additional Metadata */}
+                  {currentItem.metadata?.extra_data?.youtube?.category && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Duration
+                        Category
                       </label>
-                      <span className="text-gray-600 text-sm">
-                        {currentItem.metadata.duration}
+                      <span className="text-gray-600 dark:text-gray-300 text-sm">
+                        {currentItem.metadata.extra_data.youtube.category}
                       </span>
                     </div>
                   )}
-                  {currentItem.metadata?.extra_data?.views && (
+
+                  {/* Tags */}
+                  {currentItem.metadata?.extra_data?.youtube?.tags && currentItem.metadata.extra_data.youtube.tags.length > 0 && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Views
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tags
                       </label>
-                      <span className="text-gray-600 text-sm">
-                        {parseInt(currentItem.metadata.extra_data.views).toLocaleString()}
-                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {currentItem.metadata.extra_data.youtube.tags.slice(0, 10).map((tag: string, index: number) => (
+                          <span 
+                            key={index}
+                            className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {currentItem.metadata.extra_data.youtube.tags.length > 10 && (
+                          <span className="px-2 py-1 text-gray-500 text-xs">
+                            +{currentItem.metadata.extra_data.youtube.tags.length - 10} more
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
+
+                {/* Direct Video URL Section */}
+                {directVideoUrl && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Direct Video URL
+                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400" title="This URL is temporary and will expire in a few hours">
+                        ⚠️ Temporary
+                      </span>
+                    </label>
+                    <div className="space-y-2">
+                      <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md text-xs text-gray-600 dark:text-gray-400 break-all font-mono">
+                        {directVideoUrl}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(directVideoUrl)}
+                          className="flex-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          </svg>
+                          Copy URL
+                        </button>
+                        <button
+                          onClick={() => window.open(directVideoUrl, '_blank')}
+                          className="flex-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Open
+                        </button>
+                        <button
+                          onClick={() => setDirectVideoUrl(null)}
+                          className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-1"
+                          title="Clear URL"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* YouTube Actions */}
                 <div className="space-y-2 mb-4">
@@ -1634,31 +1920,30 @@ export default function ItemDetailModal({
                       </>
                     )}
                   </button>
-                  {/* Download Video - Temporarily disabled due to ytdl-core issues */}
-                  {/*
+                  
                   <button
-                    onClick={handleDownloadVideo}
-                    disabled={isDownloadingVideo}
+                    onClick={handleGetDirectUrl}
+                    disabled={isLoadingDirectUrl}
                     className="w-full px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isDownloadingVideo ? (
+                    {isLoadingDirectUrl ? (
                       <>
                         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Downloading...
+                        Getting URL...
                       </>
                     ) : (
                       <>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
-                        Download Video
+                        {directVideoUrl ? 'Regenerate' : 'Get'} Direct URL
                       </>
                     )}
                   </button>
-                  */}
+                  
                   <button className="w-full px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />

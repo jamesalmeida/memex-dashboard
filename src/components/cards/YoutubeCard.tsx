@@ -58,7 +58,7 @@ export default function YoutubeCard({ item, onArchive, onDelete, onClick }: Yout
             </div>
           ) : (
             // Regular YouTube play button
-            <div className="relative" style={{ color: '#FF0000' }}>
+            <div className="relative drop-shadow-lg" style={{ color: '#FF0000' }}>
               {/* White background to fill transparent triangle - always white in all modes */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-8 h-8" style={{ backgroundColor: '#FFFFFF' }}></div>

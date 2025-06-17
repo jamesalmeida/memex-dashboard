@@ -25,6 +25,8 @@ export interface ExtractedMetadata {
   likes?: number
   replies?: number
   retweets?: number
+  // Extended metadata storage
+  extra_data?: Record<string, any>
 }
 
 export interface UrlAnalysisResult {
@@ -312,6 +314,77 @@ export class UrlMetadataService {
    * Enhance YouTube video metadata
    */
   private async enhanceYouTubeMetadata(url: string, metadata: ExtractedMetadata): Promise<void> {
+    console.log('Enhancing YouTube metadata for:', url);
+    
+    try {
+      // Use our YouTube.js API to get comprehensive metadata
+      const response = await fetch('/api/youtube-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('YouTube metadata from API:', data);
+        
+        if (data.success && data.metadata) {
+          const ytData = data.metadata;
+          
+          // Override with richer YouTube.js data
+          metadata.title = ytData.title || metadata.title;
+          metadata.description = ytData.description || metadata.description;
+          metadata.duration = ytData.duration || metadata.duration;
+          metadata.views = ytData.view_count || metadata.views;
+          metadata.likes = ytData.like_count || metadata.likes;
+          metadata.published_date = ytData.upload_date || metadata.published_date;
+          
+          // Channel information
+          metadata.author = ytData.channel.name || metadata.author;
+          metadata.profile_image = ytData.channel.avatar || metadata.profile_image;
+          
+          // Use traditional high-quality YouTube thumbnail URL (always highest quality)
+          const videoIdMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]+)/);
+          if (videoIdMatch) {
+            const videoId = videoIdMatch[1];
+            metadata.thumbnail_url = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+          } else {
+            // Fallback to YouTube.js thumbnails if we can't extract video ID
+            metadata.thumbnail_url = ytData.thumbnails.maxres || 
+                                     ytData.thumbnails.high || 
+                                     ytData.thumbnails.medium || 
+                                     ytData.thumbnails.default || 
+                                     metadata.thumbnail_url;
+          }
+          
+          // Store additional YouTube-specific data in extra_data
+          metadata.extra_data = {
+            ...metadata.extra_data,
+            youtube: {
+              channel_id: ytData.channel.id,
+              channel_url: ytData.channel.url,
+              channel_subscribers: ytData.channel.subscriber_count,
+              category: ytData.category,
+              language: ytData.language,
+              tags: ytData.tags,
+              is_live: ytData.is_live,
+              is_upcoming: ytData.is_upcoming
+            }
+          };
+          
+          console.log('Enhanced metadata with YouTube.js data');
+        }
+      } else {
+        console.warn('YouTube metadata API failed, falling back to basic enhancement');
+        this.fallbackYouTubeMetadata(url, metadata);
+      }
+    } catch (error) {
+      console.error('Failed to fetch YouTube metadata:', error);
+      this.fallbackYouTubeMetadata(url, metadata);
+    }
+  }
+
+  private fallbackYouTubeMetadata(url: string, metadata: ExtractedMetadata): void {
     const videoIdMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]+)/)
     if (!videoIdMatch) return
 
@@ -321,8 +394,7 @@ export class UrlMetadataService {
     metadata.thumbnail_url = metadata.thumbnail_url || 
       `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
     
-    // Additional YouTube-specific metadata would require API key
-    // For now, we'll rely on Open Graph data
+    console.log('Using fallback YouTube metadata');
   }
 
   /**
