@@ -116,7 +116,7 @@ export default function XApiStatus() {
       {status.configured && !status.error && (
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Free tier: 50 requests / 15 min • Basic: 100 / 15 min
+            Free tier: 1 request / 15 min
           </p>
         </div>
       )}
