@@ -606,6 +606,7 @@ export default function Dashboard({ params }: DashboardProps) {
           username: metadata.username,
           profile_image: metadata.profile_image,  // Move profile_image to top level
           video_url: metadata.video_url,  // Now a direct field
+          published_date: metadata.published_date,  // Add published_date
           likes: metadata.likes,
           replies: metadata.replies,
           retweets: metadata.retweets,
@@ -872,13 +873,14 @@ export default function Dashboard({ params }: DashboardProps) {
         
         // Update metadata if available
         if (metadata.author || metadata.username || metadata.video_url || 
-            metadata.likes !== undefined || metadata.retweets !== undefined) {
+            metadata.likes !== undefined || metadata.retweets !== undefined || metadata.published_date) {
           await itemsService.updateItemMetadata(itemId, {
             domain: metadata.domain,
             author: metadata.author,
             username: metadata.username,
             profile_image: metadata.profile_image,
             video_url: metadata.video_url,
+            published_date: metadata.published_date,
             likes: metadata.likes,
             replies: metadata.replies,
             retweets: metadata.retweets,

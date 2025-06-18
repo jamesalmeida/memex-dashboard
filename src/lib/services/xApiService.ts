@@ -153,6 +153,8 @@ export class XApiService {
         console.log('Invalid response structure');
         return null;
       }
+      
+      console.log('Tweet created_at:', tweet.created_at);
 
       const author = includes?.users?.[0];
       const media = includes?.media;

@@ -86,9 +86,10 @@ export function useXApiStatus() {
     }
 
     // Only make API call if we're not rate limited or if forced
-    console.log('Checking X API status...');
+    console.log(forceCheck ? 'Force checking X API status...' : 'Checking X API status...');
     try {
-      const response = await fetch('/api/x-api-status');
+      const url = forceCheck ? '/api/x-api-status?force=true' : '/api/x-api-status';
+      const response = await fetch(url);
       const data = await response.json();
       setStatus(data);
       
@@ -116,38 +117,46 @@ export function useXApiStatus() {
   }, [loadStoredRateLimit, calculateStatusFromStored, saveRateLimit]);
 
   useEffect(() => {
-    // Initial load
-    fetchStatus();
+    // Initial load - only check stored data first
+    const stored = loadStoredRateLimit();
+    if (stored) {
+      const calculatedStatus = calculateStatusFromStored(stored);
+      if (calculatedStatus) {
+        setStatus(calculatedStatus);
+        setLoading(false);
+        
+        // Only fetch from API if we're not rate limited and it's been a while
+        const lastChecked = new Date(stored.lastChecked);
+        const timeSinceLastCheck = Date.now() - lastChecked.getTime();
+        
+        if (!calculatedStatus.isRateLimited && timeSinceLastCheck > 5 * 60 * 1000) {
+          fetchStatus();
+        }
+        return;
+      }
+    }
     
-    // Set up interval that respects rate limit status
+    // No stored data, fetch from API
+    fetchStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps, only run once on mount
+  
+  useEffect(() => {
+    // Set up interval that only updates UI from stored data
     const interval = setInterval(() => {
       const stored = loadStoredRateLimit();
       
-      if (stored && stored.isRateLimited && stored.resetTime) {
-        // If we're rate limited, just update the UI based on stored data
+      if (stored) {
+        // Just update the UI based on stored data - no API calls
         const calculatedStatus = calculateStatusFromStored(stored);
         if (calculatedStatus) {
           setStatus(calculatedStatus);
-          
-          // If reset time has passed, fetch fresh status
-          if (!calculatedStatus.isRateLimited) {
-            fetchStatus(true);
-          }
-        }
-      } else {
-        // If not rate limited or no stored data, fetch fresh status
-        // But only every few minutes to avoid using up our API calls
-        const lastChecked = stored?.lastChecked ? new Date(stored.lastChecked) : null;
-        const timeSinceLastCheck = lastChecked ? Date.now() - lastChecked.getTime() : Infinity;
-        
-        if (timeSinceLastCheck > 5 * 60 * 1000) { // 5 minutes
-          fetchStatus();
         }
       }
     }, CHECK_INTERVAL);
     
     return () => clearInterval(interval);
-  }, [fetchStatus, loadStoredRateLimit, calculateStatusFromStored]);
+  }, [loadStoredRateLimit, calculateStatusFromStored]);
 
   return { status, loading, refetch: () => fetchStatus(true) };
 }

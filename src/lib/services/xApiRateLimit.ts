@@ -62,7 +62,7 @@ class XApiRateLimitTracker {
     if (this.resetTime && new Date() > this.resetTime) {
       console.log('X API rate limit reset time has passed, allowing request');
       this.isRateLimited = false;
-      this.remainingRequests = 50; // Reset to default
+      this.remainingRequests = 1; // Reset to free tier default
       return false;
     }
 

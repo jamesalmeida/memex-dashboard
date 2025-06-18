@@ -47,55 +47,45 @@ export default function SettingsModal({ isOpen, onClose, userEmail }: SettingsMo
       <div className="p-6">
           <div className="space-y-6">
             {/* Account Section */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Account</h3>
-              <div className="space-y-3">
-                {userEmail && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Email</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{userEmail}</span>
-                  </div>
-                )}
+            <div className="space-y-3">
+              {userEmail && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Sign out of your account</span>
-                  <SignOutButton />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Account Email</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{userEmail}</span>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Placeholder for future settings */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Preferences</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Theme</span>
-                  <button
-                    onClick={toggleTheme}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                  >
-                    {isDarkMode ? (
-                      <>
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M21.64 13a1 1 0 0 0-1.05-.14 8.05 8.05 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a10.14 10.14 0 1 0 14 11.69 1 1 0 0 0-.36-1.05z"/>
-                        </svg>
-                        Dark
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2a1 1 0 0 0 1 1v2a1 1 0 0 0-2 0V3a1 1 0 0 0 1-1zm6.364 1.636a1 1 0 0 0-1.414 1.414l1.414 1.414a1 1 0 0 0 1.414-1.414l-1.414-1.414zM21 11a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2h-2zm-1.636 6.364a1 1 0 0 0-1.414-1.414l-1.414 1.414a1 1 0 0 0 1.414 1.414l1.414-1.414zM12 18a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-1-1zM5.636 17.364a1 1 0 0 0-1.414 1.414l1.414 1.414a1 1 0 0 0 1.414-1.414l-1.414-1.414zM2 12a1 1 0 1 0 2 0H2a1 1 0 0 0-2 0zm1.636-6.364a1 1 0 0 0 1.414-1.414L3.636 2.808a1 1 0 0 0-1.414 1.414l1.414 1.414z"/>
-                          <circle cx="12" cy="12" r="4"/>
-                        </svg>
-                        Light
-                      </>
-                    )}
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Language</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">English</span>
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Theme</span>
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                >
+                  {isDarkMode ? (
+                    <>
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M21.64 13a1 1 0 0 0-1.05-.14 8.05 8.05 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a10.14 10.14 0 1 0 14 11.69 1 1 0 0 0-.36-1.05z"/>
+                      </svg>
+                      Dark
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2a1 1 0 0 0 1 1v2a1 1 0 0 0-2 0V3a1 1 0 0 0 1-1zm6.364 1.636a1 1 0 0 0-1.414 1.414l1.414 1.414a1 1 0 0 0 1.414-1.414l-1.414-1.414zM21 11a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2h-2zm-1.636 6.364a1 1 0 0 0-1.414-1.414l-1.414 1.414a1 1 0 0 0 1.414 1.414l1.414-1.414zM12 18a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-1-1zM5.636 17.364a1 1 0 0 0-1.414 1.414l1.414 1.414a1 1 0 0 0 1.414-1.414l-1.414-1.414zM2 12a1 1 0 1 0 2 0H2a1 1 0 0 0-2 0zm1.636-6.364a1 1 0 0 0 1.414-1.414L3.636 2.808a1 1 0 0 0-1.414 1.414l1.414 1.414z"/>
+                        <circle cx="12" cy="12" r="4"/>
+                      </svg>
+                      Light
+                    </>
+                  )}
+                </button>
               </div>
+              {/* <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Language</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">English</span>
+              </div> */}
             </div>
 
             <div>
@@ -122,6 +112,10 @@ export default function SettingsModal({ isOpen, onClose, userEmail }: SettingsMo
                 </div>
               </div>
             </div>
+            <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Sign out of your account</span>
+                <SignOutButton />
+              </div>
           </div>
         </div>
     </Modal>

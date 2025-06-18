@@ -937,7 +937,7 @@ export default function ItemDetailModal({
           {/* X/Twitter Post */}
           {currentItem.content_type === 'x' && (
             <div className="mb-6 flex justify-center">
-              <div className="max-w-md w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+              <div className="x-post-mockup max-w-md w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
                 {/* Tweet Header */}
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center overflow-hidden relative">

@@ -80,6 +80,7 @@ async function handleRefresh(request: NextRequest, supabase: any) {
       
       if (metadata) {
         console.log('Successfully refreshed metadata with X API');
+        console.log('X API metadata published_date:', metadata.published_date);
         
         // Add domain
         const urlObj = new URL(url);
@@ -181,7 +182,7 @@ async function handleRefresh(request: NextRequest, supabase: any) {
     // Update metadata if we have additional fields
     if (metadata.author || metadata.username || metadata.profile_image || 
         metadata.video_url || metadata.likes || metadata.retweets || 
-        metadata.replies || metadata.views || metadata.extra_data) {
+        metadata.replies || metadata.views || metadata.published_date || metadata.extra_data) {
       
       // Access metadata correctly - it might be an array or object depending on the join
       const existingMetadata = Array.isArray(existingItem.metadata) 
@@ -194,6 +195,7 @@ async function handleRefresh(request: NextRequest, supabase: any) {
         username: metadata.username || existingMetadata?.username,
         profile_image: metadata.profile_image || existingMetadata?.profile_image,
         video_url: metadata.video_url || existingMetadata?.video_url,
+        published_date: metadata.published_date || existingMetadata?.published_date,
         likes: metadata.likes ?? existingMetadata?.likes,
         replies: metadata.replies ?? existingMetadata?.replies,
         retweets: metadata.retweets ?? existingMetadata?.retweets,
@@ -201,12 +203,17 @@ async function handleRefresh(request: NextRequest, supabase: any) {
         extra_data: metadata.extra_data || existingMetadata?.extra_data || {}
       };
       
+      console.log('Metadata input before cleanup:', metadataInput);
+      console.log('Published date value:', metadataInput.published_date);
+      
       // Remove undefined values
       Object.keys(metadataInput).forEach(key => {
         if (metadataInput[key] === undefined) {
           delete metadataInput[key];
         }
       });
+      
+      console.log('Metadata input after cleanup:', metadataInput);
       
       const { error: metadataError } = await supabase
         .from('item_metadata')

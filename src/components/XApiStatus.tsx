@@ -1,42 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
-interface XApiStatusData {
-  configured: boolean;
-  isRateLimited?: boolean;
-  remainingRequests?: number;
-  resetTimeString?: string;
-  minutesUntilReset?: number;
-  message?: string;
-  error?: string;
-}
+import { useState } from 'react';
+import { useXApiStatus } from '@/hooks/useXApiStatus';
 
 export default function XApiStatus() {
-  const [status, setStatus] = useState<XApiStatusData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { status, loading, refetch } = useXApiStatus();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchStatus = async () => {
-    try {
-      const response = await fetch('/api/x-api-status');
-      const data = await response.json();
-      setStatus(data);
-    } catch (error) {
-      console.error('Failed to fetch X API status:', error);
-      setStatus({ configured: false, error: 'Failed to check status' });
-    } finally {
-      setLoading(false);
-    }
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setTimeout(() => setIsRefreshing(false), 500);
   };
-
-  useEffect(() => {
-    fetchStatus();
-    
-    // Refresh status every 30 seconds
-    const interval = setInterval(fetchStatus, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   if (loading) {
     return (
@@ -56,13 +31,30 @@ export default function XApiStatus() {
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-            X API Status
-          </h3>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              X API Status
+            </h3>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              title="Refresh rate limit status"
+            >
+              <svg 
+                className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
           
           {!status.configured ? (
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
