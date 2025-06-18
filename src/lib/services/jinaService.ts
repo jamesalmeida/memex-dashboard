@@ -84,7 +84,8 @@ export class JinaService {
           content: data.data.content,
           categories: data.data.categories,
           lang: data.data.lang,
-          siteName: data.data.siteName
+          siteName: data.data.siteName,
+          url: data.data.url  // Store the actual URL from Jina
         }
       };
 

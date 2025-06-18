@@ -268,7 +268,10 @@ export class UrlMetadataService {
                                   metadata.title !== url &&
                                   metadata.title.length > 10;
         
-        if (!hasJinaContent && !hasMeaningfulTitle) {
+        // Special handling for Giphy - always keep title if it contains GIF
+        const isGiphyWithTitle = url.includes('giphy.com') && metadata.title && metadata.title.includes('GIF');
+        
+        if (!hasJinaContent && !hasMeaningfulTitle && !isGiphyWithTitle) {
           // Only clear if we don't have Jina content and the title isn't meaningful
           metadata.title = '';
           console.log('Cleared generic title for non-whitelisted content type:', contentType);
@@ -328,7 +331,10 @@ export class UrlMetadataService {
                                   metadata.title !== url &&
                                   metadata.title.length > 10;
         
-        if (!hasJinaContent && !hasMeaningfulTitle) {
+        // Special handling for Giphy - always keep title if it contains GIF
+        const isGiphyWithTitle = url.includes('giphy.com') && metadata.title && metadata.title.includes('GIF');
+        
+        if (!hasJinaContent && !hasMeaningfulTitle && !isGiphyWithTitle) {
           metadata.title = '';
           console.log('Final cleanup: Cleared generic title');
         }
@@ -1060,6 +1066,55 @@ export class UrlMetadataService {
       const urlObj = new URL(this.normalizeUrl(url));
       const pathname = urlObj.pathname;
       
+      // Special handling for Giphy URLs
+      if (url.includes('giphy.com')) {
+        console.log('Detected Giphy URL, processing Jina content');
+        
+        // For Giphy, keep the extracted title if it's meaningful
+        if (metadata.title && metadata.title.includes('GIF')) {
+          console.log('Keeping Giphy title:', metadata.title);
+        }
+        
+        // Process Jina markdown content to extract better description
+        if (metadata.extra_data?.content) {
+          const jinaContent = metadata.extra_data.content;
+          console.log('Processing Jina content for Giphy:', jinaContent);
+          
+          // Extract the alt text from the main GIF image
+          // Look for pattern like: Movie gif. Leonardo DiCaprio as Jay...
+          const altTextMatch = jinaContent.match(/\[Image \d+: ([^\]]+)\]/);
+          if (altTextMatch) {
+            metadata.description = altTextMatch[1].trim();
+            console.log('Extracted description from Jina alt text:', metadata.description);
+          } else if (metadata.description === 'giphy.gif' || !metadata.description) {
+            // Fallback: Extract GIF ID from URL
+            const giphyMatch = url.match(/(?:gifs\/[^\/]+-)?([a-zA-Z0-9]+)(?:\/giphy\.gif)?$/);
+            if (giphyMatch) {
+              metadata.description = `Giphy GIF (ID: ${giphyMatch[1]})`;
+            } else {
+              metadata.description = 'Animated GIF from Giphy';
+            }
+          }
+          
+          // Clear the markdown content from being stored as content
+          metadata.content = '';
+          delete metadata.extra_data.content;
+        }
+        
+        // Extract the actual GIF URL from Jina's URL Source if available
+        if (metadata.extra_data?.url) {
+          metadata.thumbnail_url = metadata.extra_data.url;
+          console.log('Using Jina URL source as thumbnail:', metadata.thumbnail_url);
+        } else if (!metadata.thumbnail_url || !metadata.thumbnail_url.includes('.gif')) {
+          // Ensure we use the actual GIF URL as thumbnail
+          metadata.thumbnail_url = url;
+        }
+        
+        console.log('Enhanced Giphy metadata:', metadata);
+        return;
+      }
+      
+      // For non-Giphy images, use the existing logic
       // Extract filename from path
       const filename = pathname.split('/').pop() || '';
       
