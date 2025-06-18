@@ -270,9 +270,10 @@ export default function Dashboard({ params }: DashboardProps) {
   // Filter items based on search and content type
   const filteredItems = items.filter(item => {
     const matchesSearch = searchQuery === '' || 
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags?.some(tag => tag.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      (item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (item.content?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (item.tags?.some(tag => tag.name?.toLowerCase().includes(searchQuery.toLowerCase())) ?? false);
     
     const matchesContentType = selectedContentType === null || item.content_type === selectedContentType;
     

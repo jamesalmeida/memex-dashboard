@@ -46,7 +46,7 @@ export default function InfiniteScrollGrid({
   // Filter items based on search and content type (client-side filtering)
   const filteredItems = allItems.filter(item => {
     const matchesSearch = searchQuery === '' ||
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.url?.toLowerCase().includes(searchQuery.toLowerCase())
 

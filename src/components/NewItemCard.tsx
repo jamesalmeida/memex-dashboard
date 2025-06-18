@@ -457,7 +457,6 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             maxHeight: '8rem', // ~5 lines maximum before scrolling
           }}
           disabled={isSubmitting}
-          autoFocus
           rows={1}
         />
       </div>
