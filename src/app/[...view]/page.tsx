@@ -21,6 +21,7 @@ import type { MockItem } from '@/utils/mockData';
 import { useItems, useInfiniteItems, useUpdateItem, useArchiveItem, useDeleteItem, itemKeys } from '@/hooks/useItems';
 import { useSpaces, useSpacesWithCounts, spaceKeys } from '@/hooks/useSpaces';
 import { useAddTagToItem, useRemoveTagFromItem } from '@/hooks/useTags';
+import { useXApiStatus } from '@/hooks/useXApiStatus';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface DashboardProps {
@@ -147,6 +148,7 @@ export default function Dashboard({ params }: DashboardProps) {
   const addTagMutation = useAddTagToItem();
   const removeTagMutation = useRemoveTagFromItem();
   const queryClient = useQueryClient();
+  const { status: xApiStatus } = useXApiStatus();
   
   // Combined loading state from all queries
   const loading = itemsLoading || spacesLoading || spacesWithCountsLoading;
@@ -1380,6 +1382,7 @@ export default function Dashboard({ params }: DashboardProps) {
         onAddTag={handleAddTagToItem}
         onRemoveTag={handleRemoveTagFromItem}
         onRefreshMetadata={handleRefreshMetadata}
+        xApiStatus={xApiStatus}
         spaces={spaces}
       />
 
