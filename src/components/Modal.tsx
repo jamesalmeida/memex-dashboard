@@ -150,7 +150,7 @@ export default function Modal({ isOpen, onClose, children, title, modalId, isFul
           ${isFullscreen 
             ? 'md:inset-5 md:w-[calc(100vw-40px)] md:h-[calc(100vh-40px)] md:max-w-none' 
             : maxWidth 
-              ? `md:left-5 md:w-full ${maxWidth} md:h-[75vh] md:max-h-[75vh]`
+              ? `md:left-1/2 w-full ${maxWidth} md:-translate-x-1/2 ${modalId === 'capture-modal' ? 'md:h-auto' : 'md:h-[75vh] md:max-h-[75vh]'}`
               : 'md:left-1/2 md:w-[75vw] md:max-w-6xl md:-translate-x-1/2 md:h-[75vh] md:max-h-[75vh]'
           }
           ${/* Common desktop styles */ ''}
@@ -183,7 +183,7 @@ export default function Modal({ isOpen, onClose, children, title, modalId, isFul
 
         
         {/* Content */}
-        <div className="overflow-y-auto flex-1">
+        <div className="new-item-modal overflow-y-auto flex-1">
           {children}
         </div>
       </div>
