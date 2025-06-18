@@ -18,6 +18,7 @@ interface ItemDetailModalProps {
   onUpdateItem?: (id: string, updates: Partial<MockItem>) => void;
   onAddTag?: (itemId: string, tagName: string) => void;
   onRemoveTag?: (itemId: string, tagId: string) => void;
+  onRefreshMetadata?: (id: string, url: string) => Promise<void>;
   spaces?: Space[];
 }
 
@@ -92,11 +93,13 @@ export default function ItemDetailModal({
   onUpdateItem,
   onAddTag,
   onRemoveTag,
+  onRefreshMetadata,
   spaces = []
 }: ItemDetailModalProps) {
   const [newTag, setNewTag] = useState('');
   const [selectedSpace, setSelectedSpace] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showTagInput, setShowTagInput] = useState(false);
   const [currentItem, setCurrentItem] = useState<MockItem | ItemWithMetadata | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -593,6 +596,21 @@ export default function ItemDetailModal({
       handleContentSave();
     } else if (e.key === 'Escape') {
       handleContentCancel();
+    }
+  };
+
+  const handleRefreshMetadata = async () => {
+    if (!currentItem || !currentItem.url || !onRefreshMetadata) return;
+    
+    setIsRefreshing(true);
+    try {
+      await onRefreshMetadata(currentItem.id, currentItem.url);
+      // The parent component should update the item prop, which will trigger our useEffect
+    } catch (error) {
+      console.error('Failed to refresh metadata:', error);
+      alert('Failed to refresh metadata. Please try again.');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -1574,6 +1592,31 @@ export default function ItemDetailModal({
                       Open
                     </button>
                   </div>
+                  {/* Refresh Metadata Button */}
+                  {onRefreshMetadata && (
+                    <button
+                      onClick={handleRefreshMetadata}
+                      disabled={isRefreshing}
+                      className="w-full px-3 py-1.5 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isRefreshing ? (
+                        <>
+                          <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Refreshing...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Refresh
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             )}

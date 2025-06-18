@@ -821,6 +821,124 @@ export default function Dashboard({ params }: DashboardProps) {
     }
   };
 
+  const handleRefreshMetadata = async (itemId: string, url: string) => {
+    try {
+      console.log('=== Refreshing metadata for item ===');
+      console.log('Item ID:', itemId);
+      console.log('URL:', url);
+      
+      // For now, let's do the refresh directly from the frontend
+      // First check if X API is available
+      const isXPost = url.includes('twitter.com') || url.includes('x.com');
+      
+      if (isXPost) {
+        console.log('Refreshing X post metadata...');
+        
+        // Call the extract-metadata endpoint which already handles X posts
+        const metadataResponse = await fetch('/api/extract-metadata', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url }),
+        });
+        
+        if (!metadataResponse.ok) {
+          throw new Error('Failed to extract metadata');
+        }
+        
+        const metadata = await metadataResponse.json();
+        console.log('Extracted metadata:', metadata);
+        
+        // Now update the item directly using itemsService
+        const updateData: any = {
+          // Don't update title for X posts - user may have added their own
+          description: metadata.description,
+          thumbnail_url: metadata.thumbnail_url,
+          content: metadata.content,
+        };
+        
+        // Remove undefined values
+        Object.keys(updateData).forEach(key => {
+          if (updateData[key] === undefined) {
+            delete updateData[key];
+          }
+        });
+        
+        // Update the item
+        await updateItemMutation.mutateAsync({ id: itemId, updates: updateData });
+        
+        // Update metadata if available
+        if (metadata.author || metadata.username || metadata.video_url || 
+            metadata.likes !== undefined || metadata.retweets !== undefined) {
+          await itemsService.updateItemMetadata(itemId, {
+            domain: metadata.domain,
+            author: metadata.author,
+            username: metadata.username,
+            profile_image: metadata.profile_image,
+            video_url: metadata.video_url,
+            likes: metadata.likes,
+            replies: metadata.replies,
+            retweets: metadata.retweets,
+            views: metadata.views,
+            extra_data: metadata.extra_data || {}
+          });
+        }
+        
+        // Invalidate caches and refetch
+        await queryClient.invalidateQueries({ queryKey: itemKeys.detail(itemId) });
+        await queryClient.invalidateQueries({ queryKey: itemKeys.lists() });
+        await queryClient.invalidateQueries({ queryKey: itemKeys.infinite() });
+        
+        // Fetch the updated item
+        const updatedItem = await itemsService.getItem(itemId);
+        if (updatedItem) {
+          setSelectedItem(updatedItem);
+        }
+        
+        setNotification('Metadata refreshed successfully!');
+        setTimeout(() => setNotification(null), 3000);
+        
+        return; // Skip the API call below
+      }
+      
+      // For non-X posts, use the refresh API
+      const response = await fetch('/api/refresh-metadata', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ itemId, url }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to refresh metadata');
+      }
+      
+      console.log('Metadata refreshed successfully:', data);
+      
+      // Invalidate React Query caches to fetch fresh data
+      await queryClient.invalidateQueries({ queryKey: itemKeys.detail(itemId) });
+      await queryClient.invalidateQueries({ queryKey: itemKeys.lists() });
+      await queryClient.invalidateQueries({ queryKey: itemKeys.infinite() });
+      
+      // Fetch the updated item
+      const updatedItem = await itemsService.getItem(itemId);
+      if (updatedItem) {
+        setSelectedItem(updatedItem);
+      }
+      
+      setNotification('Metadata refreshed successfully!');
+      setTimeout(() => setNotification(null), 3000);
+      
+    } catch (error) {
+      console.error('Error refreshing metadata:', error);
+      throw error; // Re-throw to let the modal handle the error state
+    }
+  };
+
   // Get selected space details
   const selectedSpaceDetails = selectedSpace ? spaces.find(s => s.id === selectedSpace) : null;
 
@@ -1261,6 +1379,7 @@ export default function Dashboard({ params }: DashboardProps) {
         onUpdateItem={handleUpdateItem}
         onAddTag={handleAddTagToItem}
         onRemoveTag={handleRemoveTagFromItem}
+        onRefreshMetadata={handleRefreshMetadata}
         spaces={spaces}
       />
 
