@@ -17,7 +17,8 @@ export interface MockItem {
   title: string;
   url?: string;
   content_type: ContentType;
-  description?: string;
+  content?: string;       // Main content (tweet text, article body, note content, etc.)
+  description?: string;   // Summary or metadata (article excerpt, image filename, etc.)
   thumbnail?: string;
   thumbnail_url?: string;
   metadata?: {
@@ -36,6 +37,7 @@ export interface MockItem {
     
     // Social
     username?: string;
+    display_name?: string;
     likes?: number;
     replies?: number;
     retweets?: number;

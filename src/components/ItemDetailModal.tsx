@@ -102,6 +102,8 @@ export default function ItemDetailModal({
   const [editedTitle, setEditedTitle] = useState('');
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
+  const [isEditingContent, setIsEditingContent] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
   const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [showTranscript, setShowTranscript] = useState(false);
@@ -122,6 +124,7 @@ export default function ItemDetailModal({
       setCurrentItem(item);
       setEditedTitle(item.title || '');
       setEditedDescription(item.description || '');
+      setEditedContent(item.content || '');
       
       // Load transcript if available
       if ('metadata' in item && item.metadata?.extra_data?.transcript) {
@@ -176,10 +179,11 @@ export default function ItemDetailModal({
         setSelectedSpace(newSpaceId);
       }
       
-      // Update current item and edited title/description
+      // Update current item and edited title/description/content
       setCurrentItem(item);
       setEditedTitle(item.title || '');
       setEditedDescription(item.description || '');
+      setEditedContent(item.content || '');
       
       // Update transcript if it's been added to the item metadata
       const itemTranscript = 'metadata' in item ? item.metadata?.extra_data?.transcript : null;
@@ -564,6 +568,33 @@ export default function ItemDetailModal({
     }
   };
 
+  // Content editing handlers (for X posts, notes, etc.)
+  const handleContentEdit = () => {
+    setEditedContent(currentItem.content || '');
+    setIsEditingContent(true);
+  };
+
+  const handleContentSave = () => {
+    if (editedContent.trim() !== currentItem.content) {
+      onUpdateItem?.(currentItem.id, { content: editedContent.trim() });
+    }
+    setIsEditingContent(false);
+  };
+
+  const handleContentCancel = () => {
+    setEditedContent(currentItem.content || '');
+    setIsEditingContent(false);
+  };
+
+  const handleContentKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault();
+      handleContentSave();
+    } else if (e.key === 'Escape') {
+      handleContentCancel();
+    }
+  };
+
   return (
     <Modal 
       isOpen={isOpen} 
@@ -883,10 +914,10 @@ export default function ItemDetailModal({
                 {/* Tweet Header */}
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center overflow-hidden relative">
-                    {currentItem.metadata?.extra_data?.profile_image ? (
+                    {currentItem.metadata?.profile_image ? (
                       <>
                         <img 
-                          src={currentItem.metadata.extra_data.profile_image}
+                          src={currentItem.metadata.profile_image}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -921,7 +952,7 @@ export default function ItemDetailModal({
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatTweetDate(currentItem.metadata?.extra_data?.tweet_date)}
+                      {formatTweetDate(currentItem.metadata?.tweet_date || currentItem.metadata?.published_date)}
                     </div>
                   </div>
                   <div className="w-5 h-5">
@@ -931,51 +962,11 @@ export default function ItemDetailModal({
                   </div>
                 </div>
 
-                {/* Tweet Content */}
+                {/* Tweet Content - Non-editable */}
                 <div className="mb-3">
-                  {isEditingDescription ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editedDescription}
-                        onChange={(e) => setEditedDescription(e.target.value)}
-                        onKeyDown={handleDescriptionKeyDown}
-                        className="w-full min-h-20 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-                        placeholder="Enter tweet content..."
-                        autoFocus
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={handleDescriptionCancel}
-                          className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleDescriptionSave}
-                          className="px-2 py-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="group">
-                      <div className="flex items-start gap-2">
-                        <p className="text-gray-900 dark:text-gray-100 leading-relaxed flex-1">
-                          {currentItem.description || currentItem.title}
-                        </p>
-                        <button
-                          onClick={handleDescriptionEdit}
-                          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity flex-shrink-0"
-                          title="Edit tweet content"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-gray-900 dark:text-gray-100 leading-relaxed">
+                    {currentItem.content || ''}
+                  </p>
                 </div>
 
                 {/* Tweet Media - Video or Image */}
@@ -1057,18 +1048,18 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* Description - Hide for X/Twitter, images, Instagram, TikTok, movies, and TV shows since they're shown in right column */}
-          {(currentItem.description || currentItem.content_type === 'note') && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && currentItem.content_type !== 'tiktok' && currentItem.content_type !== 'movie' && currentItem.content_type !== 'tv-show' && !(currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id)) && (
+          {/* Content/Description - For notes show content, for others show description */}
+          {(currentItem.description || currentItem.content || currentItem.content_type === 'note') && currentItem.content_type !== 'x' && currentItem.content_type !== 'image' && currentItem.content_type !== 'instagram' && currentItem.content_type !== 'tiktok' && currentItem.content_type !== 'movie' && currentItem.content_type !== 'tv-show' && !(currentItem.content_type === 'video' && (currentItem.url?.includes('imdb.com/title/') || currentItem.metadata?.imdb_id)) && (
             <div className={currentItem.content_type === 'note' ? "flex-1 flex flex-col" : "mb-4"}>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description
+                {currentItem.content_type === 'note' ? 'Content' : 'Description'}
               </label>
-              {isEditingDescription ? (
+              {(currentItem.content_type === 'note' ? isEditingContent : isEditingDescription) ? (
                 <div className={currentItem.content_type === 'note' ? "flex-1 flex flex-col space-y-2" : "space-y-2"}>
                   <textarea
-                    value={editedDescription}
-                    onChange={(e) => setEditedDescription(e.target.value)}
-                    onKeyDown={handleDescriptionKeyDown}
+                    value={currentItem.content_type === 'note' ? editedContent : editedDescription}
+                    onChange={(e) => currentItem.content_type === 'note' ? setEditedContent(e.target.value) : setEditedDescription(e.target.value)}
+                    onKeyDown={currentItem.content_type === 'note' ? handleContentKeyDown : handleDescriptionKeyDown}
                     className={
                       currentItem.content_type === 'note' 
                         ? "w-full flex-1 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -1079,13 +1070,13 @@ export default function ItemDetailModal({
                   />
                   <div className="flex justify-end gap-2">
                     <button
-                      onClick={handleDescriptionCancel}
+                      onClick={currentItem.content_type === 'note' ? handleContentCancel : handleDescriptionCancel}
                       className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 border border-gray-300 dark:border-gray-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                       Cancel
                     </button>
                     <button
-                      onClick={handleDescriptionSave}
+                      onClick={currentItem.content_type === 'note' ? handleContentSave : handleDescriptionSave}
                       className="px-3 py-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
                     >
                       Save (Ctrl+Enter)
@@ -1100,12 +1091,14 @@ export default function ItemDetailModal({
                         ? "text-gray-600 dark:text-gray-300 leading-relaxed flex-1 h-full overflow-y-auto"
                         : "text-gray-600 dark:text-gray-300 leading-relaxed flex-1"
                     }>
-                      {currentItem.description || 'No description'}
+                      {currentItem.content_type === 'note' 
+                        ? (currentItem.content || 'No content')
+                        : (currentItem.description || 'No description')}
                     </p>
                     <button
-                      onClick={handleDescriptionEdit}
+                      onClick={currentItem.content_type === 'note' ? handleContentEdit : handleDescriptionEdit}
                       className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity flex-shrink-0"
-                      title="Edit description"
+                      title={currentItem.content_type === 'note' ? "Edit content" : "Edit description"}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -2176,6 +2169,32 @@ export default function ItemDetailModal({
               </div>
             )}
             </div>
+
+            {/* Article Content */}
+            {currentItem.content_type === 'article' && currentItem.content && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Article Content
+                </label>
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg max-h-96 overflow-y-auto">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                    {currentItem.content.substring(0, 2000)}
+                    {currentItem.content.length > 2000 && '...'}
+                  </p>
+                  {currentItem.content.length > 2000 && (
+                    <button
+                      onClick={() => {
+                        // In the future, this could open a full reader view
+                        alert('Full article view coming soon!');
+                      }}
+                      className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Read full article ({Math.round(currentItem.content.length / 1000)}k characters)
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Tags */}
             <div className="mb-4">

@@ -18,6 +18,7 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
   };
 
   return (
+    <div className="flex flex-col">
     <BaseCard 
       item={item} 
       onArchive={onArchive} 
@@ -46,12 +47,12 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
 
       {/* Display name and username */}
       <h3 id={`x-card-author-${item.id}`} className="font-medium text-gray-900 dark:text-gray-100 mb-2 min-w-0 break-words">
-        {item.metadata?.display_name || item.metadata?.username || 'Unknown User'} (@{item.metadata?.username || 'unknown'})
+        {item.metadata?.extra_data?.display_name || item.metadata?.username || 'Unknown User'} (@{item.metadata?.username || 'unknown'})
       </h3>
       
       {/* Tweet content - expanded text with 250 char limit */}
       <p id={`x-card-content-${item.id}`} className="text-sm text-gray-600 dark:text-gray-300 mb-3 min-w-0 break-words whitespace-pre-wrap">
-        {truncateText(item.description || item.title || '', 250)}
+        {truncateText(item.content || '', 250)}
       </p>
 
       {/* Image at bottom if present - full height, no cropping */}
@@ -67,5 +68,11 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
         </div>
       )}
     </BaseCard>
+    {item.title && (
+      <h3 className="mt-1 text-sm font-normal text-gray-900 dark:text-gray-100 text-center truncate">
+        {item.title}
+      </h3>
+    )}
+  </div>
   );
 }

@@ -2,7 +2,8 @@ import type { ContentType } from '@/types/database'
 
 export interface ExtractedMetadata {
   title: string
-  description?: string
+  content?: string      // Main content (article body, tweet text, etc.)
+  description?: string  // Summary or excerpt
   thumbnail_url?: string
   profile_image?: string
   author?: string
@@ -126,7 +127,16 @@ export class UrlMetadataService {
       
       // Extract platform-specific metadata
       const metadata = await this.extractMetadata(normalizedUrl, contentType)
-      console.log('Extracted metadata:', metadata);
+      console.log('Extracted metadata:', {
+        title: metadata.title,
+        content: metadata.content,
+        domain: metadata.domain,
+        description: metadata.description,
+        thumbnail_url: metadata.thumbnail_url,
+        author: metadata.author,
+        username: metadata.username,
+        display_name: metadata.display_name
+      });
       
       // Check if we need to update content type based on metadata (e.g., TV show detection)
       let finalContentType = contentType;
@@ -238,10 +248,22 @@ export class UrlMetadataService {
       console.log('Page metadata from API:', pageData);
       Object.assign(metadata, pageData)
       
-      // Clear title for non-whitelisted content types (even if API returned one)
+      // For non-whitelisted content types, keep meaningful titles from Jina/API but clear generic ones
       if (!contentTypesWithAutoTitle.includes(contentType)) {
-        metadata.title = '';
-        console.log('Cleared title for non-whitelisted content type:', contentType);
+        // Check if we got a meaningful title from Jina or other extraction
+        const hasJinaContent = pageData.extra_data && pageData.extra_data.content;
+        const hasMeaningfulTitle = metadata.title && 
+                                  metadata.title !== domain && 
+                                  metadata.title !== url &&
+                                  metadata.title.length > 10;
+        
+        if (!hasJinaContent && !hasMeaningfulTitle) {
+          // Only clear if we don't have Jina content and the title isn't meaningful
+          metadata.title = '';
+          console.log('Cleared generic title for non-whitelisted content type:', contentType);
+        } else {
+          console.log('Keeping meaningful title from extraction:', metadata.title);
+        }
       }
 
       // Platform-specific enhancements
@@ -287,13 +309,32 @@ export class UrlMetadataService {
           break
       }
       
-      // Final cleanup: Ensure title is empty for non-whitelisted content types
-      // (in case platform-specific enhancements added it back)
+      // Final cleanup: For non-whitelisted content types, only clear generic titles
       if (!contentTypesWithAutoTitle.includes(contentType)) {
-        metadata.title = '';
+        const hasJinaContent = metadata.extra_data && metadata.extra_data.content;
+        const hasMeaningfulTitle = metadata.title && 
+                                  metadata.title !== domain && 
+                                  metadata.title !== url &&
+                                  metadata.title.length > 10;
+        
+        if (!hasJinaContent && !hasMeaningfulTitle) {
+          metadata.title = '';
+          console.log('Final cleanup: Cleared generic title');
+        }
       }
       
-      console.log('Final metadata after enhancements:', metadata);
+      console.log('Final metadata after enhancements:', {
+        title: metadata.title,
+        content: metadata.content,
+        domain: metadata.domain,
+        description: metadata.description,
+        thumbnail_url: metadata.thumbnail_url,
+        author: metadata.author,
+        username: metadata.username,
+        display_name: metadata.display_name,
+        profile_image: metadata.profile_image,
+        extra_data: metadata.extra_data
+      });
     } catch (error) {
       console.error('Error extracting metadata for', url, error)
     }
@@ -446,38 +487,65 @@ export class UrlMetadataService {
    * Enhance Twitter/X post metadata
    */
   private async enhanceXMetadata(url: string, metadata: ExtractedMetadata): Promise<void> {
+    console.log('Enhancing X metadata for:', url);
+    console.log('Initial metadata:', metadata);
+    
     // Extract username and post ID from URL
     const statusMatch = url.match(/(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/)
     const profileMatch = url.match(/(?:twitter\.com|x\.com)\/(\w+)(?:\/)?$/)
     
     if (statusMatch) {
-      const [, username] = statusMatch
-      // Don't override author if it's already set (display name from meta tags)
-      if (!metadata.author) {
-        metadata.author = `@${username}`
+      const [, urlUsername] = statusMatch
+      
+      // Set username from URL if not already set
+      if (!metadata.username) {
+        metadata.username = urlUsername
+        console.log('Set username from URL:', urlUsername)
       }
       
-      // Try to extract additional info from the title/description
+      // Extract tweet content from title and clear the title
       if (metadata.title) {
-        // Twitter titles often contain the tweet text
-        const tweetTextMatch = metadata.title.match(/^(.*?) on [X|Twitter]/i)
-        if (tweetTextMatch) {
-          metadata.description = metadata.description || tweetTextMatch[1]
+        // Try different patterns to extract tweet text
+        let tweetContent = metadata.title
+        
+        // Pattern 1: "Display Name on X: tweet content"
+        const pattern1 = metadata.title.match(/^.*? on (?:X|Twitter):\s*"?(.+?)"?$/i)
+        if (pattern1) {
+          tweetContent = pattern1[1].replace(/"$/, '')
+        } else {
+          // Pattern 2: Just remove " / X" or " / Twitter" from end
+          tweetContent = metadata.title.replace(/\s*\/\s*(?:X|Twitter)$/i, '')
         }
+        
+        metadata.content = tweetContent
+        console.log('Extracted tweet content:', tweetContent)
       }
       
-      // Check if this might be a video tweet based on common indicators
-      const hasVideoIndicators = metadata.title?.toLowerCase().includes('video') ||
-                                metadata.description?.toLowerCase().includes('video') ||
-                                metadata.video_url ||
-                                metadata.thumbnail_url?.includes('video')
+      // If we have description and no content yet, use description as content
+      if (metadata.description && !metadata.content) {
+        metadata.content = metadata.description
+      }
       
-      if (hasVideoIndicators) {
-        console.log('Video tweet detected based on content analysis')
+      // Clear title and description for X posts
+      metadata.title = ''
+      metadata.description = undefined
+      console.log('Cleared title and description for X post')
+      
+      // Set author format as @username if not already set with display name
+      if (!metadata.author || metadata.author === `@${urlUsername}`) {
+        // If we have display_name, use format: "Display Name (@username)"
+        if (metadata.display_name) {
+          metadata.author = `${metadata.display_name} (@${metadata.username})`
+        } else {
+          metadata.author = `@${metadata.username}`
+        }
+        console.log('Set author:', metadata.author)
       }
     } else if (profileMatch) {
       const [, username] = profileMatch
-      // Don't override author if it's already set (display name from meta tags)
+      if (!metadata.username) {
+        metadata.username = username
+      }
       if (!metadata.author) {
         metadata.author = `@${username}`
       }
@@ -485,6 +553,15 @@ export class UrlMetadataService {
     
     // Set domain to indicate X/Twitter
     metadata.domain = url.includes('x.com') ? 'x.com' : 'twitter.com'
+    
+    console.log('Final enhanced X metadata:', {
+      title: metadata.title,
+      content: metadata.content,
+      username: metadata.username,
+      display_name: metadata.display_name,
+      author: metadata.author,
+      profile_image: metadata.profile_image
+    })
   }
 
   /**

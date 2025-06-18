@@ -35,7 +35,8 @@ export interface Item {
   title: string;
   url?: string | null;
   content_type: ContentType;
-  description?: string | null;
+  content?: string | null;        // Main content (tweet text, article body, note content, etc.)
+  description?: string | null;     // Summary or metadata (article excerpt, image filename, etc.)
   thumbnail_url?: string | null;
   raw_text?: string | null;
   created_at: string;
@@ -115,6 +116,7 @@ export interface CreateItemInput {
   title: string;
   url?: string | null;
   content_type: ContentType;
+  content?: string | null;
   description?: string | null;
   space_id?: string | null;
   thumbnail_url?: string | null;
@@ -125,6 +127,7 @@ export interface UpdateItemInput {
   title?: string;
   url?: string | null;
   content_type?: ContentType;
+  content?: string | null;
   description?: string | null;
   space_id?: string | null;
   thumbnail_url?: string | null;

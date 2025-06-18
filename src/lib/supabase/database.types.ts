@@ -55,6 +55,7 @@ export interface Database {
           title: string
           url: string | null
           content_type: Database['public']['Enums']['content_type']
+          content: string | null
           description: string | null
           thumbnail_url: string | null
           raw_text: string | null
@@ -72,6 +73,7 @@ export interface Database {
           title: string
           url?: string | null
           content_type?: Database['public']['Enums']['content_type']
+          content?: string | null
           description?: string | null
           thumbnail_url?: string | null
           raw_text?: string | null
@@ -88,6 +90,7 @@ export interface Database {
           title?: string
           url?: string | null
           content_type?: Database['public']['Enums']['content_type']
+          content?: string | null
           description?: string | null
           thumbnail_url?: string | null
           raw_text?: string | null

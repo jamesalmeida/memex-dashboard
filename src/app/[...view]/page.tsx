@@ -584,6 +584,7 @@ export default function Dashboard({ params }: DashboardProps) {
         title: newItemData.title,
         url: newItemData.url,
         content_type: newItemData.content_type as ContentType,
+        content: newItemData.content,  // Add content field
         description: newItemData.description,
         thumbnail_url: newItemData.thumbnail_url || newItemData.thumbnail,
         space_id: viewMode === 'space-detail' && selectedSpace ? selectedSpace : 
@@ -600,18 +601,19 @@ export default function Dashboard({ params }: DashboardProps) {
           domain: metadata.domain,
           author: metadata.author,
           username: metadata.username,
+          profile_image: metadata.profile_image,  // Move profile_image to top level
+          likes: metadata.likes,
+          replies: metadata.replies,
+          retweets: metadata.retweets,
+          views: metadata.views,
           extra_data: {
-            profile_image: metadata.profile_image,
             video_url: metadata.video_url,
             video_type: metadata.video_type,
             tags: metadata.tags,
-            likes: metadata.likes,
-            replies: metadata.replies,
-            retweets: metadata.retweets,
-            views: metadata.views,
             duration: metadata.duration,
             tweet_date: metadata.tweet_date,
-            display_name: metadata.display_name
+            display_name: metadata.display_name,
+            extra_data: metadata.extra_data  // Include any extra data from metadata extraction
           }
         };
         

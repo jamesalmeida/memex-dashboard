@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as cheerio from 'cheerio'
+import { jinaService } from '@/lib/services/jinaService'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +12,36 @@ export async function POST(request: NextRequest) {
     if (!url) {
       console.log('Error: URL is required');
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+    }
+
+    // Skip Jina for X/Twitter posts as they require authentication
+    const isXPost = url.includes('twitter.com') || url.includes('x.com');
+    
+    // Try Jina Reader API first (but not for X/Twitter)
+    if (jinaService.isAvailable() && !isXPost) {
+      console.log('Attempting to extract content with Jina Reader API...');
+      const jinaMetadata = await jinaService.extractContent(url);
+      
+      if (jinaMetadata) {
+        console.log('Successfully extracted metadata with Jina:', jinaMetadata);
+        
+        // Ensure we have a domain
+        if (!jinaMetadata.domain) {
+          const urlObj = new URL(url);
+          jinaMetadata.domain = urlObj.hostname;
+        }
+        
+        console.log('=== Backend API: Extract Metadata Completed (Jina) ===');
+        return NextResponse.json(jinaMetadata);
+      }
+      
+      console.log('Jina extraction failed or returned null, falling back to traditional scraping...');
+    } else {
+      if (isXPost) {
+        console.log('Skipping Jina for X/Twitter URL, using traditional scraping...');
+      } else {
+        console.log('Jina service not available, using traditional scraping...');
+      }
     }
 
     // Fetch the webpage
@@ -262,9 +293,47 @@ export async function POST(request: NextRequest) {
           
           // For Twitter/X, handle differently
           if (url.includes('twitter.com') || url.includes('x.com')) {
+            console.log('=== X/TWITTER IMAGE EXTRACTION ===');
+            
+            // Get all potential image sources
             const ogImage = $('meta[property="og:image"]').attr('content');
-            // Skip profile pictures (usually contain 'profile_images' in the URL)
-            return ogImage && !ogImage.includes('profile_images') ? ogImage : null;
+            const twitterImage = $('meta[name="twitter:image"]').attr('content');
+            const twitterImageSrc = $('meta[name="twitter:image:src"]').attr('content');
+            
+            console.log('X og:image:', ogImage);
+            console.log('X twitter:image:', twitterImage);
+            console.log('X twitter:image:src:', twitterImageSrc);
+            
+            // Prioritize tweet media over profile images
+            let imageUrl = ogImage || twitterImage || twitterImageSrc;
+            
+            // Only exclude if it's clearly just a profile image and nothing else
+            if (imageUrl && imageUrl.includes('profile_images')) {
+              // Check if we have other images available
+              if (twitterImage && !twitterImage.includes('profile_images')) {
+                console.log('Using twitter:image instead of profile image');
+                imageUrl = twitterImage;
+              } else if (twitterImageSrc && !twitterImageSrc.includes('profile_images')) {
+                console.log('Using twitter:image:src instead of profile image');
+                imageUrl = twitterImageSrc;
+              } else {
+                console.log('Only profile image found, looking for tweet media in HTML');
+                // Look for tweet media in the HTML directly
+                const tweetImage = $('meta[property="twitter:image:src"]').attr('content') ||
+                                  $('img[src*="media"]').first().attr('src') ||
+                                  $('img[src*="pbs.twimg.com"]').first().attr('src');
+                if (tweetImage && !tweetImage.includes('profile_images')) {
+                  console.log('Found tweet media image:', tweetImage);
+                  imageUrl = tweetImage;
+                } else {
+                  console.log('No tweet media found, excluding profile image');
+                  imageUrl = null;
+                }
+              }
+            }
+            
+            console.log('Selected X image URL:', imageUrl);
+            return imageUrl;
           }
           
           // Default extraction for other sites
@@ -800,9 +869,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Clean up the metadata
-    const cleanedMetadata = Object.fromEntries(
+    const cleanedMetadata: any = Object.fromEntries(
       Object.entries(metadata).filter(([, value]) => value && value.toString().trim())
     )
+    
+    // Special handling for X/Twitter content field
+    if ((url.includes('twitter.com') || url.includes('x.com')) && metadata.description) {
+      // For X posts, the description contains the tweet content
+      cleanedMetadata.content = metadata.description;
+      console.log('Added content field for X post:', cleanedMetadata.content);
+    }
     
     console.log('Cleaned metadata:', cleanedMetadata);
     
@@ -844,6 +920,7 @@ export async function POST(request: NextRequest) {
     // Log specific fields of interest
     console.log('Key metadata fields:', {
       title: cleanedMetadata.title,
+      content: cleanedMetadata.content,
       description: cleanedMetadata.description,
       thumbnail_url: cleanedMetadata.thumbnail_url,
       profile_image: cleanedMetadata.profile_image,

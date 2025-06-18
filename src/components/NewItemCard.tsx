@@ -152,7 +152,8 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
           title: result.metadata.title || '',  // Empty string instead of 'Quick Link'
           url: normalizedUrl,
           content_type: result.content_type,
-          description: result.metadata.description || 'Added via quick capture',
+          content: result.metadata.content,  // Main content (tweet text, article body, etc.)
+          description: result.metadata.description || (result.content_type === 'x' ? undefined : 'Added via quick capture'),
           thumbnail_url: result.metadata.thumbnail_url,
           metadata: {
             domain: result.metadata.domain,
@@ -166,11 +167,20 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             likes: result.metadata.likes,
             retweets: result.metadata.retweets,
             replies: result.metadata.replies,
-            tags: ['quick-add']
+            tags: ['quick-add'],
+            // Store full content and extra data in metadata for now
+            extra_data: result.metadata.extra_data
           }
         };
         
-        console.log('Created item from URL metadata:', newItem);
+        console.log('Created item from URL metadata:', {
+          title: newItem.title,
+          content: newItem.content,
+          content_type: newItem.content_type,
+          description: newItem.description,
+          url: newItem.url,
+          metadata: newItem.metadata
+        });
       } catch (error) {
         console.error('Failed to extract metadata:', error);
         
@@ -197,11 +207,11 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
         console.log('Created fallback item:', newItem);
       }
     } else {
-      // Handle text notes - save text in description, leave title blank
+      // Handle text notes - save text in content field, leave title blank
       newItem = {
         title: '',
         content_type: 'note',
-        description: input,
+        content: input,  // Note content goes in content field
         metadata: {
           tags: ['quick-add']
         }
