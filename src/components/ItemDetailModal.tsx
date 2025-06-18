@@ -237,7 +237,7 @@ export default function ItemDetailModal({
   };
   
   const formatTweetDate = (dateString: string | undefined) => {
-    if (!dateString) return formatDate(currentItem.created_at);
+    if (!dateString || dateString === '') return ''; // Return empty string if no date
     
     // If it's already formatted like "10:30 AM · Nov 15, 2024", return as is
     if (dateString.includes('·')) return dateString;
@@ -245,7 +245,7 @@ export default function ItemDetailModal({
     // Otherwise parse and format
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) return dateString; // Return original if parsing fails
+      if (isNaN(date.getTime())) return ''; // Return empty string if parsing fails
       
       // Format to match Twitter style: "10:30 AM · Nov 15, 2024"
       const timeOptions: Intl.DateTimeFormatOptions = { 
@@ -979,7 +979,7 @@ export default function ItemDetailModal({
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatTweetDate(currentItem.metadata?.tweet_date || currentItem.metadata?.published_date)}
+                      {formatTweetDate(currentItem.metadata?.published_date || currentItem.metadata?.tweet_date)}
                     </div>
                   </div>
                   <div className="w-5 h-5">
@@ -1057,7 +1057,7 @@ export default function ItemDetailModal({
                 )}
 
                 {/* Tweet Actions */}
-                <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 pt-2">
                   <div className="flex items-center gap-1 hover:text-blue-500 cursor-pointer transition-colors">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />

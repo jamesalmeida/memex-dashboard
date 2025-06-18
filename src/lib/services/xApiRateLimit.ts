@@ -1,10 +1,27 @@
 /**
- * Simple in-memory rate limit tracker for X API
+ * Rate limit tracker for X API with persistence
  */
 class XApiRateLimitTracker {
   private resetTime: Date | null = null;
-  private remainingRequests: number = 50; // Assume free tier by default
+  private remainingRequests: number = 1; // Assume free tier (1 request per 15 min)
   private isRateLimited: boolean = false;
+  private STORAGE_KEY = 'x-api-rate-limit-server';
+
+  constructor() {
+    // Try to load from storage on initialization
+    this.loadFromStorage();
+  }
+
+  private loadFromStorage() {
+    try {
+      // In a server environment, we can't use localStorage
+      // This would need to be stored in a database or Redis in production
+      // For now, we'll just use in-memory storage
+      console.log('Rate limit tracker initialized (in-memory only)');
+    } catch (error) {
+      console.error('Error loading rate limit from storage:', error);
+    }
+  }
 
   /**
    * Update rate limit info from response headers

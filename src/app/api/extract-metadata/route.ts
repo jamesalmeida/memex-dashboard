@@ -569,11 +569,6 @@ export async function POST(request: NextRequest) {
                  $('meta[name="twitter:creator"]').attr('content');
         })(),
 
-      // Published date
-      published_date:
-        $('meta[property="article:published_time"]').attr('content') ||
-        $('meta[property="og:updated_time"]').attr('content') ||
-        $('time[datetime]').attr('datetime'),
 
       // Additional structured data
       price: $('meta[property="product:price:amount"]').attr('content'),
@@ -884,19 +879,21 @@ export async function POST(request: NextRequest) {
         return null;
       })(),
       
-      // Extract tweet posted date
-      tweet_date: (() => {
+      // Extract tweet posted date and store as published_date for X posts
+      published_date: (() => {
+        // For X/Twitter posts, we can't reliably get the actual tweet date from HTML scraping
+        // Only the X API can provide the real created_at timestamp
+        // So we leave it empty for fallback scraping
         if (url.includes('twitter.com') || url.includes('x.com')) {
-          // Try to find the date in various meta tags
-          const descDate = $('meta[property="og:description"]').attr('content')?.match(/(\d{1,2}:\d{2}\s*[AP]M\s*·\s*\w+\s*\d{1,2},\s*\d{4})/);
-          if (descDate) return descDate[1];
-          
-          // Look for Twitter-specific date format
-          const timeTag = $('time').attr('datetime');
-          if (timeTag) return timeTag;
+          return '';
         }
-        return null;
+        
+        // For other content types, use existing date extraction
+        return $('meta[property="article:published_time"]').attr('content') ||
+               $('meta[property="og:updated_time"]').attr('content') ||
+               $('time[datetime]').attr('datetime');
       })(),
+      
       
       // Instagram-specific username and display name
       instagram_username: (() => {
