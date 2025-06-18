@@ -3,6 +3,7 @@
 import { ItemWithMetadata } from '@/types/database';
 import BaseCard from './BaseCard';
 import ContentTypeIcon from './ContentTypeIcon';
+import VideoPlayer from '../VideoPlayer';
 
 interface XCardProps {
   item: ItemWithMetadata;
@@ -55,16 +56,64 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
         {truncateText(item.content || '', 250)}
       </p>
 
-      {/* Image at bottom if present - full height, no cropping */}
+      {/* Media at bottom - Video or Image */}
       {item.thumbnail_url && (
-        <div id={`x-card-image-${item.id}`} className="mt-auto mb-2">
-          <img
-            src={item.thumbnail_url}
-            alt={item.title}
-            className="w-full h-auto rounded-lg"
-            style={{ border: '1px solid lightgray' }}
-            loading="lazy"
-          />
+        <div id={`x-card-media-${item.id}`} className="mt-auto mb-2 relative">
+          {/* Check if this is a video tweet with actual video URL */}
+          {item.metadata?.video_url ? (
+            /* Play video directly */
+            <div className="relative rounded-lg overflow-hidden" style={{ border: '1px solid lightgray' }}>
+              <VideoPlayer
+                videoUrl={item.metadata.video_url}
+                thumbnailUrl={item.thumbnail_url}
+                autoplay={true}
+                muted={true}
+                loop={true}
+                className="w-full h-auto"
+              />
+              {/* Video indicator badge */}
+              <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                Video
+              </div>
+            </div>
+          ) : (item.metadata?.extra_data?.video_type || 
+                item.metadata?.extra_data?.is_video ||
+                item.metadata?.extra_data?.twitter_player_url ||
+                item.content?.toLowerCase().includes('video') ||
+                item.url?.includes('/video/')) ? (
+            /* Video without URL - show thumbnail with play button */
+            <div className="relative rounded-lg overflow-hidden cursor-pointer" 
+                 style={{ border: '1px solid lightgray' }}
+                 onClick={() => window.open(item.url, '_blank')}>
+              <img
+                src={item.thumbnail_url}
+                alt={item.title}
+                className="w-full h-auto"
+                loading="lazy"
+              />
+              {/* Play button overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-40 transition-all">
+                <div className="w-12 h-12 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-800 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+              </div>
+              {/* Video indicator badge */}
+              <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                Video
+              </div>
+            </div>
+          ) : (
+            /* Regular image */
+            <img
+              src={item.thumbnail_url}
+              alt={item.title}
+              className="w-full h-auto rounded-lg"
+              style={{ border: '1px solid lightgray' }}
+              loading="lazy"
+            />
+          )}
         </div>
       )}
     </BaseCard>

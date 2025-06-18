@@ -248,6 +248,17 @@ export class UrlMetadataService {
       console.log('Page metadata from API:', pageData);
       Object.assign(metadata, pageData)
       
+      // Check if this response came from X API (it will have video_url or rich metrics)
+      const isFromXApi = pageData.video_url || 
+                        (pageData.likes !== undefined && pageData.likes !== null) ||
+                        (pageData.views !== undefined && pageData.views !== null) ||
+                        pageData.extra_data?.is_video;
+      
+      if (isFromXApi) {
+        console.log('Detected X API response, skipping frontend enhancements');
+        return metadata; // Return as-is, don't apply frontend enhancements
+      }
+      
       // For non-whitelisted content types, keep meaningful titles from Jina/API but clear generic ones
       if (!contentTypesWithAutoTitle.includes(contentType)) {
         // Check if we got a meaningful title from Jina or other extraction

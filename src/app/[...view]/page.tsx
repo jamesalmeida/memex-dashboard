@@ -602,18 +602,28 @@ export default function Dashboard({ params }: DashboardProps) {
           author: metadata.author,
           username: metadata.username,
           profile_image: metadata.profile_image,  // Move profile_image to top level
+          video_url: metadata.video_url,  // Now a direct field
           likes: metadata.likes,
           replies: metadata.replies,
           retweets: metadata.retweets,
           views: metadata.views,
+          duration: metadata.duration ? parseInt(metadata.duration.replace('s', '')) : undefined, // Convert "11s" to 11
           extra_data: {
-            video_url: metadata.video_url,
             video_type: metadata.video_type,
             tags: metadata.tags,
             duration: metadata.duration,
             tweet_date: metadata.tweet_date,
             display_name: metadata.display_name,
-            extra_data: metadata.extra_data  // Include any extra data from metadata extraction
+            is_video: metadata.is_video,
+            twitter_player_url: metadata.twitter_player_url,
+            // Only include essential extra_data fields to avoid Supabase errors
+            video_variants: metadata.extra_data?.video_variants,
+            video_width: metadata.extra_data?.video_width,
+            video_height: metadata.extra_data?.video_height,
+            media_type: metadata.extra_data?.media_type,
+            tweet_id: metadata.extra_data?.tweet_id,
+            verified: metadata.extra_data?.verified,
+            quote_count: metadata.extra_data?.quote_count
           }
         };
         

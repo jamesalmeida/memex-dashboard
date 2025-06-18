@@ -147,6 +147,7 @@ export interface Database {
           item_id: string
           author: string | null
           domain: string | null
+          video_url: string | null
           duration: number | null
           file_size: number | null
           page_count: number | null
@@ -174,6 +175,7 @@ export interface Database {
           item_id: string
           author?: string | null
           domain?: string | null
+          video_url?: string | null
           duration?: number | null
           file_size?: number | null
           page_count?: number | null
@@ -201,6 +203,7 @@ export interface Database {
           item_id?: string
           author?: string | null
           domain?: string | null
+          video_url?: string | null
           duration?: number | null
           file_size?: number | null
           page_count?: number | null

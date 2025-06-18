@@ -250,31 +250,96 @@ export const itemsService = {
   async updateItemMetadata(itemId: string, metadata: Partial<ItemMetadata>): Promise<void> {
     const supabase = createClient()
     
+    console.log('=== updateItemMetadata called ===');
+    console.log('Item ID:', itemId);
+    console.log('Metadata to save:', JSON.stringify(metadata, null, 2));
+    
     // Check if metadata exists
-    const { data: existing } = await supabase
+    const { data: existing, error: selectError } = await supabase
       .from('item_metadata')
       .select('id')
       .eq('item_id', itemId)
       .single()
     
+    if (selectError && selectError.code !== 'PGRST116') {
+      console.error('Error checking existing metadata:', selectError);
+    }
+    
     if (existing) {
+      console.log('Updating existing metadata record:', existing.id);
       // Update existing metadata
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('item_metadata')
         .update(metadata)
         .eq('item_id', itemId)
+        .select()
       
-      if (error) throw error
+      if (error) {
+        console.error('Update error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+      console.log('Updated metadata:', data);
     } else {
+      console.log('Creating new metadata record');
       // Create new metadata
-      const { error } = await supabase
-        .from('item_metadata')
-        .insert({
-          ...metadata,
-          item_id: itemId
-        })
+      // Clean the metadata to ensure all fields match database types
+      const cleanedMetadata = {
+        item_id: itemId,
+        author: metadata.author || null,
+        domain: metadata.domain || null,
+        video_url: metadata.video_url || null,
+        duration: metadata.duration || null,
+        file_size: metadata.file_size || null,
+        page_count: metadata.page_count || null,
+        username: metadata.username || null,
+        likes: metadata.likes || null,
+        replies: metadata.replies || null,
+        retweets: metadata.retweets || null,
+        views: metadata.views || null,
+        stars: metadata.stars || null,
+        forks: metadata.forks || null,
+        language: metadata.language || null,
+        price: metadata.price || null,
+        rating: metadata.rating || null,
+        reviews: metadata.reviews || null,
+        in_stock: metadata.in_stock || null,
+        citations: metadata.citations || null,
+        published_date: metadata.published_date || null,
+        journal: metadata.journal || null,
+        extra_data: metadata.extra_data || {}
+      };
       
-      if (error) throw error
+      // Remove any undefined values
+      Object.keys(cleanedMetadata).forEach(key => {
+        if (cleanedMetadata[key] === undefined) {
+          delete cleanedMetadata[key];
+        }
+      });
+      
+      console.log('Cleaned metadata for insert:', cleanedMetadata);
+      
+      const { data, error } = await supabase
+        .from('item_metadata')
+        .insert(cleanedMetadata)
+        .select()
+      
+      if (error) {
+        console.error('Insert error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+      console.log('Created metadata:', data);
     }
   },
 

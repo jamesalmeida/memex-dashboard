@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as cheerio from 'cheerio'
 import { jinaService } from '@/lib/services/jinaService'
+import { xApiService } from '@/lib/services/xApiService'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,10 +15,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
-    // Skip Jina for X/Twitter posts as they require authentication
+    // Check if this is an X/Twitter post
     const isXPost = url.includes('twitter.com') || url.includes('x.com');
+    console.log('Is X Post:', isXPost, 'URL:', url);
+    console.log('X API Available:', xApiService.isAvailable());
     
-    // Try Jina Reader API first (but not for X/Twitter)
+    // Try X API for Twitter posts if available
+    if (isXPost && xApiService.isAvailable()) {
+      console.log('Attempting to extract X/Twitter content with X API...');
+      const xApiMetadata = await xApiService.fetchTweet(url);
+      
+      if (xApiMetadata) {
+        console.log('Successfully extracted metadata with X API');
+        
+        // Add domain
+        const urlObj = new URL(url);
+        xApiMetadata.domain = urlObj.hostname;
+        
+        // Clear title for X posts (we use content instead)
+        xApiMetadata.title = '';
+        
+        // Ensure all data is properly serialized
+        const serializedMetadata = {
+          ...xApiMetadata,
+          title: xApiMetadata.title || '',
+          content: xApiMetadata.content || '',
+          // Flatten extra_data to ensure it's properly passed
+          extra_data: xApiMetadata.extra_data ? {
+            ...xApiMetadata.extra_data,
+            // Ensure video_variants are serialized
+            video_variants: xApiMetadata.extra_data.video_variants || []
+          } : {}
+        };
+        
+        console.log('Serialized X API metadata:', serializedMetadata);
+        console.log('=== Backend API: Extract Metadata Completed (X API) ===');
+        return NextResponse.json(serializedMetadata);
+      }
+      
+      console.log('X API extraction failed, falling back to traditional scraping...');
+    }
+    
+    // Try Jina Reader API for non-X posts
     if (jinaService.isAvailable() && !isXPost) {
       console.log('Attempting to extract content with Jina Reader API...');
       const jinaMetadata = await jinaService.extractContent(url);
@@ -37,9 +76,9 @@ export async function POST(request: NextRequest) {
       
       console.log('Jina extraction failed or returned null, falling back to traditional scraping...');
     } else {
-      if (isXPost) {
-        console.log('Skipping Jina for X/Twitter URL, using traditional scraping...');
-      } else {
+      if (isXPost && !xApiService.isAvailable()) {
+        console.log('X API not available, using traditional scraping for X/Twitter...');
+      } else if (!jinaService.isAvailable()) {
         console.log('Jina service not available, using traditional scraping...');
       }
     }
@@ -89,6 +128,60 @@ export async function POST(request: NextRequest) {
       length: html.length,
       preview: html.substring(0, 500) + '...'
     });
+    
+    // For X/Twitter, try to extract video URLs from HTML
+    if (url.includes('twitter.com') || url.includes('x.com')) {
+      console.log('=== X/TWITTER VIDEO EXTRACTION FROM HTML ===');
+      
+      // Look for video URLs in the HTML
+      // Twitter embeds video URLs in various formats
+      const videoPatterns = [
+        // Look for .mp4 URLs in the HTML
+        /https:\/\/video\.twimg\.com\/[^"'\s]+\.mp4/g,
+        /https:\/\/video\.twimg\.com\/amplify_video\/[^"'\s]+\.mp4/g,
+        /https:\/\/video\.twimg\.com\/ext_tw_video\/[^"'\s]+\.mp4/g,
+        // Look for blob URLs that might contain video
+        /blob:https:\/\/[^"'\s]+/g,
+        // Look for m3u8 playlist files
+        /https:\/\/video\.twimg\.com\/[^"'\s]+\.m3u8/g
+      ];
+      
+      const foundVideos = new Set();
+      videoPatterns.forEach(pattern => {
+        const matches = html.match(pattern);
+        if (matches) {
+          matches.forEach(url => foundVideos.add(url));
+        }
+      });
+      
+      if (foundVideos.size > 0) {
+        console.log('Found video URLs in HTML:', Array.from(foundVideos));
+        // Store for later use in metadata
+        metadata.extracted_video_urls = Array.from(foundVideos);
+      }
+      
+      // Also look for data attributes that might contain video info
+      const dataConfigMatch = html.match(/data-config="([^"]+)"/);
+      if (dataConfigMatch) {
+        try {
+          const configData = JSON.parse(decodeURIComponent(dataConfigMatch[1]));
+          console.log('Found data-config:', configData);
+        } catch (e) {
+          console.log('Could not parse data-config');
+        }
+      }
+      
+      // Look for __INITIAL_STATE__ or similar JavaScript objects
+      const stateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.+?});/);
+      if (stateMatch) {
+        try {
+          const stateData = JSON.parse(stateMatch[1]);
+          console.log('Found __INITIAL_STATE__:', Object.keys(stateData));
+        } catch (e) {
+          console.log('Could not parse __INITIAL_STATE__');
+        }
+      }
+    }
     
     // Instagram-specific debugging
     if (url.includes('instagram.com')) {
@@ -356,12 +449,19 @@ export async function POST(request: NextRequest) {
         })(),
 
       // Video URL extraction
-      video_url:
-        $('meta[property="og:video:url"]').attr('content') ||
-        $('meta[property="og:video:secure_url"]').attr('content') ||
-        $('meta[property="og:video"]').attr('content') ||
-        $('meta[name="twitter:player:stream"]').attr('content') ||
-        $('meta[name="twitter:player"]').attr('content'),
+      video_url: (() => {
+        const videoUrl = $('meta[property="og:video:url"]').attr('content') ||
+                        $('meta[property="og:video:secure_url"]').attr('content') ||
+                        $('meta[property="og:video"]').attr('content') ||
+                        $('meta[name="twitter:player:stream"]').attr('content') ||
+                        $('meta[name="twitter:player"]').attr('content');
+        
+        if ((url.includes('twitter.com') || url.includes('x.com')) && videoUrl) {
+          console.log('Twitter/X video URL found:', videoUrl);
+        }
+        
+        return videoUrl;
+      })(),
 
       // Video type and dimensions
       video_type:
@@ -878,6 +978,50 @@ export async function POST(request: NextRequest) {
       // For X posts, the description contains the tweet content
       cleanedMetadata.content = metadata.description;
       console.log('Added content field for X post:', cleanedMetadata.content);
+      
+      // Check if we extracted video URLs from HTML
+      if (metadata.extracted_video_urls && metadata.extracted_video_urls.length > 0) {
+        console.log('Using extracted video URLs from HTML scraping');
+        // Find the best quality MP4
+        const mp4Videos = metadata.extracted_video_urls.filter(url => url.endsWith('.mp4'));
+        if (mp4Videos.length > 0) {
+          // Sort by resolution (URLs often contain resolution info)
+          const sortedVideos = mp4Videos.sort((a, b) => {
+            const resA = a.match(/(\d+)x(\d+)/);
+            const resB = b.match(/(\d+)x(\d+)/);
+            if (resA && resB) {
+              return (parseInt(resB[2]) - parseInt(resA[2])); // Sort by height descending
+            }
+            return 0;
+          });
+          cleanedMetadata.video_url = sortedVideos[0];
+          cleanedMetadata.is_video = true;
+          console.log('Selected video URL from HTML:', cleanedMetadata.video_url);
+        }
+        
+        // Store all found videos in extra_data
+        cleanedMetadata.extracted_video_urls = metadata.extracted_video_urls;
+      }
+      
+      // Check for video indicators in Twitter posts
+      if (!cleanedMetadata.video_url) {
+        // Sometimes Twitter uses twitter:card type to indicate video
+        const twitterCard = $('meta[name="twitter:card"]').attr('content');
+        console.log('Twitter card type:', twitterCard);
+        
+        if (twitterCard === 'player' || twitterCard === 'amplify') {
+          console.log('Twitter video detected via card type:', twitterCard);
+          // Mark as video even if we don't have the actual video URL
+          cleanedMetadata.is_video = true;
+          
+          // Try to get Twitter player URL as fallback
+          const playerUrl = $('meta[name="twitter:player"]').attr('content');
+          if (playerUrl) {
+            console.log('Twitter player URL:', playerUrl);
+            cleanedMetadata.twitter_player_url = playerUrl;
+          }
+        }
+      }
     }
     
     console.log('Cleaned metadata:', cleanedMetadata);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { SignOutButton } from './SignOutButton';
 import Modal from './Modal';
+import XApiStatus from './XApiStatus';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export default function SettingsModal({ isOpen, onClose, userEmail }: SettingsMo
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} modalId="settings-modal" title="Settings">
+    <Modal isOpen={isOpen} onClose={onClose} modalId="settings-modal" title="Settings" maxWidth="md:max-w-[390px]" isFullscreen={false}>
       {/* Content */}
       <div className="p-6">
           <div className="space-y-6">
@@ -94,6 +95,13 @@ export default function SettingsModal({ isOpen, onClose, userEmail }: SettingsMo
                   <span className="text-sm text-gray-700 dark:text-gray-300">Language</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">English</span>
                 </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Integrations</h3>
+              <div className="space-y-3">
+                <XApiStatus />
               </div>
             </div>
 

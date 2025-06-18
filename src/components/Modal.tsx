@@ -10,9 +10,10 @@ interface ModalProps {
   title?: string | React.ReactNode;
   modalId?: string;
   isFullscreen?: boolean;
+  maxWidth?: string; // Custom max-width class
 }
 
-export default function Modal({ isOpen, onClose, children, title, modalId, isFullscreen: externalIsFullscreen }: ModalProps) {
+export default function Modal({ isOpen, onClose, children, title, modalId, isFullscreen: externalIsFullscreen, maxWidth }: ModalProps) {
   const [mounted, setMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -148,7 +149,9 @@ export default function Modal({ isOpen, onClose, children, title, modalId, isFul
           ${/* Base positioning */ ''}
           ${isFullscreen 
             ? 'md:inset-5 md:w-[calc(100vw-40px)] md:h-[calc(100vh-40px)] md:max-w-none' 
-            : 'md:left-1/2 md:w-[75vw] md:max-w-6xl md:-translate-x-1/2 md:h-[75vh] md:max-h-[75vh]'
+            : maxWidth 
+              ? `md:left-5 md:w-full ${maxWidth} md:h-[75vh] md:max-h-[75vh]`
+              : 'md:left-1/2 md:w-[75vw] md:max-w-6xl md:-translate-x-1/2 md:h-[75vh] md:max-h-[75vh]'
           }
           ${/* Common desktop styles */ ''}
           md:rounded-xl md:shadow-xl

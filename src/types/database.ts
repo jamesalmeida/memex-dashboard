@@ -69,6 +69,7 @@ export interface ItemMetadata {
   domain?: string | null;
   
   // Media fields
+  video_url?: string | null; // Direct URL to video content
   duration?: number | null; // in seconds
   file_size?: number | null; // in bytes
   page_count?: number | null;
@@ -160,6 +161,7 @@ export interface CreateItemMetadataInput {
   item_id: string;
   author?: string | null;
   domain?: string | null;
+  video_url?: string | null;
   duration?: number | null;
   file_size?: number | null;
   page_count?: number | null;

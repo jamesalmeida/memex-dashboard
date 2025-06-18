@@ -169,7 +169,10 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
             replies: result.metadata.replies,
             tags: ['quick-add'],
             // Store full content and extra data in metadata for now
-            extra_data: result.metadata.extra_data
+            extra_data: result.metadata.extra_data,
+            // Include any Twitter video indicators
+            is_video: result.metadata.is_video,
+            twitter_player_url: result.metadata.twitter_player_url
           }
         };
         

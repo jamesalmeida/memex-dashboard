@@ -6,6 +6,7 @@ import { Space, ItemWithMetadata } from '@/types/database';
 import { tagsService } from '@/lib/supabase/services';
 import Modal from './Modal';
 import Image from 'next/image';
+import VideoPlayer from './VideoPlayer';
 
 interface ItemDetailModalProps {
   item: MockItem | ItemWithMetadata | null;
@@ -972,13 +973,23 @@ export default function ItemDetailModal({
                 {/* Tweet Media - Video or Image */}
                 {currentItem.thumbnail_url && (
                   <div className="mb-3 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                    {(currentItem.metadata?.extra_data?.video_url || 
-                      currentItem.metadata?.extra_data?.video_type || 
-                      currentItem.title?.toLowerCase().includes('video') ||
-                      currentItem.description?.toLowerCase().includes('video') ||
-                      currentItem.url?.includes('/video/')) ? (
+                    {currentItem.metadata?.video_url ? (
+                      /* Play video directly */
+                      <VideoPlayer
+                        videoUrl={currentItem.metadata.video_url}
+                        thumbnailUrl={currentItem.thumbnail_url}
+                        autoplay={false}
+                        muted={false}
+                        loop={false}
+                        showControls={true}
+                        className="w-full h-auto"
+                      />
+                    ) : (currentItem.metadata?.extra_data?.video_type || 
+                           currentItem.title?.toLowerCase().includes('video') ||
+                           currentItem.description?.toLowerCase().includes('video') ||
+                           currentItem.url?.includes('/video/')) ? (
+                      /* Video without URL - show thumbnail with play button */
                       <div className="relative">
-                        {/* Video thumbnail with play button overlay */}
                         <div className="relative group cursor-pointer" onClick={() => window.open(currentItem.url, '_blank')}>
                           <img 
                             src={currentItem.thumbnail_url}
@@ -1006,6 +1017,7 @@ export default function ItemDetailModal({
                         </div>
                       </div>
                     ) : (
+                      /* Regular image */
                       <img 
                         src={currentItem.thumbnail_url}
                         alt="Tweet media"
