@@ -136,7 +136,7 @@ export default function Dashboard({ params }: DashboardProps) {
   const router = useRouter();
 
   // Cached data from React Query hooks
-  const spaceIdForItems = viewMode === 'space-detail' ? selectedSpace : undefined;
+  const spaceIdForItems = viewMode === 'space-detail' && selectedSpace ? selectedSpace : undefined;
   const { data: items = [], isLoading: itemsLoading, error: itemsError } = useItems(spaceIdForItems);
   const { data: spaces = [], isLoading: spacesLoading } = useSpaces();
   const { data: spacesWithCounts = [], isLoading: spacesWithCountsLoading } = useSpacesWithCounts();

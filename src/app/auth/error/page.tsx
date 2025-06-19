@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 export default function AuthError() {
   const [urlInfo, setUrlInfo] = useState<string>('')
@@ -23,12 +24,12 @@ export default function AuthError() {
           </div>
         )}
         
-        <a 
+        <Link 
           href="/login" 
           className="mt-4 inline-block rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
         >
           Back to Login
-        </a>
+        </Link>
       </div>
     </div>
   )
