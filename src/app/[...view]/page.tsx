@@ -44,6 +44,7 @@ export default function Dashboard({ params }: DashboardProps) {
   const [createdDirection, setCreatedDirection] = useState<'asc' | 'desc'>('desc'); // newest first by default
   const [updatedDirection, setUpdatedDirection] = useState<'asc' | 'desc'>('desc'); // most recent first by default
   const [itemsDirection, setItemsDirection] = useState<'asc' | 'desc'>('desc'); // most items first by default
+  const [processingItemIds, setProcessingItemIds] = useState<Set<string>>(new Set());
   
   // Load space ordering preference from localStorage on mount
   useEffect(() => {
@@ -581,13 +582,94 @@ export default function Dashboard({ params }: DashboardProps) {
   };
 
   const handleAddItem = async (newItemData: Omit<MockItem, 'id' | 'created_at'>, openDetail: boolean = false) => {
+    console.log('=== handleAddItem called with:', newItemData);
+    
+    // Generate temporary ID
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log('Generated tempId:', tempId);
+    
+    // Create optimistic item with temporary ID
+    const optimisticItem: ItemWithMetadata = {
+      id: tempId,
+      user_id: user?.id || '',
+      title: newItemData.title || null,
+      url: newItemData.url || null,
+      content_type: newItemData.content_type as ContentType,
+      content: newItemData.content || null,
+      description: newItemData.description || null,
+      thumbnail_url: newItemData.thumbnail_url || newItemData.thumbnail || null,
+      space_id: viewMode === 'space-detail' && selectedSpace ? selectedSpace : 
+                newItemData.space ? spaces.find(s => s.name === newItemData.space)?.id : null,
+      archived: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      metadata: newItemData.metadata ? {
+        id: '',
+        item_id: tempId,
+        domain: newItemData.metadata.domain || null,
+        author: newItemData.metadata.author || null,
+        username: newItemData.metadata.username || null,
+        profile_image: newItemData.metadata.profile_image || null,
+        video_url: newItemData.metadata.video_url || null,
+        published_date: newItemData.metadata.published_date || null,
+        likes: newItemData.metadata.likes || null,
+        replies: newItemData.metadata.replies || null,
+        retweets: newItemData.metadata.retweets || null,
+        views: newItemData.metadata.views || null,
+        duration: newItemData.metadata.duration ? parseInt(newItemData.metadata.duration.replace('s', '')) : null,
+        extra_data: newItemData.metadata.extra_data || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } : null,
+      tags: []
+    };
+    
+    // Add to processing items immediately
+    setProcessingItemIds(prev => {
+      const newSet = new Set([...prev, tempId]);
+      console.log('Processing items after adding:', Array.from(newSet));
+      return newSet;
+    });
+    
+    // Add to cache immediately (optimistic update)
+    const currentSpaceId = viewMode === 'space-detail' ? selectedSpace : undefined;
+    console.log('Adding to cache for spaceId:', currentSpaceId);
+    
+    // Get the current cache data
+    const currentData = queryClient.getQueryData(itemKeys.infiniteList(currentSpaceId));
+    console.log('Current cache data:', currentData);
+    
+    if (currentData && (currentData as any).pages) {
+      // Update existing cache
+      queryClient.setQueryData(
+        itemKeys.infiniteList(currentSpaceId),
+        {
+          ...(currentData as any),
+          pages: (currentData as any).pages.map((page: any, index: number) => {
+            if (index === 0) {
+              console.log('Adding optimistic item to first page', page);
+              return {
+                ...page,
+                items: [optimisticItem, ...(page.items || [])]
+              };
+            }
+            return page;
+          })
+        }
+      );
+    } else {
+      // No existing cache, need to invalidate to force a refetch
+      console.log('No cache exists, will show item after refetch');
+      // Don't invalidate yet - wait until after item is created
+    }
+    
     try {
       // Convert MockItem format to our database format
       const createInput = {
         title: newItemData.title,
         url: newItemData.url,
         content_type: newItemData.content_type as ContentType,
-        content: newItemData.content,  // Add content field
+        content: newItemData.content,
         description: newItemData.description,
         thumbnail_url: newItemData.thumbnail_url || newItemData.thumbnail,
         space_id: viewMode === 'space-detail' && selectedSpace ? selectedSpace : 
@@ -595,6 +677,33 @@ export default function Dashboard({ params }: DashboardProps) {
       };
 
       const newItem = await itemsService.createItem(createInput);
+      
+      // Remove temp item from processing and add real item
+      setProcessingItemIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tempId);
+        newSet.add(newItem.id);
+        return newSet;
+      });
+      
+      // Replace temporary item with real item in cache
+      queryClient.setQueryData(
+        itemKeys.infiniteList(currentSpaceId),
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              items: (page.items || []).map((item: ItemWithMetadata) => 
+                item.id === tempId 
+                  ? { ...newItem, metadata: optimisticItem.metadata, tags: [] }
+                  : item
+              )
+            }))
+          };
+        }
+      );
       
       // Store metadata if provided
       if (newItemData.metadata) {
@@ -650,10 +759,13 @@ export default function Dashboard({ params }: DashboardProps) {
         await itemsService.updateItemMetadata(newItem.id, metadataInput);
       }
       
-      // Invalidate and refetch items to show the new item
-      queryClient.invalidateQueries({ queryKey: itemKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: itemKeys.infinite() });
-      queryClient.invalidateQueries({ queryKey: spaceKeys.withCounts() });
+      // Don't invalidate immediately - let the optimistic update show first
+      // We'll invalidate after the processing animation completes
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: itemKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: itemKeys.infinite() });
+        queryClient.invalidateQueries({ queryKey: spaceKeys.withCounts() });
+      }, 2500); // After processing animation
       
       setNotification('Item added successfully!');
       setTimeout(() => setNotification(null), 3000);
@@ -667,9 +779,43 @@ export default function Dashboard({ params }: DashboardProps) {
         }
       }
       
+      // Remove from processing items after a delay to allow animation
+      setTimeout(() => {
+        setProcessingItemIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(newItem.id);
+          return newSet;
+        });
+      }, 2000);
+      
       return newItem;
     } catch (error) {
       console.error('Error adding item:', error);
+      
+      // Remove optimistic item on error
+      setProcessingItemIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tempId);
+        return newSet;
+      });
+      
+      // Remove from cache
+      queryClient.setQueryData(
+        itemKeys.infiniteList(currentSpaceId),
+        (oldData: any) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              items: (page.items || []).filter((item: ItemWithMetadata) => item.id !== tempId)
+            }))
+          };
+        }
+      );
+      
+      setNotification('Failed to add item. Please try again.');
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 
@@ -1310,6 +1456,7 @@ export default function Dashboard({ params }: DashboardProps) {
               onDelete={handleDelete}
               onAddItem={handleAddItem}
               spaces={spaces}
+              processingItemIds={processingItemIds}
             />
           ) : viewMode === 'spaces' ? (
             <MasonryGrid gap={24} mobileColumns={1}>
@@ -1334,6 +1481,7 @@ export default function Dashboard({ params }: DashboardProps) {
               onDelete={handleDelete}
               onAddItem={handleAddItem}
               spaces={spaces}
+              processingItemIds={processingItemIds}
             />
           ) : null}
         </div>

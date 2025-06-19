@@ -17,6 +17,7 @@ interface InfiniteScrollGridProps {
   onDelete: (id: string) => void
   onAddItem?: (item: Omit<MockItem, 'id' | 'created_at'>, openDetail?: boolean) => void
   spaces: Space[]
+  processingItemIds?: Set<string>
 }
 
 export default function InfiniteScrollGrid({
@@ -27,7 +28,8 @@ export default function InfiniteScrollGrid({
   onArchive,
   onDelete,
   onAddItem,
-  spaces
+  spaces,
+  processingItemIds = new Set()
 }: InfiniteScrollGridProps) {
   const {
     data,
@@ -122,16 +124,22 @@ export default function InfiniteScrollGrid({
           </div>
         )}
         
-        {filteredItems.map((item) => (
-          <ItemCard
-            key={item.id}
-            item={item}
-            onClick={() => onItemClick(item)}
-            onArchive={onArchive}
-            onDelete={onDelete}
-            spaces={spaces}
-          />
-        ))}
+        {filteredItems.map((item) => {
+          const isProcessing = processingItemIds.has(item.id);
+          if (isProcessing) {
+            console.log('Item is processing:', item.id);
+          }
+          return (
+            <ItemCard
+              key={item.id}
+              item={item}
+              onClick={() => onItemClick(item)}
+              onArchive={onArchive}
+              onDelete={onDelete}
+              isProcessing={isProcessing}
+            />
+          );
+        })}
       </MasonryGrid>
 
       {/* Load more trigger */}
