@@ -62,7 +62,7 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
           {/* Check if this is a video tweet with actual video URL */}
           {item.metadata?.video_url ? (
             /* Play video directly */
-            <div className="relative rounded-lg overflow-hidden" style={{ border: '1px solid lightgray' }}>
+            <div className="relative rounded-lg overflow-hidden">
               <VideoPlayer
                 videoUrl={item.metadata.video_url}
                 thumbnailUrl={item.thumbnail_url}
@@ -110,7 +110,6 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
               src={item.thumbnail_url}
               alt={item.title}
               className="w-full h-auto rounded-lg"
-              style={{ border: '1px solid lightgray' }}
               loading="lazy"
             />
           )}
