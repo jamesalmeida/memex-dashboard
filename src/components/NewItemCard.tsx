@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MockItem } from '@/utils/mockData';
-import { urlMetadataService, type UrlAnalysisResult } from '@/lib/services/urlMetadata';
-import UrlPreview from './UrlPreview';
+import { urlMetadataService } from '@/lib/services/urlMetadata';
 
 interface NewItemCardProps {
   onAdd: (item: Omit<MockItem, 'id' | 'created_at'>) => void;
@@ -18,8 +17,6 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
   const [lastHeight, setLastHeight] = useState(48); // 3rem = 48px
   const [isDragOver, setIsDragOver] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [extractedMetadata, setExtractedMetadata] = useState<UrlAnalysisResult | null>(null);
-  const [isValidUrl, setIsValidUrl] = useState(false);
 
   // Auto-resize textarea and trigger grid re-layout if needed
   useEffect(() => {
@@ -42,27 +39,6 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
     }
   }, [input, lastHeight]);
 
-  // Check if input is a valid URL
-  useEffect(() => {
-    if (!input.trim()) {
-      setIsValidUrl(false);
-      setExtractedMetadata(null);
-      return;
-    }
-
-    const urlPattern = /^(https?:\/\/)|(www\.)|([a-zA-Z0-9-]+\.(com|org|net|io|dev|app|co|edu|gov|mil|info|biz|me|tv|fm|ai|cloud|xyz|tech|site|online|store|shop|blog|news|media|social|network|community|platform|service|solutions|digital|global|world|international|[a-z]{2,3}))/i;
-    const isUrl = input.startsWith('http') || urlPattern.test(input);
-    setIsValidUrl(isUrl);
-    
-    // Clear metadata if not a URL
-    if (!isUrl) {
-      setExtractedMetadata(null);
-    }
-  }, [input]);
-
-  const handleMetadataExtracted = useCallback((result: UrlAnalysisResult) => {
-    setExtractedMetadata(result);
-  }, []);
 
   const detectContentType = (input: string): MockItem['content_type'] => {
     if (!input) return 'note';
@@ -168,9 +144,9 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
 
     if (normalizedUrl) {
       try {
-        // Use already extracted metadata if available from preview
-        const result = extractedMetadata || await urlMetadataService.analyzeUrl(normalizedUrl);
-        console.log('URL metadata result:', extractedMetadata ? 'Using preview metadata' : 'Fetched new metadata', result);
+        // Fetch metadata when submitting
+        const result = await urlMetadataService.analyzeUrl(normalizedUrl);
+        console.log('URL metadata result:', result);
         
         newItem = {
           title: result.metadata.title || '',  // Empty string instead of 'Quick Link'
@@ -250,7 +226,6 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
     console.log('=== NewItemCard: Submit Handler Completed ===');
     onAdd(newItem);
     setInput('');
-    setExtractedMetadata(null);
     setIsSubmitting(false);
   };
 
@@ -380,7 +355,6 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
 
   const handleClear = () => {
     setInput('');
-    setExtractedMetadata(null);
   };
 
   const handleFileSelect = () => {
@@ -487,14 +461,6 @@ export default function NewItemCard({ onAdd }: NewItemCardProps) {
         />
       </div>
       
-      {/* URL Preview */}
-      {isValidUrl && input.trim() && (
-        <UrlPreview 
-          url={normalizeUrl(input)} 
-          onMetadataExtracted={handleMetadataExtracted}
-          className="mt-3 mb-2"
-        />
-      )}
       
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-2">
