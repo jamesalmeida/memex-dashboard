@@ -1123,26 +1123,30 @@ export default function ItemDetailModal({
                 </div>
               ) : (
                 <div className={currentItem.content_type === 'note' ? "group flex-1 flex flex-col" : "group"}>
-                  <div className={currentItem.content_type === 'note' ? "flex items-start gap-2 flex-1" : "flex items-start gap-2"}>
-                    <p className={
-                      currentItem.content_type === 'note' 
-                        ? "text-gray-600 dark:text-gray-300 leading-relaxed flex-1 h-full overflow-y-auto"
-                        : "text-gray-600 dark:text-gray-300 leading-relaxed flex-1"
-                    }>
-                      {currentItem.content_type === 'note' 
-                        ? (currentItem.content || 'No content')
-                        : (currentItem.description || 'No description')}
-                    </p>
-                    <button
-                      onClick={currentItem.content_type === 'note' ? handleContentEdit : handleDescriptionEdit}
-                      className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity flex-shrink-0"
-                      title={currentItem.content_type === 'note' ? "Edit content" : "Edit description"}
+                  {currentItem.content_type === 'note' ? (
+                    <p 
+                      className="text-gray-600 dark:text-gray-300 leading-relaxed flex-1 h-full overflow-y-auto cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      onClick={handleContentEdit}
+                      title="Click to edit content"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                  </div>
+                      {currentItem.content || 'No content'}
+                    </p>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <p className="text-gray-600 dark:text-gray-300 leading-relaxed flex-1">
+                        {currentItem.description || 'No description'}
+                      </p>
+                      <button
+                        onClick={handleDescriptionEdit}
+                        className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 transition-opacity flex-shrink-0"
+                        title="Edit description"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

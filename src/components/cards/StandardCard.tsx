@@ -68,18 +68,22 @@ export default function StandardCard({ item, onArchive, onDelete, onClick }: Sta
         </div>
       </div>
 
-      {/* Title */}
+      {/* Title - Always show as H3 for all content types */}
       {item.title && (
-        <h3 id={`standard-card-title-${item.id}`} className="text-sm md:text-base font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
+        <h3 id={`standard-card-title-${item.id}`} className="text-sm md:text-base font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 mb-2 flex-1 min-w-0 break-words">
           {item.title}
         </h3>
       )}
 
-      {/* Description */}
-      {item.description && (
-        <p id={`standard-card-description-${item.id}`} className={`text-xs md:text-sm text-gray-600 dark:text-gray-300 mb-3 min-w-0 break-words ${
-          item.content_type === 'note' ? 'line-clamp-4' : 'line-clamp-2'
-        }`}>
+      {/* Content/Description - For notes show content, for others show description */}
+      {item.content_type === 'note' && item.content && (
+        <p id={`standard-card-content-${item.id}`} className="text-xs md:text-sm text-gray-700 dark:text-gray-300 line-clamp-6 mb-3 min-w-0 break-words">
+          {item.content}
+        </p>
+      )}
+      
+      {item.content_type !== 'note' && item.description && (
+        <p id={`standard-card-description-${item.id}`} className="text-xs md:text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 min-w-0 break-words">
           {item.description}
         </p>
       )}

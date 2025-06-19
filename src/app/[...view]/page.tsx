@@ -713,6 +713,7 @@ export default function Dashboard({ params }: DashboardProps) {
           title: updates.title,
           url: updates.url,
           content_type: updates.content_type as ContentType,
+          content: updates.content,
           description: updates.description,
           thumbnail_url: updates.thumbnail_url || updates.thumbnail,
         };
@@ -743,6 +744,7 @@ export default function Dashboard({ params }: DashboardProps) {
           
           // Update other fields optimistically
           if ('title' in updates) optimisticItem.title = updates.title;
+          if ('content' in updates) optimisticItem.content = updates.content;
           if (updates.description !== undefined) optimisticItem.description = updates.description;
           
           // Apply optimistic update immediately
