@@ -1339,7 +1339,7 @@ export default function Dashboard({ params }: DashboardProps) {
       </div>
 
       {/* Mobile bottom gradient overlay */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50/80 via-gray-50/40 to-transparent dark:from-gray-900/80 dark:via-gray-900/40 pointer-events-none z-40"></div>
+      <div className="mobile-bottom-gradient md:hidden fixed bottom-0 left-0 right-0 h-32 pointer-events-none z-40"></div>
 
       {/* Floating Action Button */}
       <button

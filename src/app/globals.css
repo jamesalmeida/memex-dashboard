@@ -116,3 +116,18 @@ html:not(.dark) .hover\:bg-gray-800:hover { background-color: rgb(243 244 246) !
   overflow-wrap: break-word;
 }
 
+/* Mobile bottom gradient */
+.mobile-bottom-gradient {
+  background: linear-gradient(to top, 
+    rgba(255, 255, 255, 0.8) 0%, 
+    rgba(255, 255, 255, 0.4) 50%, 
+    transparent 100%);
+}
+
+.dark .mobile-bottom-gradient {
+  background: linear-gradient(to top, 
+    rgba(0, 0, 0, 0.5) 0%, 
+    rgba(0, 0, 0, 0.25) 50%, 
+    transparent 100%) !important;
+}
+
