@@ -657,6 +657,11 @@ export default function Dashboard({ params }: DashboardProps) {
           })
         }
       );
+      
+      // Trigger grid recalculation after adding item
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 50);
     } else {
       // No existing cache, need to invalidate to force a refetch
       console.log('No cache exists, will show item after refetch');
@@ -704,6 +709,11 @@ export default function Dashboard({ params }: DashboardProps) {
           };
         }
       );
+      
+      // Trigger grid recalculation after replacing item
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 50);
       
       // Store metadata if provided
       if (newItemData.metadata) {
