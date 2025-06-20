@@ -69,6 +69,7 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
                 autoplay={true}
                 muted={true}
                 loop={true}
+                lazyLoad={true}
                 className="w-full h-auto"
               />
               {/* Video indicator badge */}

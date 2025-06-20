@@ -11,6 +11,7 @@ interface VideoPlayerProps {
   className?: string;
   onError?: () => void;
   showControls?: boolean; // Allow standard video controls
+  lazyLoad?: boolean; // Enable lazy loading with intersection observer
 }
 
 export default function VideoPlayer({ 
@@ -21,16 +22,66 @@ export default function VideoPlayer({
   loop = true,
   className = '',
   onError,
-  showControls = false
+  showControls = false,
+  lazyLoad = false
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isMuted, setIsMuted] = useState(muted);
+  const [isInView, setIsInView] = useState(!lazyLoad); // If not lazy loading, consider always in view
 
+  // Intersection Observer for lazy loading
   useEffect(() => {
-    if (videoRef.current && autoplay) {
+    if (!lazyLoad || !containerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          setIsInView(entry.isIntersecting);
+        });
+      },
+      {
+        threshold: 0.1, // Trigger when 10% of the video is visible
+        rootMargin: '50px' // Start loading slightly before video comes into view
+      }
+    );
+
+    observer.observe(containerRef.current);
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, [lazyLoad]);
+
+  // Handle play/pause based on visibility
+  useEffect(() => {
+    if (!videoRef.current || !lazyLoad) return;
+
+    const playVideo = async () => {
+      try {
+        await videoRef.current?.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.log('Video play failed:', error);
+      }
+    };
+
+    if (isInView && autoplay) {
+      playVideo();
+    } else if (!isInView && isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, [isInView, autoplay, lazyLoad]);
+
+  // Original autoplay effect for non-lazy loaded videos
+  useEffect(() => {
+    if (videoRef.current && autoplay && !lazyLoad) {
       // Attempt to play with user interaction workaround
       const playVideo = async () => {
         try {
@@ -43,7 +94,7 @@ export default function VideoPlayer({
       };
       playVideo();
     }
-  }, [autoplay]);
+  }, [autoplay, lazyLoad]);
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -94,7 +145,7 @@ export default function VideoPlayer({
   }
 
   return (
-    <div className={`relative group ${className}`}>
+    <div ref={containerRef} className={`relative group ${className}`}>
       <video
         ref={videoRef}
         src={videoUrl}
@@ -102,7 +153,7 @@ export default function VideoPlayer({
         muted={isMuted}
         loop={loop}
         playsInline
-        autoPlay={autoplay}
+        autoPlay={autoplay && (!lazyLoad || isInView)}
         controls={showControls}
         onError={handleError}
         onLoadedData={handleLoadedData}
