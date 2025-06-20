@@ -12,6 +12,7 @@ interface VideoPlayerProps {
   onError?: () => void;
   showControls?: boolean; // Allow standard video controls
   lazyLoad?: boolean; // Enable lazy loading with intersection observer
+  unmuteOnHover?: boolean; // Unmute video when hovering
 }
 
 export default function VideoPlayer({ 
@@ -23,7 +24,8 @@ export default function VideoPlayer({
   className = '',
   onError,
   showControls = false,
-  lazyLoad = false
+  lazyLoad = false,
+  unmuteOnHover = false
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,6 +34,7 @@ export default function VideoPlayer({
   const [isLoading, setIsLoading] = useState(true);
   const [isMuted, setIsMuted] = useState(muted);
   const [isInView, setIsInView] = useState(!lazyLoad); // If not lazy loading, consider always in view
+  const [isHovering, setIsHovering] = useState(false);
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -126,6 +129,31 @@ export default function VideoPlayer({
     }
   };
 
+  // Hover-based mute/unmute effect
+  useEffect(() => {
+    if (!unmuteOnHover || !videoRef.current) return;
+
+    if (isHovering && isPlaying) {
+      videoRef.current.muted = false;
+      setIsMuted(false);
+    } else {
+      videoRef.current.muted = true;
+      setIsMuted(true);
+    }
+  }, [isHovering, isPlaying, unmuteOnHover]);
+
+  const handleMouseEnter = () => {
+    if (unmuteOnHover) {
+      setIsHovering(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (unmuteOnHover) {
+      setIsHovering(false);
+    }
+  };
+
   if (hasError && thumbnailUrl) {
     // Fallback to thumbnail if video fails
     return (
@@ -145,7 +173,12 @@ export default function VideoPlayer({
   }
 
   return (
-    <div ref={containerRef} className={`relative group ${className}`}>
+    <div 
+      ref={containerRef} 
+      className={`relative group ${className}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <video
         ref={videoRef}
         src={videoUrl}
