@@ -2,51 +2,18 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/utils/supabaseClient'
 
 export default function AuthCallback() {
   const router = useRouter()
 
   useEffect(() => {
-    const handleRedirect = async () => {
-      try {
-        // Get the code from URL parameters
-        const searchParams = new URLSearchParams(window.location.search)
-        const code = searchParams.get('code')
-        
-        if (!code) {
-          console.error('No code in URL')
-          router.push('/login?error=no_code')
-          return
-        }
-        
-        // Exchange the code for a session
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        
-        if (error) {
-          console.error('Auth exchange error:', error)
-          router.push('/login?error=auth_failed')
-          return
-        }
-        
-        // Check if we now have a session
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!session) {
-          console.error('No session after exchange')
-          router.push('/login?error=no_session')
-          return
-        }
-        
-        // Success! Redirect to everything
-        router.push('/everything')
-      } catch (error) {
-        console.error('Callback error:', error)
-        router.push('/login?error=callback_error')
-      }
-    }
+    // Supabase automatically handles the auth callback in the client
+    // We just need to wait a moment and redirect
+    const timer = setTimeout(() => {
+      router.push('/everything')
+    }, 1000)
     
-    handleRedirect()
+    return () => clearTimeout(timer)
   }, [router])
 
   return (
