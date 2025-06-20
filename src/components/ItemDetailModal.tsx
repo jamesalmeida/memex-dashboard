@@ -1004,8 +1004,8 @@ export default function ItemDetailModal({
                       <VideoPlayer
                         videoUrl={currentItem.metadata.video_url}
                         thumbnailUrl={currentItem.thumbnail_url}
-                        autoplay={false}
-                        muted={false}
+                        autoplay={true}
+                        muted={true}
                         loop={false}
                         showControls={true}
                         className="w-full h-auto"

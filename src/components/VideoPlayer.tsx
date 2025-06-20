@@ -99,17 +99,6 @@ export default function VideoPlayer({
     }
   }, [autoplay, lazyLoad]);
 
-  const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        videoRef.current.play();
-        setIsPlaying(true);
-      }
-    }
-  };
 
   const handleError = () => {
     console.error('Video failed to load:', videoUrl);
@@ -193,7 +182,6 @@ export default function VideoPlayer({
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         className="w-full h-full object-cover"
-        onClick={showControls ? undefined : handlePlayPause}
       />
       
       {/* Loading indicator */}
@@ -206,28 +194,6 @@ export default function VideoPlayer({
       {/* Custom controls only if not showing native controls */}
       {!showControls && (
         <>
-          {/* Play/Pause overlay - only show when not playing or on hover */}
-          <div 
-            className={`absolute inset-0 flex items-center justify-center transition-opacity pointer-events-none ${
-              isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
-            }`}
-          >
-            <div 
-              className="w-12 h-12 bg-white bg-opacity-90 rounded-full flex items-center justify-center transform transition-transform hover:scale-110 pointer-events-auto cursor-pointer"
-              onClick={handlePlayPause}
-            >
-              {isPlaying ? (
-                <svg className="w-6 h-6 text-gray-800" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                </svg>
-              ) : (
-                <svg className="w-6 h-6 text-gray-800 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              )}
-            </div>
-          </div>
-          
           {/* Mute/Unmute button */}
           <button
             className={`absolute bottom-2 left-2 bg-black bg-opacity-75 hover:bg-opacity-90 text-white p-2 rounded transition-all ${
