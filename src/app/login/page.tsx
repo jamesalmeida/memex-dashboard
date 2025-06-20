@@ -37,6 +37,9 @@ function LoginForm() {
     console.log('Current origin:', window.location.origin)
     console.log('Full URL:', window.location.href)
     
+    // Log the Supabase URL to verify we're using the right project
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+    
     const { error } = await supabase.auth.signInWithOtp({ 
       email,
       options: {
