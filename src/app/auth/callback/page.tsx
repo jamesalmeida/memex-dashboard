@@ -39,13 +39,24 @@ export default function AuthCallback() {
           return
         }
 
+        // Check for error in hash params first
+        const hashError = hashParams.get('error')
+        const hashErrorCode = hashParams.get('error_code')
+        const hashErrorDescription = hashParams.get('error_description')
+        
+        if (hashError || hashErrorCode) {
+          console.error('Auth error in hash:', hashError, hashErrorCode, hashErrorDescription)
+          router.push(`/login?error=${hashErrorCode || hashError}`)
+          return
+        }
+        
         // Check for error in URL params
         const urlParams = new URLSearchParams(window.location.search)
         const error = urlParams.get('error')
         const errorDescription = urlParams.get('error_description')
         
         if (error) {
-          console.error('Auth error:', error, errorDescription)
+          console.error('Auth error in URL:', error, errorDescription)
           router.push(`/login?error=${error}`)
           return
         }

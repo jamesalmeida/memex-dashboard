@@ -19,7 +19,8 @@ function LoginForm() {
         'no_code': 'Invalid authentication link. Please request a new one.',
         'no_tokens': 'No authentication tokens found. Please request a new magic link.',
         'access_denied': 'Access denied. Please try again.',
-        'server_error': 'Server error. Please try again later.'
+        'server_error': 'Server error. Please try again later.',
+        'otp_expired': 'Your magic link has expired. Please request a new one.'
       }
       setMessage({ type: 'error', text: errorMessages[error] || 'An error occurred.' })
     }
