@@ -92,7 +92,7 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
                 item.metadata?.extra_data?.twitter_player_url ||
                 item.content?.toLowerCase().includes('video') ||
                 item.url?.includes('/video/')) ? (
-            /* Video without URL - show thumbnail with play button */
+            /* Video without URL - show thumbnail with play button  */
             <div className="relative rounded-lg overflow-hidden cursor-pointer" 
                  style={{ border: '1px solid lightgray' }}
                  onClick={() => window.open(item.url, '_blank')}>
