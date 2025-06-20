@@ -80,9 +80,13 @@ export default function VideoPlayer({
 
     if (isInView && autoplay) {
       playVideo();
-    } else if (!isInView && isPlaying) {
+    } else if (!isInView) {
+      // Always pause when out of view, regardless of playing state
       videoRef.current.pause();
       setIsPlaying(false);
+      // Also mute when out of view
+      videoRef.current.muted = true;
+      setIsMuted(true);
     }
   }, [isInView, autoplay, lazyLoad]);
 
@@ -117,6 +121,8 @@ export default function VideoPlayer({
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering play/pause
     
+    console.log('[VideoPlayer] Toggle mute clicked, current muted:', isMuted);
+    
     if (videoRef.current) {
       const newMutedState = !isMuted;
       videoRef.current.muted = newMutedState;
@@ -124,6 +130,7 @@ export default function VideoPlayer({
       
       // If we have a hover unmute toggle callback, call it
       if (onHoverUnmuteToggle) {
+        console.log('[VideoPlayer] Calling onHoverUnmuteToggle');
         onHoverUnmuteToggle();
       }
     }
@@ -133,23 +140,42 @@ export default function VideoPlayer({
   useEffect(() => {
     if (!unmuteOnHover || !videoRef.current) return;
 
+    const video = videoRef.current;
+    
+    console.log('[VideoPlayer] Hover effect:', {
+      isHovering,
+      isPlaying,
+      hoverUnmuteEnabled,
+      isInView,
+      shouldUnmute: isHovering && isPlaying && hoverUnmuteEnabled && isInView
+    });
+    
     // Only unmute on hover if hover unmute is enabled globally
-    if (isHovering && isPlaying && hoverUnmuteEnabled) {
-      videoRef.current.muted = false;
+    if (isHovering && isPlaying && hoverUnmuteEnabled && isInView) {
+      video.muted = false;
       setIsMuted(false);
     } else {
-      videoRef.current.muted = true;
+      video.muted = true;
       setIsMuted(true);
     }
-  }, [isHovering, isPlaying, unmuteOnHover, hoverUnmuteEnabled]);
+
+    // Cleanup to ensure video is muted when effect changes
+    return () => {
+      if (video) {
+        video.muted = true;
+      }
+    };
+  }, [isHovering, isPlaying, unmuteOnHover, hoverUnmuteEnabled, isInView]);
 
   const handleMouseEnter = () => {
+    console.log('[VideoPlayer] Mouse enter');
     if (unmuteOnHover) {
       setIsHovering(true);
     }
   };
 
   const handleMouseLeave = () => {
+    console.log('[VideoPlayer] Mouse leave');
     if (unmuteOnHover) {
       setIsHovering(false);
     }

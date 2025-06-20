@@ -24,6 +24,7 @@ export function GridVideoMuteProvider({ children }: { children: React.ReactNode 
 
   // Persist state changes
   const setIsHoverUnmuteEnabled = (enabled: boolean) => {
+    console.log('[GridVideoMuteContext] Setting hover unmute enabled to:', enabled)
     setIsHoverUnmuteEnabledState(enabled)
     localStorage.setItem(STORAGE_KEY, String(enabled))
   }
