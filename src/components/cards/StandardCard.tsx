@@ -36,7 +36,24 @@ export default function StandardCard({ item, onArchive, onDelete, onClick }: Sta
       onDelete={onDelete} 
       onClick={onClick}
       className="standard-card"
+      showImage={false}  // Disable BaseCard's image since we handle it here
     >
+      {/* Thumbnail image for bookmarks and other content with og:image */}
+      {item.thumbnail_url && item.content_type !== 'note' && (
+        <div className="relative aspect-video mb-3 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+          <img
+            src={item.thumbnail_url}
+            alt={item.title || 'Preview'}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            onError={(e) => {
+              // Hide image on error
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+      )}
+
       {/* Header with icon and content type name */}
       <div id={`standard-card-header-${item.id}`} className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm min-w-0 flex-1">

@@ -138,8 +138,32 @@ export class UrlMetadataService {
         display_name: metadata.display_name
       });
       
-      // Check if we need to update content type based on metadata (e.g., TV show detection)
+      // Check if we need to update content type based on metadata
       let finalContentType = contentType;
+      
+      // Use og:type to refine content type detection
+      const ogType = metadata.extra_data?.og?.type || metadata.extra_data?.og_type;
+      if (ogType) {
+        const ogTypeLower = ogType.toLowerCase();
+        console.log('Using og:type for content type refinement:', ogType);
+        
+        // Map common og:type values to our content types
+        if (ogTypeLower.includes('product') && contentType === 'bookmark') {
+          finalContentType = 'product';
+          console.log('Content type changed to product based on og:type');
+        } else if (ogTypeLower.includes('article') && contentType === 'bookmark') {
+          finalContentType = 'article';
+          console.log('Content type changed to article based on og:type');
+        } else if (ogTypeLower.includes('video') && contentType === 'bookmark') {
+          finalContentType = 'video';
+          console.log('Content type changed to video based on og:type');
+        } else if (ogTypeLower.includes('book') && contentType === 'bookmark') {
+          finalContentType = 'book';
+          console.log('Content type changed to book based on og:type');
+        }
+      }
+      
+      // TV show detection for movies
       if (contentType === 'movie' && metadata.is_tv_show) {
         finalContentType = 'tv-show';
         console.log('Content type changed from movie to tv-show based on metadata');
@@ -247,6 +271,42 @@ export class UrlMetadataService {
       const pageData = await this.fetchPageMetadata(url)
       console.log('Page metadata from API:', pageData);
       Object.assign(metadata, pageData)
+      
+      // Store all Open Graph data in extra_data for future use
+      if (!metadata.extra_data) {
+        metadata.extra_data = {};
+      }
+      
+      // Merge the entire extra_data object from pageData which now includes all OG tags
+      if (pageData.extra_data) {
+        metadata.extra_data = {
+          ...metadata.extra_data,
+          ...pageData.extra_data
+        };
+      }
+      
+      // Use og:image from extra_data if we don't have a thumbnail yet
+      if (!metadata.thumbnail_url && metadata.extra_data?.og?.image) {
+        metadata.thumbnail_url = metadata.extra_data.og.image;
+        console.log('Using og:image as thumbnail:', metadata.thumbnail_url);
+      }
+      
+      // Preserve Open Graph metadata (for backward compatibility)
+      if (pageData.og_type) metadata.extra_data.og_type = pageData.og_type;
+      if (pageData.og_url) metadata.extra_data.og_url = pageData.og_url;
+      if (pageData.og_locale) metadata.extra_data.og_locale = pageData.og_locale;
+      if (pageData.og_site_name) metadata.extra_data.og_site_name = pageData.og_site_name;
+      
+      // Store product-specific Open Graph data
+      if (pageData.og_product_availability) metadata.extra_data.og_product_availability = pageData.og_product_availability;
+      if (pageData.og_product_condition) metadata.extra_data.og_product_condition = pageData.og_product_condition;
+      if (pageData.og_product_price_currency) metadata.extra_data.og_product_price_currency = pageData.og_product_price_currency;
+      if (pageData.og_product_retailer_item_id) metadata.extra_data.og_product_retailer_item_id = pageData.og_product_retailer_item_id;
+      
+      // Store article-specific Open Graph data
+      if (pageData.og_article_author) metadata.extra_data.og_article_author = pageData.og_article_author;
+      if (pageData.og_article_section) metadata.extra_data.og_article_section = pageData.og_article_section;
+      if (pageData.og_article_tag) metadata.extra_data.og_article_tag = pageData.og_article_tag;
       
       // Check if this response came from X API (it will have video_url or rich metrics)
       const isFromXApi = pageData.video_url || 

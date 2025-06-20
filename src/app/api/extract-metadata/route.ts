@@ -56,10 +56,11 @@ export async function POST(request: NextRequest) {
       console.log('X API extraction failed, falling back to traditional scraping...');
     }
     
-    // Try Jina Reader API for non-X posts
+    // Try Jina Reader API for non-X posts but don't return early
+    let jinaMetadata = null;
     if (jinaService.isAvailable() && !isXPost) {
       console.log('Attempting to extract content with Jina Reader API...');
-      const jinaMetadata = await jinaService.extractContent(url);
+      jinaMetadata = await jinaService.extractContent(url);
       
       if (jinaMetadata) {
         console.log('Successfully extracted metadata with Jina:', jinaMetadata);
@@ -70,11 +71,11 @@ export async function POST(request: NextRequest) {
           jinaMetadata.domain = urlObj.hostname;
         }
         
-        console.log('=== Backend API: Extract Metadata Completed (Jina) ===');
-        return NextResponse.json(jinaMetadata);
+        // Don't return early - we want to also scrape for Open Graph tags
+        console.log('Jina extraction successful, will also scrape for Open Graph tags...');
+      } else {
+        console.log('Jina extraction failed or returned null...');
       }
-      
-      console.log('Jina extraction failed or returned null, falling back to traditional scraping...');
     } else {
       if (isXPost && !xApiService.isAvailable()) {
         console.log('X API not available, using traditional scraping for X/Twitter...');
@@ -579,6 +580,25 @@ export async function POST(request: NextRequest) {
       // File size for downloads
       file_size: $('meta[property="og:file_size"]').attr('content'),
       
+      // Open Graph type and canonical URL
+      og_type: $('meta[property="og:type"]').attr('content'),
+      og_url: $('meta[property="og:url"]').attr('content'),
+      
+      // Additional Open Graph properties that might be useful
+      og_locale: $('meta[property="og:locale"]').attr('content'),
+      og_site_name: $('meta[property="og:site_name"]').attr('content'),
+      
+      // Product-specific Open Graph tags
+      og_product_availability: $('meta[property="product:availability"]').attr('content'),
+      og_product_condition: $('meta[property="product:condition"]').attr('content'),
+      og_product_price_currency: $('meta[property="product:price:currency"]').attr('content'),
+      og_product_retailer_item_id: $('meta[property="product:retailer_item_id"]').attr('content'),
+      
+      // Article-specific Open Graph tags
+      og_article_author: $('meta[property="article:author"]').attr('content'),
+      og_article_section: $('meta[property="article:section"]').attr('content'),
+      og_article_tag: $('meta[property="article:tag"]').attr('content'),
+      
       // Social media specific (Twitter/X)
       likes: $('meta[name="twitter:data1"]').attr('content')?.replace(/[^\d]/g, '') || 
              $('[data-testid="like"]').first().text()?.replace(/[^\d]/g, ''),
@@ -933,6 +953,73 @@ export async function POST(request: NextRequest) {
       })()
     }
 
+    // Extract ALL Open Graph tags into extra_data
+    console.log('=== EXTRACTING ALL OPEN GRAPH TAGS ===');
+    const ogData: Record<string, any> = {};
+    
+    // Extract all og: prefixed meta tags
+    $('meta[property^="og:"]').each((i, elem) => {
+      const property = $(elem).attr('property');
+      const content = $(elem).attr('content');
+      if (property && content) {
+        // Convert og:property:name to nested structure
+        const parts = property.split(':');
+        if (parts.length === 2) {
+          // Simple og:property
+          ogData[parts[1]] = content;
+        } else if (parts.length > 2) {
+          // Nested property like og:product:price:amount
+          let current = ogData;
+          for (let i = 1; i < parts.length - 1; i++) {
+            if (!current[parts[i]]) {
+              current[parts[i]] = {};
+            }
+            // If it's already a string, convert to object with _value
+            if (typeof current[parts[i]] === 'string') {
+              current[parts[i]] = { _value: current[parts[i]] };
+            }
+            current = current[parts[i]];
+          }
+          current[parts[parts.length - 1]] = content;
+        }
+        console.log(`OG tag: ${property} = ${content}`);
+      }
+    });
+    
+    // Also extract twitter: prefixed tags
+    const twitterData: Record<string, any> = {};
+    $('meta[name^="twitter:"]').each((i, elem) => {
+      const name = $(elem).attr('name');
+      const content = $(elem).attr('content');
+      if (name && content) {
+        const parts = name.split(':');
+        if (parts.length === 2) {
+          twitterData[parts[1]] = content;
+        } else if (parts.length > 2) {
+          // Nested property
+          let current = twitterData;
+          for (let i = 1; i < parts.length - 1; i++) {
+            if (!current[parts[i]]) {
+              current[parts[i]] = {};
+            }
+            current = current[parts[i]];
+          }
+          current[parts[parts.length - 1]] = content;
+        }
+        console.log(`Twitter tag: ${name} = ${content}`);
+      }
+    });
+    
+    // Add Open Graph data to metadata
+    metadata.extra_data = {
+      ...metadata.extra_data,
+      og: ogData,
+      twitter: twitterData
+    };
+    
+    console.log('All Open Graph data:', JSON.stringify(ogData, null, 2));
+    console.log('All Twitter card data:', JSON.stringify(twitterData, null, 2));
+
     console.log('Raw extracted metadata:', metadata);
     
     // Instagram-specific metadata logging
@@ -965,6 +1052,40 @@ export async function POST(request: NextRequest) {
       console.log('=== END INSTAGRAM SUMMARY ===');
     }
 
+    // Merge Jina metadata if available
+    if (jinaMetadata) {
+      console.log('Merging Jina metadata with scraped data...');
+      
+      // Use Jina's content if we don't have it from scraping
+      if (jinaMetadata.content && !metadata.content) {
+        metadata.content = jinaMetadata.content;
+      }
+      
+      // Use Jina's description if we don't have one
+      if (jinaMetadata.description && !metadata.description) {
+        metadata.description = jinaMetadata.description;
+      }
+      
+      // Use Jina's title if ours is generic or missing
+      if (jinaMetadata.title && (!metadata.title || metadata.title === 'Untitled')) {
+        metadata.title = jinaMetadata.title;
+      }
+      
+      // Merge extra_data
+      if (jinaMetadata.extra_data) {
+        metadata.extra_data = {
+          ...metadata.extra_data,
+          ...jinaMetadata.extra_data
+        };
+      }
+      
+      // Use Jina's thumbnail if we don't have one from og:image
+      if (jinaMetadata.thumbnail_url && !metadata.thumbnail_url) {
+        metadata.thumbnail_url = jinaMetadata.thumbnail_url;
+        console.log('Using Jina thumbnail:', jinaMetadata.thumbnail_url);
+      }
+    }
+    
     // Clean up the metadata
     const cleanedMetadata: any = Object.fromEntries(
       Object.entries(metadata).filter(([, value]) => value && value.toString().trim())
