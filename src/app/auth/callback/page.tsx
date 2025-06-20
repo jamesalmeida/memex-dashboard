@@ -15,11 +15,14 @@ export default function AuthCallback() {
         const accessToken = hashParams.get('access_token')
         const refreshToken = hashParams.get('refresh_token')
         
+        console.log('Auth callback - Full URL:', window.location.href)
         console.log('Hash params:', {
           hasAccessToken: !!accessToken,
           hasRefreshToken: !!refreshToken,
-          fullHash: window.location.hash
+          fullHash: window.location.hash,
+          allHashKeys: Array.from(hashParams.keys())
         })
+        console.log('URL params:', window.location.search)
 
         // If we have tokens in the hash, set the session
         if (accessToken && refreshToken) {

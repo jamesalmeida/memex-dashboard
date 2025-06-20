@@ -33,7 +33,9 @@ function LoginForm() {
 
     // Get the current URL, handling both localhost ports
     const redirectTo = window.location.origin + '/auth/callback'
-    console.log('Redirect URL:', redirectTo)
+    console.log('Login - Sending magic link with redirect URL:', redirectTo)
+    console.log('Current origin:', window.location.origin)
+    console.log('Full URL:', window.location.href)
     
     const { error } = await supabase.auth.signInWithOtp({ 
       email,
