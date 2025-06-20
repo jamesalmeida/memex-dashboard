@@ -15,7 +15,8 @@ function LoginForm() {
       const errorMessages: { [key: string]: string } = {
         'auth_failed': 'Authentication failed. Please try again.',
         'no_session': 'No session found. Please sign in again.',
-        'callback_error': 'An error occurred during authentication.'
+        'callback_error': 'An error occurred during authentication.',
+        'no_code': 'Invalid authentication link. Please request a new one.'
       }
       setMessage({ type: 'error', text: errorMessages[error] || 'An error occurred.' })
     }

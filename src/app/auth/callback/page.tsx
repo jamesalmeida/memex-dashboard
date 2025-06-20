@@ -10,8 +10,18 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleRedirect = async () => {
       try {
+        // Get the code from URL parameters
+        const searchParams = new URLSearchParams(window.location.search)
+        const code = searchParams.get('code')
+        
+        if (!code) {
+          console.error('No code in URL')
+          router.push('/login?error=no_code')
+          return
+        }
+        
         // Exchange the code for a session
-        const { error } = await supabase.auth.exchangeCodeForSession(window.location.search)
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
         
         if (error) {
           console.error('Auth exchange error:', error)
