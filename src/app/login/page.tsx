@@ -1,10 +1,25 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/utils/supabaseClient'
+import { useSearchParams } from 'next/navigation'
+
 export default function Login() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
+  const searchParams = useSearchParams()
+  
+  useEffect(() => {
+    const error = searchParams.get('error')
+    if (error) {
+      const errorMessages: { [key: string]: string } = {
+        'auth_failed': 'Authentication failed. Please try again.',
+        'no_session': 'No session found. Please sign in again.',
+        'callback_error': 'An error occurred during authentication.'
+      }
+      setMessage({ type: 'error', text: errorMessages[error] || 'An error occurred.' })
+    }
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
