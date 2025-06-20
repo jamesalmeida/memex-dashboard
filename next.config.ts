@@ -14,9 +14,6 @@ const nextConfig: NextConfig = {
     // !! WARN !!
     ignoreBuildErrors: true,
   },
-  compiler: {
-    removeConsole: false, // Keep console logs in production for debugging
-  },
 };
 
 export default nextConfig;

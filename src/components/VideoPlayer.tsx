@@ -121,8 +121,6 @@ export default function VideoPlayer({
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering play/pause
     
-    console.log('[VideoPlayer] Toggle mute clicked, current muted:', isMuted);
-    
     if (videoRef.current) {
       const newMutedState = !isMuted;
       videoRef.current.muted = newMutedState;
@@ -130,7 +128,6 @@ export default function VideoPlayer({
       
       // If we have a hover unmute toggle callback, call it
       if (onHoverUnmuteToggle) {
-        console.log('[VideoPlayer] Calling onHoverUnmuteToggle');
         onHoverUnmuteToggle();
       }
     }
@@ -141,14 +138,6 @@ export default function VideoPlayer({
     if (!unmuteOnHover || !videoRef.current) return;
 
     const video = videoRef.current;
-    
-    console.log('[VideoPlayer] Hover effect:', {
-      isHovering,
-      isPlaying,
-      hoverUnmuteEnabled,
-      isInView,
-      shouldUnmute: isHovering && isPlaying && hoverUnmuteEnabled && isInView
-    });
     
     // Only unmute on hover if hover unmute is enabled globally
     if (isHovering && isPlaying && hoverUnmuteEnabled && isInView) {
@@ -168,14 +157,12 @@ export default function VideoPlayer({
   }, [isHovering, isPlaying, unmuteOnHover, hoverUnmuteEnabled, isInView]);
 
   const handleMouseEnter = () => {
-    console.log('[VideoPlayer] Mouse enter');
     if (unmuteOnHover) {
       setIsHovering(true);
     }
   };
 
   const handleMouseLeave = () => {
-    console.log('[VideoPlayer] Mouse leave');
     if (unmuteOnHover) {
       setIsHovering(false);
     }
@@ -228,11 +215,6 @@ export default function VideoPlayer({
           <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
-      
-      {/* Debug indicator - REMOVE AFTER TESTING */}
-      <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
-        v2 {isHovering ? 'H' : ''} {isMuted ? 'M' : 'U'}
-      </div>
       
       {/* Custom controls only if not showing native controls */}
       {!showControls && (
