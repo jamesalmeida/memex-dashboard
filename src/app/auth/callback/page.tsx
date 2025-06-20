@@ -11,7 +11,7 @@ export default function AuthCallback() {
       // Wait for Supabase to process the hash fragment
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      router.push('/')
+      router.push('/everything')
     }
     
     handleRedirect()
