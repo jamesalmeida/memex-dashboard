@@ -6,6 +6,11 @@ import { GridVideoMuteProvider } from '@/contexts/GridVideoMuteContext';
 export const metadata = {
   title: 'Memex',
   description: 'Your Triage Dashboard',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({
