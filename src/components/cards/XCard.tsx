@@ -4,6 +4,7 @@ import { ItemWithMetadata } from '@/types/database';
 import BaseCard from './BaseCard';
 import ContentTypeIcon from './ContentTypeIcon';
 import VideoPlayer from '../VideoPlayer';
+import { useGridVideoMute } from '@/contexts/GridVideoMuteContext';
 
 interface XCardProps {
   item: ItemWithMetadata;
@@ -13,9 +14,15 @@ interface XCardProps {
 }
 
 export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps) {
+  const { isHoverUnmuteEnabled, setIsHoverUnmuteEnabled } = useGridVideoMute();
+  
   const truncateText = (text: string, maxLength: number = 250) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
+  };
+  
+  const handleHoverUnmuteToggle = () => {
+    setIsHoverUnmuteEnabled(!isHoverUnmuteEnabled);
   };
 
   return (
@@ -71,6 +78,8 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
                 loop={true}
                 lazyLoad={true}
                 unmuteOnHover={true}
+                hoverUnmuteEnabled={isHoverUnmuteEnabled}
+                onHoverUnmuteToggle={handleHoverUnmuteToggle}
                 className="w-full h-auto"
               />
               {/* Video indicator badge */}

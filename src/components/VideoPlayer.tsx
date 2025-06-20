@@ -13,6 +13,8 @@ interface VideoPlayerProps {
   showControls?: boolean; // Allow standard video controls
   lazyLoad?: boolean; // Enable lazy loading with intersection observer
   unmuteOnHover?: boolean; // Unmute video when hovering
+  hoverUnmuteEnabled?: boolean; // Global state for hover unmute feature
+  onHoverUnmuteToggle?: () => void; // Callback to toggle hover unmute feature
 }
 
 export default function VideoPlayer({ 
@@ -25,7 +27,9 @@ export default function VideoPlayer({
   onError,
   showControls = false,
   lazyLoad = false,
-  unmuteOnHover = false
+  unmuteOnHover = false,
+  hoverUnmuteEnabled = true,
+  onHoverUnmuteToggle
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -112,9 +116,16 @@ export default function VideoPlayer({
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering play/pause
+    
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      const newMutedState = !isMuted;
+      videoRef.current.muted = newMutedState;
+      setIsMuted(newMutedState);
+      
+      // If we have a hover unmute toggle callback, call it
+      if (onHoverUnmuteToggle) {
+        onHoverUnmuteToggle();
+      }
     }
   };
 
@@ -122,14 +133,15 @@ export default function VideoPlayer({
   useEffect(() => {
     if (!unmuteOnHover || !videoRef.current) return;
 
-    if (isHovering && isPlaying) {
+    // Only unmute on hover if hover unmute is enabled globally
+    if (isHovering && isPlaying && hoverUnmuteEnabled) {
       videoRef.current.muted = false;
       setIsMuted(false);
     } else {
       videoRef.current.muted = true;
       setIsMuted(true);
     }
-  }, [isHovering, isPlaying, unmuteOnHover]);
+  }, [isHovering, isPlaying, unmuteOnHover, hoverUnmuteEnabled]);
 
   const handleMouseEnter = () => {
     if (unmuteOnHover) {

@@ -1,6 +1,7 @@
 import './globals.css';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import QueryProvider from '@/components/QueryProvider';
+import { GridVideoMuteProvider } from '@/contexts/GridVideoMuteContext';
 
 export const metadata = {
   title: 'Memex',
@@ -17,7 +18,9 @@ export default function RootLayout({
       <body>
         <QueryProvider>
           <ThemeProvider>
-            {children}
+            <GridVideoMuteProvider>
+              {children}
+            </GridVideoMuteProvider>
           </ThemeProvider>
         </QueryProvider>
       </body>
