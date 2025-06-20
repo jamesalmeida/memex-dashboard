@@ -229,6 +229,11 @@ export default function VideoPlayer({
         </div>
       )}
       
+      {/* Debug indicator - REMOVE AFTER TESTING */}
+      <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+        v2 {isHovering ? 'H' : ''} {isMuted ? 'M' : 'U'}
+      </div>
+      
       {/* Custom controls only if not showing native controls */}
       {!showControls && (
         <>
