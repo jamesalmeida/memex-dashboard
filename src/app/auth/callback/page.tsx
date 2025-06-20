@@ -9,42 +9,59 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleAuth = async () => {
-      // First, let's check if there's already a session
-      const { data: { session: existingSession } } = await supabase.auth.getSession()
-      
-      if (existingSession) {
-        console.log('Session already exists, redirecting...')
-        router.push('/everything')
-        return
-      }
-
-      // If no session, wait for Supabase to handle the auth callback
-      console.log('Waiting for auth to complete...')
-      
-      // Listen for auth state changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        console.log('Auth event:', event, 'Session:', !!session)
+      try {
+        // Get the hash fragment which contains the access token
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
         
-        if (event === 'SIGNED_IN' && session) {
-          router.push('/everything')
-        } else if (event === 'USER_UPDATED' && session) {
-          router.push('/everything')
-        }
-      })
+        console.log('Hash params:', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          fullHash: window.location.hash
+        })
 
-      // Also check again after a delay
-      setTimeout(async () => {
+        // If we have tokens in the hash, set the session
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          })
+          
+          if (error) {
+            console.error('Error setting session:', error)
+            router.push('/login?error=auth_failed')
+            return
+          }
+          
+          console.log('Session set successfully')
+          router.push('/everything')
+          return
+        }
+
+        // Check for error in URL params
+        const urlParams = new URLSearchParams(window.location.search)
+        const error = urlParams.get('error')
+        const errorDescription = urlParams.get('error_description')
+        
+        if (error) {
+          console.error('Auth error:', error, errorDescription)
+          router.push(`/login?error=${error}`)
+          return
+        }
+
+        // If no tokens and no error, check if session already exists
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
+          console.log('Existing session found')
           router.push('/everything')
         } else {
-          console.error('No session after timeout')
-          router.push('/login?error=auth_failed')
+          console.error('No auth tokens found')
+          router.push('/login?error=no_tokens')
         }
-      }, 2000)
-
-      return () => {
-        subscription.unsubscribe()
+      } catch (error) {
+        console.error('Callback error:', error)
+        router.push('/login?error=callback_error')
       }
     }
     
