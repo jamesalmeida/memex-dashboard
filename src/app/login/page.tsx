@@ -1,9 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { supabase } from '@/utils/supabaseClient'
 import { useSearchParams } from 'next/navigation'
 
-export default function Login() {
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
@@ -83,5 +83,19 @@ export default function Login() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl">Loading...</h2>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }
