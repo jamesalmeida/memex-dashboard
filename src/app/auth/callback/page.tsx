@@ -10,68 +10,39 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuth = async () => {
       try {
-        // Get the hash fragment which contains the access token
-        const hashParams = new URLSearchParams(window.location.hash.substring(1))
-        const accessToken = hashParams.get('access_token')
-        const refreshToken = hashParams.get('refresh_token')
+        // Wait a moment for Supabase to process the auth
+        await new Promise(resolve => setTimeout(resolve, 100))
         
-        console.log('Auth callback - Full URL:', window.location.href)
-        console.log('Hash params:', {
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken,
-          fullHash: window.location.hash,
-          allHashKeys: Array.from(hashParams.keys())
-        })
-        console.log('URL params:', window.location.search)
-
-        // If we have tokens in the hash, set the session
-        if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          })
-          
-          if (error) {
-            console.error('Error setting session:', error)
-            router.push('/login?error=auth_failed')
-            return
-          }
-          
-          console.log('Session set successfully')
+        // Check if we have a session
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session) {
+          console.log('Session found, redirecting to /everything')
           router.push('/everything')
           return
         }
-
-        // Check for error in hash params first
+        
+        // If no session, check for errors in hash
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
         const hashError = hashParams.get('error')
         const hashErrorCode = hashParams.get('error_code')
-        const hashErrorDescription = hashParams.get('error_description')
         
         if (hashError || hashErrorCode) {
-          console.error('Auth error in hash:', hashError, hashErrorCode, hashErrorDescription)
-          router.push(`/login?error=${hashErrorCode || hashError}`)
+          console.error('Auth error:', hashError, hashErrorCode)
+          router.push(`/login?error=${hashErrorCode || hashError || 'auth_failed'}`)
           return
         }
         
-        // Check for error in URL params
-        const urlParams = new URLSearchParams(window.location.search)
-        const error = urlParams.get('error')
-        const errorDescription = urlParams.get('error_description')
+        // No session and no error - wait a bit more and try again
+        console.log('No session yet, waiting...')
+        await new Promise(resolve => setTimeout(resolve, 1000))
         
-        if (error) {
-          console.error('Auth error in URL:', error, errorDescription)
-          router.push(`/login?error=${error}`)
-          return
-        }
-
-        // If no tokens and no error, check if session already exists
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-          console.log('Existing session found')
+        const { data: { session: sessionRetry } } = await supabase.auth.getSession()
+        if (sessionRetry) {
           router.push('/everything')
         } else {
-          console.error('No auth tokens found')
-          router.push('/login?error=no_tokens')
+          console.error('No session after retry')
+          router.push('/login?error=no_session')
         }
       } catch (error) {
         console.error('Callback error:', error)
