@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react';
 import type { Space } from '@/types/database';
 
 interface SpaceCardProps {
@@ -9,7 +10,7 @@ interface SpaceCardProps {
   onDelete?: (space: Space & { item_count: number }) => void;
 }
 
-export default function SpaceCard({ space, onClick, onEdit, onDelete }: SpaceCardProps) {
+const SpaceCard = memo(function SpaceCard({ space, onClick, onEdit, onDelete }: SpaceCardProps) {
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit?.(space);
@@ -81,4 +82,6 @@ export default function SpaceCard({ space, onClick, onEdit, onDelete }: SpaceCar
       </div>
     </div>
   );
-}
+});
+
+export default SpaceCard;

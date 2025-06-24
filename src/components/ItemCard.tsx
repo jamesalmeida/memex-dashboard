@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ItemWithMetadata } from '@/types/database';
 import { CardRouter } from './cards';
 
@@ -13,7 +13,7 @@ interface ItemCardProps {
   isProcessing?: boolean;
 }
 
-export default function ItemCard({ 
+const ItemCard = memo(function ItemCard({ 
   item, 
   onArchive, 
   onDelete, 
@@ -55,4 +55,17 @@ export default function ItemCard({
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function for memo
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.title === nextProps.item.title &&
+    prevProps.item.description === nextProps.item.description &&
+    prevProps.item.thumbnail_url === nextProps.item.thumbnail_url &&
+    prevProps.item.is_favorite === nextProps.item.is_favorite &&
+    prevProps.item.updated_at === nextProps.item.updated_at &&
+    prevProps.isProcessing === nextProps.isProcessing
+  );
+});
+
+export default ItemCard;
