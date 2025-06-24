@@ -1552,6 +1552,7 @@ export default function Dashboard({ params }: DashboardProps) {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         userEmail={user?.email}
+        userId={user?.id}
       />
 
       <NewSpaceModal
