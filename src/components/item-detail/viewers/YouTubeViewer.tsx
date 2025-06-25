@@ -141,6 +141,10 @@ export function YouTubeViewer({
               <span className="text-sm">Share</span>
             </button>
             
+            <button className="p-2 bg-muted rounded-full hover:bg-muted-foreground/10 transition-colors">
+              <Download className="w-5 h-5" />
+            </button>
+            
             {onTranscriptToggle && (
               <button 
                 onClick={onTranscriptToggle}
