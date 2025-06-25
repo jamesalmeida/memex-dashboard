@@ -1,5 +1,5 @@
 import { ExtractedMetadata } from './urlMetadata';
-import { xApiRateLimiter } from './xApiRateLimit';
+import { xApiRateLimiter } from './xApiRateLimitPersistent';
 
 interface XApiTweet {
   data: {
@@ -83,7 +83,7 @@ export class XApiService {
     }
 
     // Check rate limits before making request
-    if (xApiRateLimiter.shouldSkipRequest()) {
+    if (await xApiRateLimiter.shouldSkipRequest()) {
       console.log('Skipping X API request due to rate limit');
       return null;
     }
@@ -114,7 +114,7 @@ export class XApiService {
       });
 
       // Update rate limit info from headers
-      xApiRateLimiter.updateFromHeaders(response.headers);
+      await xApiRateLimiter.updateFromHeaders(response.headers);
 
       if (!response.ok) {
         console.error('X API error:', response.status, response.statusText);
@@ -124,7 +124,7 @@ export class XApiService {
           const resetTime = response.headers.get('x-rate-limit-reset');
           const resetDate = resetTime ? new Date(parseInt(resetTime) * 1000) : undefined;
           console.log('Rate limited. Reset time:', resetDate || 'unknown');
-          xApiRateLimiter.markRateLimited(resetDate);
+          await xApiRateLimiter.markRateLimited(resetDate);
         }
         
         throw new Error(`X API returned ${response.status}`);

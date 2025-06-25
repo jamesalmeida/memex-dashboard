@@ -20,6 +20,21 @@ export async function POST(request: NextRequest) {
     console.log('Is X Post:', isXPost, 'URL:', url);
     console.log('X API Available:', xApiService.isAvailable());
     
+    // Debug X API configuration
+    if (isXPost) {
+      console.log('=== X API DEBUG INFO ===');
+      console.log('Bearer Token exists:', !!process.env.X_BEARER_TOKEN);
+      console.log('Bearer Token length:', process.env.X_BEARER_TOKEN?.length || 0);
+      console.log('API Key exists:', !!process.env.X_API_KEY);
+      console.log('API Key Secret exists:', !!process.env.X_API_KEY_SECRET);
+      
+      // Check rate limit status
+      const rateLimitStatus = (xApiService as any).xApiRateLimiter?.getStatus?.() || 
+                              (await import('@/lib/services/xApiRateLimit')).xApiRateLimiter.getStatus();
+      console.log('Rate limit status:', rateLimitStatus);
+      console.log('=== END X API DEBUG ===');
+    }
+    
     // Try X API for Twitter posts if available
     if (isXPost && xApiService.isAvailable()) {
       console.log('Attempting to extract X/Twitter content with X API...');
@@ -27,6 +42,14 @@ export async function POST(request: NextRequest) {
       
       if (xApiMetadata) {
         console.log('Successfully extracted metadata with X API');
+        console.log('X API response includes:', {
+          hasContent: !!xApiMetadata.content,
+          hasAuthor: !!xApiMetadata.author,
+          hasVideo: !!xApiMetadata.video_url,
+          hasThumbnail: !!xApiMetadata.thumbnail_url,
+          hasLikes: !!xApiMetadata.likes,
+          hasPublishedDate: !!xApiMetadata.published_date
+        });
         
         // Add domain
         const urlObj = new URL(url);
@@ -54,6 +77,8 @@ export async function POST(request: NextRequest) {
       }
       
       console.log('X API extraction failed, falling back to traditional scraping...');
+    } else if (isXPost && !xApiService.isAvailable()) {
+      console.log('X API not available for X post - bearer token missing or service unavailable');
     }
     
     // Try Jina Reader API for non-X posts but don't return early
