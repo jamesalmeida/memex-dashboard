@@ -52,7 +52,7 @@ function transformMetadataForLegacyAPI(metadata: any): any {
     title: metadata.title || '',
     description: metadata.description || '',
     thumbnail_url: metadata.thumbnail || '',
-    video_url: metadata.media?.videos?.[0]?.url || '',
+    video_url: '',  // Will be set in content-specific transformations
     author: metadata.author?.name || '',
     domain: new URL(metadata.url).hostname,
   };
@@ -70,8 +70,23 @@ function transformMetadataForLegacyAPI(metadata: any): any {
       response.views = metadata.engagement?.views?.toString();
       response.published_date = metadata.publishedAt;
       
-      // Add video variants if available
+      // Add video variants if available and select best MP4 URL
       if (metadata.media?.videos?.length > 0) {
+        // Find the best MP4 video
+        const mp4Videos = metadata.media.videos.filter((v: any) => 
+          v.format === 'video/mp4' || v.url?.includes('.mp4')
+        );
+        
+        if (mp4Videos.length > 0) {
+          response.video_url = mp4Videos[0].url;
+        } else {
+          // Fallback to first non-m3u8 video
+          const nonHlsVideo = metadata.media.videos.find((v: any) => 
+            !v.url?.includes('.m3u8') && !v.format?.includes('mpegURL')
+          );
+          response.video_url = nonHlsVideo?.url || metadata.media.videos[0].url;
+        }
+        
         response.extra_data = {
           video_variants: metadata.media.videos,
         };

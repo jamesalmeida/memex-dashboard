@@ -157,6 +157,7 @@ export class XApiService {
       }
       
       console.log('Tweet created_at:', tweet.created_at);
+      console.log('Media includes:', JSON.stringify(includes?.media, null, 2));
 
       const author = includes?.users?.[0];
       const media = includes?.media;
@@ -242,7 +243,11 @@ export class XApiService {
         }
       }
 
-      console.log('Extracted X API metadata:', metadata);
+      console.log('Extracted X API metadata:', {
+        ...metadata,
+        video_url: metadata.video_url,
+        video_variants_count: metadata.extra_data?.video_variants?.length || 0
+      });
       return metadata;
 
     } catch (error) {

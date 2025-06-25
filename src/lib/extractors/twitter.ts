@@ -99,7 +99,16 @@ export class TwitterExtractor extends BaseExtractor {
     
     // Handle video variants from extra_data
     if (apiData.extra_data?.video_variants?.length > 0) {
-      metadata.media!.videos = apiData.extra_data.video_variants.map((variant: any) => ({
+      // Sort variants to prioritize MP4 over HLS
+      const sortedVariants = [...apiData.extra_data.video_variants].sort((a: any, b: any) => {
+        // MP4 comes first
+        if (a.content_type === 'video/mp4' && b.content_type !== 'video/mp4') return -1;
+        if (a.content_type !== 'video/mp4' && b.content_type === 'video/mp4') return 1;
+        // Then by bitrate if both are same type
+        return (b.bit_rate || 0) - (a.bit_rate || 0);
+      });
+      
+      metadata.media!.videos = sortedVariants.map((variant: any) => ({
         url: variant.url,
         format: variant.content_type,
         thumbnail: apiData.thumbnail_url,
