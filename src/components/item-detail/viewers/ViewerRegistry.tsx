@@ -8,6 +8,7 @@ import { ArticleViewer } from './ArticleViewer';
 import { RedditViewer } from './RedditViewer';
 import { TikTokViewer } from './TikTokViewer';
 import { ContentType } from '@/lib/contentTypes/patterns';
+import { extractPlatformId } from '@/lib/contentTypes/detector';
 import { cn } from '@/lib/utils';
 
 interface ViewerProps {
@@ -85,19 +86,23 @@ export function ContentViewer({
       );
 
     case 'youtube':
+      const videoId = item.video_id || item.metadata?.extra_data?.video_id || 
+                      (item.url ? extractPlatformId(item.url, 'youtube') : null);
+      console.log('YouTube viewer - item URL:', item.url);
+      console.log('YouTube viewer - extracted video ID:', videoId);
       return (
         <YouTubeViewer
           title={item.title}
-          videoId={item.video_id}
-          channelName={item.channel_name || item.author}
-          channelImage={item.channel_image}
+          videoId={videoId}
+          channelName={item.metadata?.author || item.channel_name || item.author}
+          channelImage={item.metadata?.profile_image || item.channel_image}
           description={item.description}
-          publishedDate={item.published_date}
+          publishedDate={item.metadata?.published_date || item.published_date}
           thumbnail={item.thumbnail_url}
-          views={item.views}
-          likes={item.likes}
-          duration={item.duration}
-          isShort={item.is_short}
+          views={item.metadata?.views || item.views}
+          likes={item.metadata?.likes || item.likes}
+          duration={item.metadata?.duration || item.duration}
+          isShort={item.metadata?.extra_data?.is_short || item.is_short}
           onTranscriptToggle={onTranscriptToggle}
           isTranscriptOpen={isTranscriptOpen}
           hasTranscript={!!item.metadata?.extra_data?.transcript}

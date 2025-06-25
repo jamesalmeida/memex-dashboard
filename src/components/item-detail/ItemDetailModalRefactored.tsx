@@ -13,6 +13,7 @@ import { MetadataSkeleton } from './skeletons/MetadataSkeleton';
 import { SpaceSelector } from './SpaceSelector';
 import { detectContentType } from '@/lib/contentTypes/detector';
 import { ContentType } from '@/lib/contentTypes/patterns';
+import { extractPlatformId } from '@/lib/contentTypes/detector';
 import { cn } from '@/lib/utils';
 import type { Space } from '@/types/database';
 
@@ -234,7 +235,8 @@ export function ItemDetailModalRefactored({
     <YouTubeTranscript
       itemId={item.id}
       url={item.url}
-      videoId={item.video_id}
+      videoId={item.video_id || item.metadata?.extra_data?.video_id || 
+               (item.url ? extractPlatformId(item.url, 'youtube') : null)}
       existingTranscript={hasExistingTranscript}
       onTranscriptFetch={handleTranscriptFetch}
       onClose={() => setShowTranscript(false)}

@@ -131,6 +131,7 @@ export async function POST(request: Request) {
               duration: ytMeta.duration,
               published_date: ytMeta.upload_date,
               extra_data: {
+                video_id: ytMeta.id || url.match(/(?:v=|\/shorts\/|\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1],
                 channel_id: ytMeta.channel?.id,
                 channel_url: ytMeta.channel?.url,
                 subscriber_count: ytMeta.channel?.subscriber_count,
