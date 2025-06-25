@@ -179,12 +179,25 @@ export async function POST(request: Request) {
             };
             
             // Prepare metadata for item_metadata table
+            // Find the best MP4 video URL if video_variants exist
+            let videoUrl = xData.video_url || '';
+            if (xData.extra_data?.video_variants?.length > 0) {
+              const mp4Variants = xData.extra_data.video_variants
+                .filter((v: any) => v.format === 'video/mp4' || v.content_type === 'video/mp4')
+                .filter((v: any) => v.url && !v.url.includes('.m3u8'));
+              
+              if (mp4Variants.length > 0) {
+                videoUrl = mp4Variants[0].url;
+                console.log('Chrome Extension: Selected MP4 video URL:', videoUrl);
+              }
+            }
+            
             enrichedData.metadata = {
               domain: xData.domain || domain,
               author: xData.author || '',
               username: xData.username || '',
               profile_image: xData.profile_image || '',
-              video_url: xData.video_url || '',
+              video_url: videoUrl,
               likes: xData.likes,
               retweets: xData.retweets,
               replies: xData.replies,

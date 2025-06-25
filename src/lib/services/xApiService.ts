@@ -189,8 +189,6 @@ export class XApiService {
           metadata.thumbnail_url = firstMedia.url;
         } else if (firstMedia.type === 'video' || firstMedia.type === 'animated_gif') {
           metadata.thumbnail_url = firstMedia.preview_image_url;
-          metadata.video_url = firstMedia.variants?.[0]?.url; // Get first variant
-          metadata.video_type = firstMedia.variants?.[0]?.content_type;
           metadata.duration = firstMedia.duration_ms ? `${Math.round(firstMedia.duration_ms / 1000)}s` : undefined;
           
           // Store all video variants in extra_data
@@ -205,13 +203,32 @@ export class XApiService {
           
           // Find the best quality video variant
           if (firstMedia.variants && firstMedia.variants.length > 0) {
-            const mp4Variants = firstMedia.variants
+            // First try to find MP4 variants with bitrate
+            let mp4Variants = firstMedia.variants
               .filter(v => v.content_type === 'video/mp4' && v.bit_rate)
               .sort((a, b) => (b.bit_rate || 0) - (a.bit_rate || 0));
             
+            // If no variants with bitrate, get all MP4 variants
+            if (mp4Variants.length === 0) {
+              mp4Variants = firstMedia.variants
+                .filter(v => v.content_type === 'video/mp4');
+            }
+            
             if (mp4Variants.length > 0) {
               metadata.video_url = mp4Variants[0].url;
-              console.log('Selected video URL with bitrate:', mp4Variants[0].bit_rate);
+              metadata.video_type = mp4Variants[0].content_type;
+              console.log('Selected video URL:', mp4Variants[0].url);
+              console.log('Video type:', mp4Variants[0].content_type);
+            } else {
+              // Fallback to any video variant that's not m3u8
+              const nonHlsVariant = firstMedia.variants?.find(v => 
+                v.content_type !== 'application/x-mpegURL' && v.url
+              );
+              if (nonHlsVariant) {
+                metadata.video_url = nonHlsVariant.url;
+                metadata.video_type = nonHlsVariant.content_type;
+                console.log('Using fallback video URL:', nonHlsVariant.url);
+              }
             }
           }
         }

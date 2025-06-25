@@ -41,6 +41,8 @@ export function ContentViewer({
   // Map the item data to viewer props based on content type
   switch (contentType) {
     case 'twitter':
+      console.log('Twitter viewer - item:', item);
+      console.log('Twitter viewer - metadata:', item.metadata);
       return (
         <TwitterViewer
           title={item.title}

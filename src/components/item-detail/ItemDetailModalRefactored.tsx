@@ -72,6 +72,7 @@ export function ItemDetailModalRefactored({
     if (item?.content_type) {
       // Use the existing content_type from the item
       console.log('Item content_type:', item.content_type);
+      console.log('Item metadata:', item.metadata);
       // Map legacy content types to our new types
       const mappedType = mapLegacyContentType(item.content_type);
       console.log('Mapped to:', mappedType);

@@ -116,6 +116,16 @@ export function TwitterViewer({
                 poster={thumbnail}
                 controls
                 className="w-full h-auto max-h-[500px] object-contain"
+                onError={(e) => {
+                  console.error('Twitter video playback error:', e);
+                  console.error('Video URL:', videoUrl);
+                  const video = e.target as HTMLVideoElement;
+                  console.error('Video error code:', video.error?.code);
+                  console.error('Video error message:', video.error?.message);
+                }}
+                onLoadedMetadata={() => {
+                  console.log('Twitter video loaded successfully:', videoUrl);
+                }}
               >
                 Your browser does not support the video tag.
               </video>
