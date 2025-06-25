@@ -125,7 +125,7 @@ export function ItemDetailLayout({
 
         {/* Right Column - Metadata (fixed width, always in same position) */}
         <div
-          className="min-w-[390px] flex-shrink-0 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+          className="w-[390px] flex-shrink-0 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
           id="item-detail-right-column"
         >
           <div className="h-full w-full overflow-auto relative">
