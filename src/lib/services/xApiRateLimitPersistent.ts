@@ -153,7 +153,7 @@ class XApiRateLimitPersistent {
     if (resetTime) {
       this.memoryCache.resetTime = resetTime;
     } else {
-      // Default to 15 minutes from now for free tier
+      // Default to 15 minutes from now (X API Basic tier window)
       this.memoryCache.resetTime = new Date(Date.now() + 15 * 60 * 1000);
     }
     this.memoryCache.lastChecked = new Date();

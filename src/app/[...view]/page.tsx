@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, use } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import ItemCard from '@/components/ItemCard';
 import CaptureModal from '@/components/CaptureModal';
-import ItemDetailModal from '@/components/ItemDetailModal';
+import { ItemDetailModalRefactored } from '@/components/item-detail/ItemDetailModalRefactored';
 import NewItemCard from '@/components/NewItemCard';
 import SpaceCard from '@/components/SpaceCard';
 import NewSpaceModal from '@/components/NewSpaceModal';
@@ -1524,7 +1524,7 @@ export default function Dashboard({ params }: DashboardProps) {
         onAdd={handleAddItem}
       />
 
-      <ItemDetailModal
+      <ItemDetailModalRefactored
         item={selectedItem}
         isOpen={showItemDetail}
         onClose={() => {
@@ -1538,14 +1538,49 @@ export default function Dashboard({ params }: DashboardProps) {
           // Reset flag after a brief delay
           setTimeout(() => setIsHandlingHash(false), 100);
         }}
-        onDelete={handleDelete}
-        onArchive={handleArchive}
+        onDeleteItem={handleDelete}
+        onArchiveItem={async (itemId) => {
+          try {
+            const item = items?.find(i => i.id === itemId);
+            if (!item) return;
+            
+            await itemsService.toggleArchive(itemId, !item.is_archived);
+            
+            // Invalidate queries to refresh the data
+            queryClient.invalidateQueries({ queryKey: itemKeys.all });
+            queryClient.invalidateQueries({ queryKey: spaceKeys.withCounts() });
+            
+            setNotification(item.is_archived ? 'Item unarchived!' : 'Item archived!');
+            setTimeout(() => setNotification(null), 3000);
+          } catch (error) {
+            console.error('Error archiving item:', error);
+            setNotification('Error archiving item. Please try again.');
+            setTimeout(() => setNotification(null), 3000);
+          }
+        }}
         onUpdateItem={handleUpdateItem}
-        onAddTag={handleAddTagToItem}
-        onRemoveTag={handleRemoveTagFromItem}
-        onRefreshMetadata={handleRefreshMetadata}
-        xApiStatus={xApiStatus}
-        spaces={spaces}
+        onChangeSpace={async (itemId, spaceId) => {
+          try {
+            await itemsService.updateItem(itemId, { space_id: spaceId });
+            
+            // Invalidate queries to refresh the data
+            queryClient.invalidateQueries({ queryKey: itemKeys.all });
+            queryClient.invalidateQueries({ queryKey: spaceKeys.withCounts() });
+            
+            // Update the selected item if it's still open
+            if (selectedItem && selectedItem.id === itemId) {
+              setSelectedItem({ ...selectedItem, space_id: spaceId });
+            }
+            
+            setNotification('Item moved to new space!');
+            setTimeout(() => setNotification(null), 3000);
+          } catch (error) {
+            console.error('Error changing item space:', error);
+            setNotification('Error moving item. Please try again.');
+            setTimeout(() => setNotification(null), 3000);
+          }
+        }}
+        spaces={spaces || []}
       />
 
       <SettingsModal

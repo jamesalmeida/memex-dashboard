@@ -93,37 +93,39 @@ export function ItemDetailLayout({
     <div className={cn('flex h-full w-full', className)}>
       {/* Desktop Layout */}
       <div className="hidden md:flex w-full h-full">
-        {/* Left Column - Content Viewer */}
-        <div
-          className={cn(
-            'flex-shrink-0 transition-all duration-300 ease-in-out overflow-hidden',
-            isShelfOpen && centerShelf ? 'w-[40%]' : 'w-[60%]'
-          )}
-          id="item-detail-left-column"
-        >
-          <div className="h-full w-full overflow-auto">
-            {leftColumn}
-          </div>
-        </div>
-
-        {/* Center Shelf - Slides out from right column */}
-        {centerShelf && (
+        {/* Left side container that holds left column and center shelf */}
+        <div className="flex-1 flex min-w-0">
+          {/* Left Column - Content Viewer */}
           <div
             className={cn(
-              'transition-all duration-300 ease-in-out overflow-hidden bg-background border-l',
-              isShelfOpen ? 'w-[35%]' : 'w-0'
+              'flex-1 min-w-0 transition-all duration-300 ease-in-out overflow-hidden'
             )}
-            id="item-detail-center-shelf"
+            id="item-detail-left-column"
           >
             <div className="h-full w-full overflow-auto">
-              {centerShelf}
+              {leftColumn}
             </div>
           </div>
-        )}
 
-        {/* Right Column - Metadata (fixed width) */}
+          {/* Center Shelf - Slides out from right column */}
+          {centerShelf && (
+            <div
+              className={cn(
+                'transition-all duration-300 ease-in-out overflow-hidden bg-gray-50 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700',
+                isShelfOpen ? 'w-[400px]' : 'w-0'
+              )}
+              id="item-detail-center-shelf"
+            >
+              <div className="h-full w-full overflow-auto">
+                {centerShelf}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column - Metadata (fixed width, always in same position) */}
         <div
-          className="w-[25%] min-w-[300px] flex-shrink-0 border-l bg-muted/30"
+          className="min-w-[390px] flex-shrink-0 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
           id="item-detail-right-column"
         >
           <div className="h-full w-full overflow-auto relative">
@@ -133,8 +135,8 @@ export function ItemDetailLayout({
                 onClick={toggleShelf}
                 className={cn(
                   'absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full',
-                  'bg-background border border-r-0 rounded-l-md p-1',
-                  'hover:bg-muted transition-colors z-10'
+                  'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 border-r-0 rounded-l-md p-1',
+                  'hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors z-10'
                 )}
                 aria-label={isShelfOpen ? 'Close center shelf' : 'Open center shelf'}
               >

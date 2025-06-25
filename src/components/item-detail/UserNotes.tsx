@@ -80,8 +80,8 @@ export function UserNotes({ itemId, initialNotes = '', onSave, className }: User
             placeholder="Add your notes here..."
             className={cn(
               "w-full min-h-[100px] p-3 text-sm",
-              "bg-background border rounded-md",
-              "focus:outline-none focus:ring-2 focus:ring-primary",
+              "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md",
+              "focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
               "resize-y"
             )}
             autoFocus
@@ -92,8 +92,8 @@ export function UserNotes({ itemId, initialNotes = '', onSave, className }: User
               disabled={isSaving}
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 text-sm",
-                "bg-primary text-primary-foreground rounded-md",
-                "hover:bg-primary/90 transition-colors",
+                "bg-blue-600 text-white rounded-md",
+                "hover:bg-blue-700 transition-colors",
                 "disabled:opacity-50 disabled:cursor-not-allowed"
               )}
             >
@@ -105,7 +105,7 @@ export function UserNotes({ itemId, initialNotes = '', onSave, className }: User
               disabled={isSaving}
               className={cn(
                 "flex items-center gap-2 px-3 py-1.5 text-sm",
-                "bg-muted hover:bg-muted/80 rounded-md transition-colors",
+                "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-md transition-colors",
                 "disabled:opacity-50 disabled:cursor-not-allowed"
               )}
             >
@@ -122,9 +122,9 @@ export function UserNotes({ itemId, initialNotes = '', onSave, className }: User
           onClick={() => setIsEditing(true)}
           className={cn(
             "p-3 text-sm rounded-md cursor-text",
-            "bg-muted/50 hover:bg-muted/70 transition-colors",
+            "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors",
             "min-h-[60px]",
-            !notes && "text-muted-foreground"
+            !notes && "text-gray-500 dark:text-gray-400"
           )}
         >
           {notes || 'Click to add notes...'}

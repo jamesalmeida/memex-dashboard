@@ -1,25 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Copy, Check, Loader2 } from 'lucide-react';
+import { FileText, Download, Copy, Check, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface YouTubeTranscriptProps {
-  videoId: string;
+  itemId: string;
+  url: string;
+  videoId?: string;
+  existingTranscript?: string;
   onTranscriptFetch?: (transcript: string) => void;
+  onClose?: () => void;
   className?: string;
 }
 
-interface TranscriptSegment {
-  text: string;
-  start: number;
-  duration: number;
-}
-
-export function YouTubeTranscript({ videoId, onTranscriptFetch, className }: YouTubeTranscriptProps) {
+export function YouTubeTranscript({ itemId, url, videoId, existingTranscript, onTranscriptFetch, onClose, className }: YouTubeTranscriptProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [transcript, setTranscript] = useState<TranscriptSegment[] | null>(null);
+  const [transcript, setTranscript] = useState<string | null>(existingTranscript || null);
   const [copied, setCopied] = useState(false);
 
   const fetchTranscript = async () => {
@@ -27,40 +25,49 @@ export function YouTubeTranscript({ videoId, onTranscriptFetch, className }: You
     setError(null);
     
     try {
-      // TODO: Implement actual transcript fetching
-      // This would call your transcript API endpoint
-      const response = await fetch(`/api/youtube-transcript?videoId=${videoId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch transcript');
-      }
+      const response = await fetch('/api/transcript', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId,
+          url,
+          contentType: 'youtube'
+        })
+      });
       
       const data = await response.json();
-      setTranscript(data.segments);
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch transcript');
+      }
+      
+      setTranscript(data.transcript);
       
       if (onTranscriptFetch) {
-        const fullText = data.segments.map((s: TranscriptSegment) => s.text).join(' ');
-        onTranscriptFetch(fullText);
+        onTranscriptFetch(data.transcript);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch transcript');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch transcript';
+      setError(errorMessage);
+      
+      // Handle specific error types
+      if (errorMessage.includes('temporarily unavailable') || errorMessage.includes('interface')) {
+        setError('YouTube transcript extraction is temporarily unavailable. Please try again later.');
+      } else if (errorMessage.includes('not have captions')) {
+        setError('This video does not have captions available.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const copyTranscript = async () => {
     if (!transcript) return;
     
-    const fullText = transcript.map(s => s.text).join('\n');
     try {
-      await navigator.clipboard.writeText(fullText);
+      await navigator.clipboard.writeText(transcript);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -71,12 +78,11 @@ export function YouTubeTranscript({ videoId, onTranscriptFetch, className }: You
   const downloadTranscript = () => {
     if (!transcript) return;
     
-    const fullText = transcript.map(s => `[${formatTime(s.start)}] ${s.text}`).join('\n');
-    const blob = new Blob([fullText], { type: 'text/plain' });
+    const blob = new Blob([transcript], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `transcript-${videoId}.txt`;
+    a.download = `transcript-${videoId || 'youtube'}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -84,10 +90,11 @@ export function YouTubeTranscript({ videoId, onTranscriptFetch, className }: You
   };
 
   useEffect(() => {
-    if (videoId) {
+    // Only fetch if we don't have an existing transcript
+    if (!existingTranscript && itemId && url) {
       fetchTranscript();
     }
-  }, [videoId]);
+  }, [itemId, url, existingTranscript]);
 
   return (
     <div className={cn("h-full flex flex-col", className)}>
@@ -98,28 +105,39 @@ export function YouTubeTranscript({ videoId, onTranscriptFetch, className }: You
           <h3 className="font-semibold">Transcript</h3>
         </div>
         
-        {transcript && (
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
+          {transcript && (
+            <>
+              <button
+                onClick={copyTranscript}
+                className="p-2 hover:bg-muted rounded-md transition-colors"
+                title={copied ? "Copied!" : "Copy transcript"}
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </button>
+              <button
+                onClick={downloadTranscript}
+                className="p-2 hover:bg-muted rounded-md transition-colors"
+                title="Download transcript"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </>
+          )}
+          {onClose && (
             <button
-              onClick={copyTranscript}
-              className="p-2 hover:bg-muted rounded-md transition-colors"
-              title={copied ? "Copied!" : "Copy transcript"}
+              onClick={onClose}
+              className="p-2 hover:bg-muted rounded-md transition-colors ml-2"
+              title="Close transcript"
             >
-              {copied ? (
-                <Check className="w-4 h-4 text-green-600" />
-              ) : (
-                <Copy className="w-4 h-4" />
-              )}
+              <X className="w-4 h-4" />
             </button>
-            <button
-              onClick={downloadTranscript}
-              className="p-2 hover:bg-muted rounded-md transition-colors"
-              title="Download transcript"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -143,22 +161,15 @@ export function YouTubeTranscript({ videoId, onTranscriptFetch, className }: You
           </div>
         )}
         
-        {transcript && transcript.length > 0 && (
-          <div className="space-y-3">
-            {transcript.map((segment, index) => (
-              <div key={index} className="flex gap-3">
-                <span className="text-xs text-muted-foreground whitespace-nowrap pt-0.5">
-                  {formatTime(segment.start)}
-                </span>
-                <p className="text-sm flex-1">{segment.text}</p>
-              </div>
-            ))}
+        {transcript && (
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">{transcript}</p>
           </div>
         )}
         
-        {transcript && transcript.length === 0 && (
+        {!isLoading && !error && !transcript && (
           <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">No transcript available for this video</p>
+            <p className="text-muted-foreground">No transcript available</p>
           </div>
         )}
       </div>

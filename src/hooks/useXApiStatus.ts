@@ -64,7 +64,7 @@ export function useXApiStatus() {
     return {
       configured: true,
       isRateLimited: isStillRateLimited,
-      remainingRequests: isStillRateLimited ? 0 : 1, // Assume we have at least 1 request after reset
+      remainingRequests: isStillRateLimited ? 0 : 15, // X API Basic tier: 15 requests per 15 minutes after reset
       resetTimeString: stored.resetTime,
       minutesUntilReset
     };
@@ -136,7 +136,7 @@ export function useXApiStatus() {
       }
     }
     
-    // No stored data, fetch from API
+    // No stored data, fetch from API to get accurate info
     fetchStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps, only run once on mount

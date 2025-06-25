@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Play, ThumbsUp, ThumbsDown, Share, Download, MoreHorizontal } from 'lucide-react';
+import { Play, ThumbsUp, ThumbsDown, Share, Download, MoreHorizontal, FileText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +17,9 @@ interface YouTubeViewerProps {
   likes?: number;
   duration?: string;
   isShort?: boolean;
+  onTranscriptToggle?: () => void;
+  hasTranscript?: boolean;
+  isTranscriptOpen?: boolean;
 }
 
 export function YouTubeViewer({
@@ -31,6 +34,9 @@ export function YouTubeViewer({
   likes,
   duration,
   isShort,
+  onTranscriptToggle,
+  hasTranscript,
+  isTranscriptOpen,
 }: YouTubeViewerProps) {
   const formatCount = (count?: number) => {
     if (!count) return '0';
@@ -116,6 +122,21 @@ export function YouTubeViewer({
             <button className="p-2 bg-muted rounded-full hover:bg-muted-foreground/10 transition-colors">
               <Download className="w-5 h-5" />
             </button>
+            
+            {onTranscriptToggle && (
+              <button 
+                onClick={onTranscriptToggle}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-full transition-colors",
+                  isTranscriptOpen 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-muted hover:bg-muted-foreground/10"
+                )}
+              >
+                <FileText className="w-5 h-5" />
+                <span className="text-sm">Transcript</span>
+              </button>
+            )}
             
             <button className="p-2 hover:bg-muted rounded-full transition-colors">
               <MoreHorizontal className="w-5 h-5" />

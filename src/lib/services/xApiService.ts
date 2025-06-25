@@ -50,6 +50,7 @@ export class XApiService {
   private baseUrl = 'https://api.twitter.com/2';
 
   constructor() {
+    // In server environment, these should be available
     this.bearerToken = process.env.X_BEARER_TOKEN || '';
     this.apiKey = process.env.X_API_KEY || '';
     this.apiKeySecret = process.env.X_API_KEY_SECRET || '';
@@ -57,7 +58,8 @@ export class XApiService {
     console.log('X API Service initialized:', {
       hasBearerToken: !!this.bearerToken,
       hasApiKey: !!this.apiKey,
-      bearerTokenLength: this.bearerToken.length
+      bearerTokenLength: this.bearerToken.length,
+      env: typeof window === 'undefined' ? 'server' : 'browser'
     });
     
     if (!this.bearerToken) {
@@ -175,6 +177,7 @@ export class XApiService {
           tweet_id: tweet.id,
           verified: author?.verified,
           quote_count: tweet.public_metrics?.quote_count,
+          published_date: tweet.created_at,
         }
       };
 
@@ -241,5 +244,21 @@ export class XApiService {
   }
 }
 
-// Export singleton instance
-export const xApiService = new XApiService();
+// Create a getter that initializes the service lazily
+let _instance: XApiService | null = null;
+
+export const xApiService = {
+  isAvailable(): boolean {
+    if (!_instance) {
+      _instance = new XApiService();
+    }
+    return _instance.isAvailable();
+  },
+  
+  async fetchTweet(url: string) {
+    if (!_instance) {
+      _instance = new XApiService();
+    }
+    return _instance.fetchTweet(url);
+  }
+};

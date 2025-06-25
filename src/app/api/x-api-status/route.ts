@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { xApiService } from '@/lib/services/xApiService';
-import { xApiRateLimiter } from '@/lib/services/xApiRateLimit';
+import { xApiRateLimiter } from '@/lib/services/xApiRateLimitPersistent';
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,11 +18,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Get current rate limit status from memory
-    let rateLimitInfo = xApiRateLimiter.getStatus();
+    let rateLimitInfo = await xApiRateLimiter.getStatus();
 
-    // If force check is requested or we don't have info, make a lightweight API call
-    if (forceCheck || !rateLimitInfo.hasInfo) {
-      console.log(forceCheck ? 'Force checking X API rate limit...' : 'No rate limit info, checking...');
+    // Check rate limits if forced or if we don't have current info
+    if (forceCheck || !rateLimitInfo.hasInfo || rateLimitInfo.remainingRequests === null) {
+      console.log(forceCheck ? 'Force checking X API rate limit...' : 'Checking X API rate limit...');
       
       try {
         // Make a minimal API call to check rate limits
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
         });
 
         // Update rate limit info from headers
-        xApiRateLimiter.updateFromHeaders(response.headers);
+        await xApiRateLimiter.updateFromHeaders(response.headers);
         
         // Log the response for debugging
         if (!response.ok) {
@@ -41,13 +41,24 @@ export async function GET(req: NextRequest) {
         }
         
         // Get updated status
-        rateLimitInfo = xApiRateLimiter.getStatus();
+        rateLimitInfo = await xApiRateLimiter.getStatus();
         console.log('Updated rate limit info:', rateLimitInfo);
         
       } catch (error) {
         console.error('Error checking X API rate limit:', error);
         // Return the existing info if the check fails
       }
+    } else if (!rateLimitInfo.hasInfo) {
+      // If we have no info at all, return a conservative estimate
+      console.log('No rate limit info available, returning conservative estimate');
+      rateLimitInfo = {
+        hasInfo: false,
+        isRateLimited: false,
+        remainingRequests: 15, // X API Basic tier: 15 requests per 15 minutes
+        resetTime: null,
+        resetTimeString: '',
+        minutesUntilReset: 15
+      };
     }
 
     return NextResponse.json({

@@ -13,7 +13,8 @@ interface MetadataPanelProps {
 }
 
 export function MetadataPanel({ item, contentType, className }: MetadataPanelProps) {
-  const typeMetadata = CONTENT_TYPE_METADATA[contentType];
+  // Fallback to 'unknown' if content type is not found
+  const typeMetadata = CONTENT_TYPE_METADATA[contentType] || CONTENT_TYPE_METADATA.unknown;
   
   const formatCount = (count?: number | string) => {
     const num = typeof count === 'string' ? parseInt(count) : count;
@@ -26,10 +27,12 @@ export function MetadataPanel({ item, contentType, className }: MetadataPanelPro
   return (
     <div className={cn("space-y-6 p-4", className)}>
       {/* Content Type Badge */}
-      <div className="flex items-center gap-2">
-        <span className="text-2xl">{typeMetadata.icon}</span>
-        <span className="font-medium">{typeMetadata.displayName}</span>
-      </div>
+      {typeMetadata && (
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">{typeMetadata.icon}</span>
+          <span className="font-medium">{typeMetadata.displayName}</span>
+        </div>
+      )}
 
       {/* URL */}
       <div className="space-y-2">
@@ -48,61 +51,61 @@ export function MetadataPanel({ item, contentType, className }: MetadataPanelPro
       </div>
 
       {/* Author */}
-      {(item.author || item.username || item.channel_name) && (
+      {(item.metadata?.author || item.metadata?.username || item.author || item.channel_name) && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <User className="w-4 h-4" />
             <span>Author</span>
           </div>
           <div className="text-sm">
-            {item.display_name || item.author || item.channel_name}
-            {item.username && (
-              <span className="text-muted-foreground ml-1">@{item.username}</span>
+            {item.metadata?.extra_data?.display_name || item.metadata?.author || item.author || item.channel_name}
+            {(item.metadata?.username || item.username) && (
+              <span className="text-muted-foreground ml-1">@{item.metadata?.username || item.username}</span>
             )}
           </div>
         </div>
       )}
 
       {/* Published Date */}
-      {item.published_date && (
+      {(item.metadata?.published_date || item.published_date) && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
             <span>Published</span>
           </div>
           <div className="text-sm">
-            {formatDistanceToNow(new Date(item.published_date), { addSuffix: true })}
+            {formatDistanceToNow(new Date(item.metadata?.published_date || item.published_date), { addSuffix: true })}
           </div>
         </div>
       )}
 
       {/* Engagement Metrics */}
-      {(item.likes || item.views || item.retweets || item.comments) && (
+      {(item.metadata?.likes || item.metadata?.views || item.metadata?.retweets || item.metadata?.replies || item.likes || item.views || item.retweets || item.comments) && (
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground">Engagement</div>
           <div className="grid grid-cols-2 gap-3">
-            {item.likes && (
+            {(item.metadata?.likes || item.likes) && (
               <div className="flex items-center gap-2 text-sm">
                 <Heart className="w-4 h-4 text-red-500" />
-                <span>{formatCount(item.likes)} likes</span>
+                <span>{formatCount(item.metadata?.likes || item.likes)} likes</span>
               </div>
             )}
-            {item.views && (
+            {(item.metadata?.views || item.views) && (
               <div className="flex items-center gap-2 text-sm">
                 <Eye className="w-4 h-4 text-blue-500" />
-                <span>{formatCount(item.views)} views</span>
+                <span>{formatCount(item.metadata?.views || item.views)} views</span>
               </div>
             )}
-            {item.retweets && (
+            {(item.metadata?.retweets || item.retweets) && (
               <div className="flex items-center gap-2 text-sm">
                 <Share2 className="w-4 h-4 text-green-500" />
-                <span>{formatCount(item.retweets)} shares</span>
+                <span>{formatCount(item.metadata?.retweets || item.retweets)} shares</span>
               </div>
             )}
-            {(item.comments || item.replies) && (
+            {(item.metadata?.replies || item.comments || item.replies) && (
               <div className="flex items-center gap-2 text-sm">
                 <MessageCircle className="w-4 h-4 text-purple-500" />
-                <span>{formatCount(item.comments || item.replies)} comments</span>
+                <span>{formatCount(item.metadata?.replies || item.comments || item.replies)} comments</span>
               </div>
             )}
           </div>

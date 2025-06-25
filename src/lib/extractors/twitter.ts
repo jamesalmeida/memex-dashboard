@@ -16,12 +16,17 @@ export class TwitterExtractor extends BaseExtractor {
   async extract(options: ExtractorOptions): Promise<ExtractorResult> {
     const { url } = options;
     
+    console.log('Twitter extractor: Starting extraction for', url);
+    console.log('Twitter extractor: X API available?', xApiService.isAvailable());
+    
     // Try X API first if available
     if (xApiService.isAvailable()) {
+      console.log('Twitter extractor: Attempting X API extraction');
       try {
         const apiData = await xApiService.fetchTweet(url);
         
         if (apiData) {
+          console.log('Twitter extractor: X API data received', apiData);
           const metadata = this.transformApiResponse(apiData, url);
           return {
             metadata,

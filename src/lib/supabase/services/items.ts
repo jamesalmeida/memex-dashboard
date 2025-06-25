@@ -217,6 +217,23 @@ export const itemsService = {
     if (error) throw error
   },
 
+  // Archive/unarchive item
+  async toggleArchive(id: string, isArchived: boolean): Promise<void> {
+    const supabase = createClient()
+    
+    const updateData = {
+      is_archived: isArchived,
+      archived_at: isArchived ? new Date().toISOString() : null
+    }
+    
+    const { error } = await supabase
+      .from('items')
+      .update(updateData)
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
   // Add tags to an item
   async addTagsToItem(itemId: string, tagIds: string[]): Promise<void> {
     const supabase = createClient()

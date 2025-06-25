@@ -7,6 +7,8 @@ export async function POST(request: NextRequest) {
     
     console.log('=== Metadata Extraction API ===');
     console.log('URL:', url);
+    console.log('Environment:', typeof window === 'undefined' ? 'server' : 'browser');
+    console.log('X_BEARER_TOKEN available:', !!process.env.X_BEARER_TOKEN);
     
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
@@ -24,6 +26,7 @@ export async function POST(request: NextRequest) {
     // Transform metadata to match existing API response format
     const response = transformMetadataForLegacyAPI(result.metadata);
     
+    console.log('Transformed response:', JSON.stringify(response, null, 2));
     console.log('=== Metadata Extraction Complete ===');
     return NextResponse.json(response);
     

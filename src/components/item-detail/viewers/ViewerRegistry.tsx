@@ -5,14 +5,39 @@ import { TwitterViewer } from './TwitterViewer';
 import { InstagramViewer } from './InstagramViewer';
 import { YouTubeViewer } from './YouTubeViewer';
 import { ArticleViewer } from './ArticleViewer';
+import { RedditViewer } from './RedditViewer';
+import { TikTokViewer } from './TikTokViewer';
 import { ContentType } from '@/lib/contentTypes/patterns';
+import { cn } from '@/lib/utils';
 
 interface ViewerProps {
   item: any; // Will be typed properly when integrated
   contentType: ContentType;
+  onTranscriptToggle?: () => void;
+  isTranscriptOpen?: boolean;
 }
 
-export function ContentViewer({ item, contentType }: ViewerProps) {
+export function ContentViewer({ 
+  item, 
+  contentType, 
+  onTranscriptToggle, 
+  isTranscriptOpen
+}: ViewerProps) {
+  // Handle missing or unknown content types
+  if (!contentType || contentType === 'unknown') {
+    return (
+      <ArticleViewer
+        title={item.title || 'Untitled'}
+        content={item.content}
+        description={item.description}
+        author={item.author}
+        publishedDate={item.published_date}
+        thumbnail={item.thumbnail_url}
+        url={item.url}
+      />
+    );
+  }
+
   // Map the item data to viewer props based on content type
   switch (contentType) {
     case 'twitter':
@@ -20,21 +45,21 @@ export function ContentViewer({ item, contentType }: ViewerProps) {
         <TwitterViewer
           title={item.title}
           content={item.content || item.description}
-          author={item.author}
-          username={item.username}
-          profileImage={item.profile_image}
-          displayName={item.display_name}
-          publishedDate={item.published_date}
+          author={item.metadata?.author || item.author}
+          username={item.metadata?.username}
+          profileImage={item.metadata?.profile_image}
+          displayName={item.metadata?.extra_data?.display_name || item.metadata?.author?.split(' (@')[0] || item.metadata?.author}
+          publishedDate={item.metadata?.extra_data?.published_date || item.metadata?.published_date || item.created_at}
           thumbnail={item.thumbnail_url}
-          videoUrl={item.video_url}
-          isVideo={item.is_video || !!item.video_url}
+          videoUrl={item.metadata?.video_url}
+          isVideo={!!item.metadata?.video_url || item.metadata?.extra_data?.is_video}
           engagement={{
-            likes: parseInt(item.likes || '0'),
-            retweets: parseInt(item.retweets || '0'),
-            replies: parseInt(item.replies || '0'),
-            views: parseInt(item.views || '0'),
+            likes: parseInt(item.metadata?.likes?.toString() || '0'),
+            retweets: parseInt(item.metadata?.retweets?.toString() || '0'),
+            replies: parseInt(item.metadata?.replies?.toString() || '0'),
+            views: parseInt(item.metadata?.views?.toString() || '0'),
           }}
-          verified={item.verified}
+          verified={item.metadata?.extra_data?.verified}
         />
       );
 
@@ -71,11 +96,53 @@ export function ContentViewer({ item, contentType }: ViewerProps) {
           likes={item.likes}
           duration={item.duration}
           isShort={item.is_short}
+          onTranscriptToggle={onTranscriptToggle}
+          isTranscriptOpen={isTranscriptOpen}
+          hasTranscript={!!item.metadata?.extra_data?.transcript}
         />
       );
 
     case 'reddit':
+      return (
+        <RedditViewer
+          title={item.title}
+          content={item.content}
+          author={item.author}
+          subreddit={item.subreddit}
+          score={item.score || item.upvotes}
+          commentCount={item.comment_count || item.comments}
+          awards={item.awards}
+          publishedDate={item.published_date}
+          thumbnail={item.thumbnail_url}
+          isVideo={item.is_video}
+          videoUrl={item.video_url}
+          imageUrl={item.image_url || item.thumbnail_url}
+          postType={item.post_type || (item.video_url ? 'video' : item.image_url ? 'image' : 'text')}
+          linkUrl={item.link_url}
+          linkDomain={item.link_domain}
+        />
+      );
+
     case 'tiktok':
+      return (
+        <TikTokViewer
+          title={item.title}
+          caption={item.caption || item.description}
+          author={item.author}
+          username={item.username}
+          profileImage={item.profile_image}
+          videoUrl={item.video_url}
+          thumbnail={item.thumbnail_url}
+          musicName={item.music_name}
+          musicAuthor={item.music_author}
+          likes={item.likes}
+          comments={item.comments}
+          shares={item.shares}
+          views={item.views}
+          publishedDate={item.published_date}
+        />
+      );
+
     case 'facebook':
     case 'linkedin':
     case 'pinterest':

@@ -190,7 +190,10 @@ export async function POST(request: Request) {
               replies: xData.replies,
               views: xData.views,
               published_date: xData.published_date || '',
-              extra_data: xData.extra_data || {}
+              extra_data: {
+                ...xData.extra_data,
+                display_name: xData.display_name || ''
+              }
             };
             
             console.log('Successfully enriched with X/Twitter metadata');
