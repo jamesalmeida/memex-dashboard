@@ -224,7 +224,7 @@ export async function POST(request: Request) {
     // Create item data matching the items table schema
     const itemData = {
       user_id: userIdFromHeader,
-      title: enrichedData.title !== undefined ? enrichedData.title : title,
+      title: enrichedData.title !== undefined ? enrichedData.title : (contentType === 'x' ? '' : title),
       url: url,
       content_type: contentType,
       content: enrichedData.content || selection || '',

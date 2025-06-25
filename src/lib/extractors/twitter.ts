@@ -58,7 +58,7 @@ export class TwitterExtractor extends BaseExtractor {
     
     const metadata: TwitterMetadata = {
       url,
-      title: apiData.content || '',
+      title: '', // Twitter posts don't have titles
       contentType: 'twitter',
       category: 'social',
       extractedAt: new Date().toISOString(),
@@ -179,7 +179,7 @@ export class TwitterExtractor extends BaseExtractor {
     
     const metadata: TwitterMetadata = {
       url,
-      title,
+      title: '', // Twitter posts don't have titles
       contentType: 'twitter',
       category: 'social',
       extractedAt: new Date().toISOString(),
