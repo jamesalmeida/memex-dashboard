@@ -780,6 +780,15 @@ export default function Dashboard({ params }: DashboardProps) {
       setNotification('Item added successfully!');
       setTimeout(() => setNotification(null), 3000);
       
+      // Auto-tag with content type if it's not 'unknown'
+      if (newItem.content_type && newItem.content_type !== 'unknown') {
+        try {
+          await handleAddTagToItem(newItem.id, newItem.content_type);
+        } catch (error) {
+          console.error('Failed to auto-tag item with content type:', error);
+        }
+      }
+      
       if (openDetail) {
         // Fetch the full item with metadata for the detail view
         const fullItem = await itemsService.getItem(newItem.id);
@@ -1561,6 +1570,19 @@ export default function Dashboard({ params }: DashboardProps) {
           }
         }}
         onUpdateItem={handleUpdateItem}
+        onAddTag={handleAddTagToItem}
+        onRemoveTag={async (itemId, tagName) => {
+          // Find the tag from the selected item's tags
+          const item = items?.find(i => i.id === itemId) || selectedItem;
+          if (item && item.tags) {
+            const tag = item.tags.find((t: any) => 
+              typeof t === 'string' ? t === tagName : t.name === tagName
+            );
+            if (tag && typeof tag === 'object' && tag.id) {
+              await handleRemoveTagFromItem(itemId, tag.id);
+            }
+          }
+        }}
         onChangeSpace={async (itemId, spaceId) => {
           try {
             await itemsService.updateItem(itemId, { space_id: spaceId });

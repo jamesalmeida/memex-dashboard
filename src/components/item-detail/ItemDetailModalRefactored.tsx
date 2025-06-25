@@ -12,6 +12,7 @@ import { ContentSkeleton } from './skeletons/ContentSkeleton';
 import { MetadataSkeleton } from './skeletons/MetadataSkeleton';
 import { SpaceSelector } from './SpaceSelector';
 import { EditableTitle } from './EditableTitle';
+import { ItemTags } from './ItemTags';
 import { detectContentType } from '@/lib/contentTypes/detector';
 import { ContentType } from '@/lib/contentTypes/patterns';
 import { extractPlatformId } from '@/lib/contentTypes/detector';
@@ -26,6 +27,8 @@ interface ItemDetailModalRefactoredProps {
   onDeleteItem?: (itemId: string) => void;
   onArchiveItem?: (itemId: string) => void;
   onChangeSpace?: (itemId: string, spaceId: string | null) => void;
+  onAddTag?: (itemId: string, tag: string) => void;
+  onRemoveTag?: (itemId: string, tag: string) => void;
   spaces?: Space[];
   className?: string;
 }
@@ -38,6 +41,8 @@ export function ItemDetailModalRefactored({
   onDeleteItem,
   onArchiveItem,
   onChangeSpace,
+  onAddTag,
+  onRemoveTag,
   spaces = [],
   className,
 }: ItemDetailModalRefactoredProps) {
@@ -167,6 +172,18 @@ export function ItemDetailModalRefactored({
     }
   };
 
+  const handleAddTag = async (tag: string) => {
+    if (onAddTag) {
+      await onAddTag(item.id, tag);
+    }
+  };
+
+  const handleRemoveTag = async (tag: string) => {
+    if (onRemoveTag) {
+      await onRemoveTag(item.id, tag);
+    }
+  };
+
   const handleTranscriptFetch = (transcript: string) => {
     // Update the item with the fetched transcript
     if (onUpdateItem) {
@@ -229,6 +246,15 @@ export function ItemDetailModalRefactored({
                     onChangeSpace(item.id, spaceId);
                   }
                 }}
+              />
+            </div>
+            <div className="p-4 border-t">
+              <ItemTags
+                itemId={item.id}
+                tags={item.tags?.map((tag: any) => typeof tag === 'string' ? tag : tag.name) || []}
+                contentType={contentType}
+                onAddTag={handleAddTag}
+                onRemoveTag={handleRemoveTag}
               />
             </div>
             <div className="p-4 border-t">

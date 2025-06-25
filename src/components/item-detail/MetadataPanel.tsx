@@ -141,12 +141,12 @@ export function MetadataPanel({ item, contentType, className }: MetadataPanelPro
             <span>Tags</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {item.tags.map((tag: string, index: number) => (
+            {item.tags.map((tag: string | {name: string}, index: number) => (
               <span
                 key={index}
                 className="px-2 py-1 text-xs bg-muted rounded-full"
               >
-                {tag}
+                {typeof tag === 'string' ? tag : tag.name}
               </span>
             ))}
           </div>
