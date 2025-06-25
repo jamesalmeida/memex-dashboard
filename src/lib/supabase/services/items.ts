@@ -14,7 +14,7 @@ export const itemsService = {
     
     let query = supabase
       .from('items')
-      .select('id, user_id, space_id, title, url, content_type, content, description, thumbnail_url, created_at, updated_at, archived_at, is_archived, is_favorite, search_vector')
+      .select('id, user_id, space_id, title, url, content_type, content, description, thumbnail_url, created_at, updated_at, archived_at, is_archived, is_favorite, user_notes, search_vector')
       .eq('is_archived', false)
       .order('created_at', { ascending: false })
     

@@ -872,6 +872,7 @@ export default function Dashboard({ params }: DashboardProps) {
           content: updates.content,
           description: updates.description,
           thumbnail_url: updates.thumbnail_url || updates.thumbnail,
+          user_notes: updates.user_notes,
         };
 
         // Only update space_id if space is explicitly provided in updates
@@ -902,6 +903,7 @@ export default function Dashboard({ params }: DashboardProps) {
           if ('title' in updates) optimisticItem.title = updates.title;
           if ('content' in updates) optimisticItem.content = updates.content;
           if (updates.description !== undefined) optimisticItem.description = updates.description;
+          if ('user_notes' in updates) optimisticItem.user_notes = updates.user_notes;
           
           // Apply optimistic update immediately
           setSelectedItem(optimisticItem);

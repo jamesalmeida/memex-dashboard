@@ -53,6 +53,11 @@ export function ItemDetailModalRefactored({
     }
   }, []);
 
+  // Update userNotes when item changes
+  useEffect(() => {
+    setUserNotes(item?.user_notes || '');
+  }, [item?.id]); // Use item.id to trigger update when switching items
+
   // Handle ESC key to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

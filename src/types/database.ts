@@ -44,6 +44,7 @@ export interface Item {
   archived_at?: string | null;
   is_archived: boolean;
   is_favorite: boolean;
+  user_notes?: string | null;
 }
 
 export interface Tag {
@@ -135,6 +136,7 @@ export interface UpdateItemInput {
   raw_text?: string | null;
   is_archived?: boolean;
   is_favorite?: boolean;
+  user_notes?: string | null;
 }
 
 export interface CreateSpaceInput {
