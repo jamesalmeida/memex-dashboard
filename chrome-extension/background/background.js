@@ -53,7 +53,15 @@ async function saveToDashboard(data) {
       body: JSON.stringify(data)
     });
     
-    const responseData = await response.json();
+    let responseData;
+    const responseText = await response.text();
+    
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse response:', responseText);
+      throw new Error(`Server error: ${response.status} - ${responseText}`);
+    }
     
     if (!response.ok) {
       console.error('API Error:', responseData);
