@@ -328,7 +328,7 @@ export default function ItemDetailModal({
     setShowSpaceSelector(false); // Close the dropdown
     
     // Find the space name by ID for the update
-    const spaceName = newSpaceId === 'none' ? undefined : spaces.find(s => s.id === newSpaceId)?.name;
+    const spaceName = newSpaceId === 'none' ? null : spaces.find(s => s.id === newSpaceId)?.name;
     
     onUpdateItem?.(currentItem.id, { 
       space: spaceName 

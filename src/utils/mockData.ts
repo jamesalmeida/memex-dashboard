@@ -60,7 +60,7 @@ export interface MockItem {
     journal?: string;
   };
   created_at: string;
-  space?: string;
+  space?: string | null;
 }
 
 export const mockItems: MockItem[] = [
