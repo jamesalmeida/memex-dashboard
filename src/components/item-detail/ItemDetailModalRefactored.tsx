@@ -113,29 +113,28 @@ export function ItemDetailModalRefactored({
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
-      // Call the API to refresh metadata
-      const response = await fetch('/api/extract-metadata', {
+      // Call the refresh-metadata API which properly updates both item and metadata
+      const response = await fetch('/api/refresh-metadata', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url: item.url }),
+        body: JSON.stringify({ 
+          itemId: item.id,
+          url: item.url 
+        }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to refresh metadata');
       }
 
-      const freshMetadata = await response.json();
+      const result = await response.json();
       
-      // Update the item with fresh metadata
+      // Force a refetch of the item to get updated metadata
       if (onUpdateItem) {
-        await onUpdateItem(item.id, {
-          title: freshMetadata.title,
-          description: freshMetadata.description,
-          thumbnail_url: freshMetadata.thumbnail_url,
-          // Add other metadata fields as needed
-        });
+        // Trigger an update to force React Query to refetch
+        await onUpdateItem(item.id, {});
       }
     } catch (error) {
       console.error('Error refreshing metadata:', error);

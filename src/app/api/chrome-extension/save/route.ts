@@ -93,7 +93,12 @@ export async function POST(request: Request) {
 
     // For YouTube and X content, fetch rich metadata before saving
     let enrichedData: any = {};
-    const baseUrl = request.headers.get('origin') || `http://localhost:${process.env.PORT || 3000}`;
+    
+    // Construct the base URL for internal API calls
+    const host = request.headers.get('host') || 'localhost:3000';
+    const protocol = process.env.NODE_ENV === 'production' || !host.includes('localhost') ? 'https' : 'http';
+    const baseUrl = `${protocol}://${host}`;
+    console.log('Chrome Extension: Using baseUrl:', baseUrl);
     
     if (contentType === 'youtube') {
       try {
@@ -167,10 +172,15 @@ export async function POST(request: Request) {
         
         if (xResponse.ok) {
           const xData = await xResponse.json();
-          console.log('X/Twitter metadata response:', xData);
+          console.log('X/Twitter metadata response:', JSON.stringify(xData, null, 2));
           
-          // Check if we got X API data (has video_url or engagement metrics)
-          if (xData.video_url || xData.likes !== undefined || xData.views !== undefined) {
+          // Always enrich Twitter data even if it's from scraping
+          // Check if we got any Twitter data at all
+          if (xData) {
+            console.log('Chrome Extension: Processing Twitter metadata, has username?', !!xData.username);
+            console.log('Chrome Extension: Processing Twitter metadata, has display_name?', !!xData.display_name);
+            console.log('Chrome Extension: Processing Twitter metadata, has author?', !!xData.author);
+            
             // Enrich with X API data
             enrichedData = {
               title: '', // X posts don't use title
@@ -193,24 +203,26 @@ export async function POST(request: Request) {
               }
             }
             
+            // Always set metadata for Twitter posts
             enrichedData.metadata = {
               domain: xData.domain || domain,
-              author: xData.author || '',
+              author: xData.author || xData.display_name || '',
               username: xData.username || '',
               profile_image: xData.profile_image || '',
-              video_url: videoUrl,
-              likes: xData.likes,
-              retweets: xData.retweets,
-              replies: xData.replies,
-              views: xData.views,
+              video_url: videoUrl || '',
+              likes: xData.likes || 0,
+              retweets: xData.retweets || 0,
+              replies: xData.replies || 0,
+              views: xData.views || 0,
               published_date: xData.published_date || '',
               extra_data: {
-                ...xData.extra_data,
-                display_name: xData.display_name || ''
+                ...(xData.extra_data || {}),
+                display_name: xData.display_name || xData.author || ''
               }
             };
             
             console.log('Successfully enriched with X/Twitter metadata');
+            console.log('Enriched metadata:', JSON.stringify(enrichedData.metadata, null, 2));
           }
         } else {
           console.error('X/Twitter metadata API failed:', await xResponse.text());
@@ -255,22 +267,37 @@ export async function POST(request: Request) {
     if (data && enrichedData.metadata) {
       try {
         console.log(`Chrome Extension: Saving ${contentType} metadata...`);
-        const { error: metadataError } = await supabase
+        console.log('Metadata to save:', JSON.stringify({
+          item_id: data.id,
+          ...enrichedData.metadata
+        }, null, 2));
+        
+        const { data: metadataData, error: metadataError } = await supabase
           .from('item_metadata')
           .insert({
             item_id: data.id,
             ...enrichedData.metadata
-          });
+          })
+          .select()
+          .single();
         
         if (metadataError) {
           console.error(`Error saving ${contentType} metadata:`, metadataError);
+          console.error('Error details:', {
+            message: metadataError.message,
+            details: metadataError.details,
+            hint: metadataError.hint,
+            code: metadataError.code
+          });
           // Don't fail the main request if metadata save fails
         } else {
-          console.log(`Successfully saved ${contentType} metadata`);
+          console.log(`Successfully saved ${contentType} metadata:`, metadataData);
         }
       } catch (metaError) {
         console.error('Error saving metadata:', metaError);
       }
+    } else {
+      console.log('No enriched metadata to save for', contentType);
     }
 
     // After successfully saving the item, trigger metadata refresh for content without enriched metadata
@@ -279,8 +306,7 @@ export async function POST(request: Request) {
       try {
         console.log('Chrome Extension: Triggering metadata refresh for item:', data.id);
         
-        // Call the refresh-metadata endpoint
-        const baseUrl = request.headers.get('origin') || `http://localhost:${process.env.PORT || 3000}`;
+        // Call the refresh-metadata endpoint (reuse the baseUrl from above)
         const refreshResponse = await fetch(`${baseUrl}/api/refresh-metadata`, {
           method: 'POST',
           headers: {

@@ -1,8 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server'
-import * as cheerio from 'cheerio'
-import { jinaService } from '@/lib/services/jinaService'
-import { xApiService } from '@/lib/services/xApiService'
+import { extractorRegistry } from '@/lib/extractors/registry'
 import { createClient } from '@supabase/supabase-js'
+
+/**
+ * Transform new metadata format to match database schema
+ */
+function transformMetadataForDatabase(metadata: any): any {
+  const response: any = {
+    title: metadata.title || '',
+    description: metadata.description || '',
+    thumbnail_url: metadata.thumbnail || '',
+    content: metadata.description || metadata.title || '',
+  };
+  
+  // Prepare metadata fields for item_metadata table
+  const metadataFields: any = {
+    domain: new URL(metadata.url).hostname,
+  };
+  
+  // Content type specific transformations
+  switch (metadata.contentType) {
+    case 'twitter':
+      response.title = ''; // Twitter posts don't have titles
+      response.content = metadata.description || '';
+      
+      metadataFields.username = metadata.author?.username;
+      metadataFields.author = metadata.author?.name;
+      metadataFields.profile_image = metadata.author?.profileImage;
+      metadataFields.likes = metadata.engagement?.likes;
+      metadataFields.retweets = metadata.engagement?.retweets;
+      metadataFields.replies = metadata.engagement?.replies;
+      metadataFields.views = metadata.engagement?.views;
+      metadataFields.published_date = metadata.publishedAt;
+      
+      // Handle video
+      if (metadata.media?.videos?.length > 0) {
+        // Find the best MP4 video
+        const mp4Videos = metadata.media.videos.filter((v: any) => 
+          v.format === 'video/mp4' || v.url?.includes('.mp4')
+        );
+        
+        if (mp4Videos.length > 0) {
+          metadataFields.video_url = mp4Videos[0].url;
+        } else {
+          // Fallback to first non-m3u8 video
+          const nonHlsVideo = metadata.media.videos.find((v: any) => 
+            !v.url?.includes('.m3u8') && !v.format?.includes('mpegURL')
+          );
+          metadataFields.video_url = nonHlsVideo?.url || metadata.media.videos[0].url;
+        }
+        
+        metadataFields.extra_data = {
+          video_variants: metadata.media.videos,
+          display_name: metadata.author?.name || ''
+        };
+      } else {
+        metadataFields.extra_data = {
+          display_name: metadata.author?.name || ''
+        };
+      }
+      break;
+      
+    case 'youtube':
+      metadataFields.duration = metadata.duration;
+      metadataFields.author = metadata.channelName;
+      metadataFields.extra_data = {
+        channel_url: metadata.channelUrl,
+        video_id: metadata.videoId,
+      };
+      break;
+      
+    case 'instagram':
+      metadataFields.username = metadata.author?.username;
+      metadataFields.extra_data = {
+        post_type: metadata.postType,
+        images: metadata.carousel?.map((img: any) => img.url) || 
+                metadata.media?.images?.map((img: any) => img.url) || [],
+      };
+      break;
+  }
+  
+  response.metadata = metadataFields;
+  return response;
+}
 
 export async function POST(request: NextRequest) {
   // Create a Supabase client with the service role key to bypass RLS
@@ -66,106 +146,36 @@ async function handleRefresh(request: NextRequest, supabase: any) {
       return NextResponse.json({ error: 'Failed to fetch item' }, { status: 500 });
     }
 
-    // Check if this is an X/Twitter post
-    const isXPost = url.includes('twitter.com') || url.includes('x.com');
-    console.log('Is X Post:', isXPost, 'URL:', url);
-    console.log('X API Available:', xApiService.isAvailable());
+    // Use the extractor registry to extract metadata
+    console.log('Using extractor registry for URL:', url);
     
-    let metadata = null;
-    
-    // Try X API for Twitter posts if available
-    if (isXPost && xApiService.isAvailable()) {
-      console.log('Attempting to refresh X/Twitter content with X API...');
-      metadata = await xApiService.fetchTweet(url);
-      
-      if (metadata) {
-        console.log('Successfully refreshed metadata with X API');
-        console.log('X API metadata published_date:', metadata.published_date);
-        
-        // Add domain
-        const urlObj = new URL(url);
-        metadata.domain = urlObj.hostname;
-        
-        // Clear title for X posts (we use content instead)
-        metadata.title = '';
-      } else {
-        console.log('X API extraction failed, falling back to traditional scraping...');
-      }
-    }
-    
-    // If X API failed or not available, use traditional scraping
-    if (!metadata) {
-      // For non-X posts, try Jina Reader API
-      if (!isXPost && jinaService.isAvailable()) {
-        console.log('Attempting to refresh content with Jina Reader API...');
-        metadata = await jinaService.extractContent(url);
-      }
-      
-      // If Jina failed or not available, use traditional scraping
-      if (!metadata) {
-        console.log('Using traditional scraping for refresh...');
-        
-        // Fetch the webpage
-        const headers = url.includes('instagram.com') ? {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-        } : {
-          'User-Agent': 'Mozilla/5.0 (compatible; Memex/1.0; +https://memex.garden)',
-        };
-        
-        const response = await fetch(url, { headers });
-        
-        if (!response.ok) {
-          console.error('Failed to fetch URL:', response.status, response.statusText);
-          return NextResponse.json({ error: 'Failed to fetch URL' }, { status: response.status });
-        }
-        
-        const html = await response.text();
-        const $ = cheerio.load(html);
-        
-        // Extract basic metadata
-        metadata = {
-          title: $('meta[property="og:title"]').attr('content') || 
-                 $('meta[name="twitter:title"]').attr('content') || 
-                 $('title').text() || '',
-          description: $('meta[property="og:description"]').attr('content') || 
-                       $('meta[name="twitter:description"]').attr('content') || 
-                       $('meta[name="description"]').attr('content') || '',
-          thumbnail_url: $('meta[property="og:image"]').attr('content') || 
-                         $('meta[name="twitter:image"]').attr('content') || '',
-          domain: new URL(url).hostname,
-        };
-        
-        // Extract X/Twitter specific data from HTML
-        if (isXPost) {
-          // Try to extract tweet content from various meta tags
-          const tweetText = $('meta[property="og:description"]').attr('content') || 
-                           $('meta[name="description"]').attr('content') || '';
-          
-          if (tweetText) {
-            metadata.content = tweetText.replace(/" on X$/, '').trim();
-          }
-          
-          // Clear title for X posts
-          metadata.title = '';
-        }
-      }
-    }
-    
-    if (!metadata) {
-      console.error('Failed to extract any metadata');
+    let extractorResult;
+    try {
+      extractorResult = await extractorRegistry.extract(url);
+      console.log('Extraction result:', {
+        contentType: extractorResult.metadata.contentType,
+        confidence: extractorResult.confidence,
+        source: extractorResult.source,
+      });
+    } catch (extractError) {
+      console.error('Extractor failed:', extractError);
       return NextResponse.json({ error: 'Failed to extract metadata' }, { status: 500 });
     }
     
+    const metadata = extractorResult.metadata;
+    
     console.log('Refreshed metadata:', metadata);
+    
+    // Transform metadata to match database schema
+    const transformedMetadata = transformMetadataForDatabase(metadata);
     
     // Update the item in the database
     const updateData: any = {
-      title: metadata.title || existingItem.title,
-      description: metadata.description || existingItem.description,
-      thumbnail_url: metadata.thumbnail_url || existingItem.thumbnail_url,
-      content: metadata.content || existingItem.content,
+      title: transformedMetadata.title ?? existingItem.title,
+      description: transformedMetadata.description || existingItem.description,
+      thumbnail_url: transformedMetadata.thumbnail_url || existingItem.thumbnail_url,
+      content: transformedMetadata.content || existingItem.content,
+      content_type: metadata.contentType || existingItem.content_type,
       updated_at: new Date().toISOString()
     };
     
@@ -180,9 +190,7 @@ async function handleRefresh(request: NextRequest, supabase: any) {
     }
     
     // Update metadata if we have additional fields
-    if (metadata.author || metadata.username || metadata.profile_image || 
-        metadata.video_url || metadata.likes || metadata.retweets || 
-        metadata.replies || metadata.views || metadata.published_date || metadata.extra_data) {
+    if (transformedMetadata.metadata) {
       
       // Access metadata correctly - it might be an array or object depending on the join
       const existingMetadata = Array.isArray(existingItem.metadata) 
@@ -190,17 +198,22 @@ async function handleRefresh(request: NextRequest, supabase: any) {
         : existingItem.metadata;
       
       const metadataInput: Record<string, unknown> = {
-        domain: metadata.domain || existingMetadata?.domain,
-        author: metadata.author || existingMetadata?.author,
-        username: metadata.username || existingMetadata?.username,
-        profile_image: metadata.profile_image || existingMetadata?.profile_image,
-        video_url: metadata.video_url || existingMetadata?.video_url,
-        published_date: metadata.published_date || existingMetadata?.published_date,
-        likes: metadata.likes ?? existingMetadata?.likes,
-        replies: metadata.replies ?? existingMetadata?.replies,
-        retweets: metadata.retweets ?? existingMetadata?.retweets,
-        views: metadata.views ?? existingMetadata?.views,
-        extra_data: metadata.extra_data || existingMetadata?.extra_data || {}
+        ...transformedMetadata.metadata,
+        // Preserve existing data if new data is missing
+        domain: transformedMetadata.metadata.domain || existingMetadata?.domain,
+        author: transformedMetadata.metadata.author || existingMetadata?.author,
+        username: transformedMetadata.metadata.username || existingMetadata?.username,
+        profile_image: transformedMetadata.metadata.profile_image || existingMetadata?.profile_image,
+        video_url: transformedMetadata.metadata.video_url || existingMetadata?.video_url,
+        published_date: transformedMetadata.metadata.published_date || existingMetadata?.published_date,
+        likes: transformedMetadata.metadata.likes ?? existingMetadata?.likes,
+        replies: transformedMetadata.metadata.replies ?? existingMetadata?.replies,
+        retweets: transformedMetadata.metadata.retweets ?? existingMetadata?.retweets,
+        views: transformedMetadata.metadata.views ?? existingMetadata?.views,
+        extra_data: {
+          ...(existingMetadata?.extra_data || {}),
+          ...(transformedMetadata.metadata.extra_data || {})
+        }
       };
       
       console.log('Metadata input before cleanup:', metadataInput);
