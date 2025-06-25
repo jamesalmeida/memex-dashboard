@@ -11,6 +11,7 @@ import { YouTubeTranscript } from './center-shelf/YouTubeTranscript';
 import { ContentSkeleton } from './skeletons/ContentSkeleton';
 import { MetadataSkeleton } from './skeletons/MetadataSkeleton';
 import { SpaceSelector } from './SpaceSelector';
+import { EditableTitle } from './EditableTitle';
 import { detectContentType } from '@/lib/contentTypes/detector';
 import { ContentType } from '@/lib/contentTypes/patterns';
 import { extractPlatformId } from '@/lib/contentTypes/detector';
@@ -155,6 +156,12 @@ export function ItemDetailModalRefactored({
     }
   };
 
+  const handleSaveTitle = async (newTitle: string) => {
+    if (onUpdateItem && newTitle !== item.title) {
+      await onUpdateItem(item.id, { title: newTitle });
+    }
+  };
+
   const handleTranscriptFetch = (transcript: string) => {
     // Update the item with the fetched transcript
     if (onUpdateItem) {
@@ -189,6 +196,18 @@ export function ItemDetailModalRefactored({
   // Right column content
   const rightColumn = (
     <div className="h-full flex flex-col">
+      {/* Title section - outside scrollable area */}
+      <div className="p-4 border-b">
+        {isLoading ? (
+          <div className="h-7 w-3/4 bg-muted rounded animate-pulse" />
+        ) : (
+          <EditableTitle
+            title={item.title}
+            onSave={handleSaveTitle}
+          />
+        )}
+      </div>
+      
       <div className="flex-1 overflow-auto">
         {isLoading ? (
           <MetadataSkeleton />

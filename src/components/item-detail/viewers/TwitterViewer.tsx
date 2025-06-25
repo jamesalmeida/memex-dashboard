@@ -169,11 +169,11 @@ export function TwitterViewer({
             </button>
           </div>
           
-          {engagement?.views && (
+          {/* {engagement?.views && (
             <div className="mt-2 text-sm text-muted-foreground">
               {formatCount(engagement.views)} views
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>
