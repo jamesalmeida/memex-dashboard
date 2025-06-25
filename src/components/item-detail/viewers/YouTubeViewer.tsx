@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Play, ThumbsUp, ThumbsDown, Share, Download, MoreHorizontal, FileText } from 'lucide-react';
+import { Play, ThumbsUp, ThumbsDown, Share, Download, MoreHorizontal, FileText, Image } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +46,28 @@ export function YouTubeViewer({
   };
 
   const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=0` : null;
+
+  const handleDownloadThumbnail = async () => {
+    if (!thumbnail) return;
+    
+    try {
+      // Fetch the image
+      const response = await fetch(thumbnail);
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_thumbnail.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download thumbnail:', error);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -119,10 +141,6 @@ export function YouTubeViewer({
               <span className="text-sm">Share</span>
             </button>
             
-            <button className="p-2 bg-muted rounded-full hover:bg-muted-foreground/10 transition-colors">
-              <Download className="w-5 h-5" />
-            </button>
-            
             {onTranscriptToggle && (
               <button 
                 onClick={onTranscriptToggle}
@@ -135,6 +153,17 @@ export function YouTubeViewer({
               >
                 <FileText className="w-5 h-5" />
                 <span className="text-sm">Transcript</span>
+              </button>
+            )}
+            
+            {thumbnail && (
+              <button 
+                onClick={handleDownloadThumbnail}
+                className="flex items-center gap-2 px-4 py-2 bg-muted rounded-full hover:bg-muted-foreground/10 transition-colors"
+                title="Download thumbnail"
+              >
+                <Image className="w-5 h-5" />
+                <span className="text-sm">Thumbnail</span>
               </button>
             )}
             
