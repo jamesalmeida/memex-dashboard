@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Plus, Hash, Sparkles } from 'lucide-react';
+import { X, Plus, Hash, Sparkles, Loader2, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ContentType, CONTENT_TYPE_METADATA } from '@/lib/contentTypes/patterns';
 
@@ -12,6 +12,12 @@ interface ItemTagsProps {
   onAddTag: (tag: string) => Promise<void>;
   onRemoveTag: (tag: string) => Promise<void>;
   className?: string;
+  item?: {
+    title: string;
+    content?: string | null;
+    description?: string | null;
+    url?: string | null;
+  };
 }
 
 export function ItemTags({
@@ -21,10 +27,12 @@ export function ItemTags({
   onAddTag,
   onRemoveTag,
   className,
+  item,
 }: ItemTagsProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newTag, setNewTag] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Get content type metadata for the auto-tag
@@ -84,18 +92,82 @@ export function ItemTags({
     }
   };
 
+  const handleGenerateTags = async () => {
+    if (!item || isGenerating) return;
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/generate-tags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: item.title,
+          content: item.content,
+          description: item.description,
+          url: item.url,
+          contentType,
+          existingTags: allTags,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate tags');
+      }
+
+      const { tags: generatedTags } = await response.json();
+      
+      // Add generated tags one by one
+      for (const tag of generatedTags) {
+        if (!allTags.includes(tag)) {
+          await onAddTag(tag);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate tags:', error);
+      // TODO: Show error toast
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Tags</h3>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="p-1 hover:bg-muted rounded transition-colors"
-          aria-label="Add tag"
-          disabled={isAdding}
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Tag className="w-4 h-4" />
+          <h3 className="text-sm font-medium">Tags</h3>
+        </div>
+        <div className="flex items-center gap-1">
+          {item && allTags.length < 7 && (
+            <button
+              onClick={handleGenerateTags}
+              className={cn(
+                "p-1 hover:bg-muted rounded transition-colors",
+                isGenerating && "opacity-50 cursor-not-allowed"
+              )}
+              aria-label="Generate tags with AI"
+              title="Generate tags with AI"
+              disabled={isGenerating || isProcessing}
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+            </button>
+          )}
+          <button
+            onClick={() => setIsAdding(true)}
+            className="p-1 hover:bg-muted rounded transition-colors"
+            aria-label="Add tag"
+            disabled={isAdding}
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-1">

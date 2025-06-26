@@ -285,6 +285,12 @@ export function ItemDetailModalRefactored({
                 contentType={contentType}
                 onAddTag={handleAddTag}
                 onRemoveTag={handleRemoveTag}
+                item={{
+                  title: item.title,
+                  content: item.content,
+                  description: item.description,
+                  url: item.url,
+                }}
               />
             </div>
             <div className="p-4 border-t">
