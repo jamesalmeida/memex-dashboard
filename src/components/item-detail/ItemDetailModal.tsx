@@ -50,6 +50,11 @@ export function ItemDetailModal({
   const [contentType, setContentType] = useState<ContentType>('unknown');
   const [showTranscript, setShowTranscript] = useState(false);
   const [userNotes, setUserNotes] = useState(item?.user_notes || '');
+  const [selectedContentType, setSelectedContentType] = useState<ContentType>(contentType);
+
+  useEffect(() => {
+    setSelectedContentType(contentType);
+  }, [contentType]);
 
   // Initialize contentType on mount if item exists
   useEffect(() => {
@@ -125,12 +130,6 @@ export function ItemDetailModal({
   };
 
   if (!isOpen || !item) return null;
-
-  const [selectedContentType, setSelectedContentType] = useState<ContentType>(contentType);
-
-  useEffect(() => {
-    setSelectedContentType(contentType);
-  }, [contentType]);
 
   const handleRefresh = async () => {
     setIsLoading(true);
