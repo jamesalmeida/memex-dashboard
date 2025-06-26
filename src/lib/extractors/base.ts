@@ -19,10 +19,12 @@ export interface ExtractorResult {
  * Base class for all content extractors
  */
 export abstract class BaseExtractor {
+  name: ContentType;
   protected contentType: ContentType;
   protected requiresAuth: boolean = false;
   
   constructor(contentType: ContentType) {
+    this.name = contentType;
     this.contentType = contentType;
   }
   

@@ -110,10 +110,11 @@ export async function POST(request: NextRequest) {
 async function handleRefresh(request: NextRequest, supabase: any) {
   console.log('=== Refresh Metadata API Started ===');
   try {
-    const { itemId, url } = await request.json()
+    const { itemId, url, contentType } = await request.json()
     
     console.log('Item ID:', itemId);
     console.log('URL:', url);
+    console.log('Content Type:', contentType);
     
     if (!itemId || !url) {
       console.log('Error: Item ID and URL are required');
@@ -151,7 +152,7 @@ async function handleRefresh(request: NextRequest, supabase: any) {
     
     let extractorResult;
     try {
-      extractorResult = await extractorRegistry.extract(url);
+      extractorResult = await extractorRegistry.extract(url, { contentType });
       console.log('Extraction result:', {
         contentType: extractorResult.metadata.contentType,
         confidence: extractorResult.confidence,

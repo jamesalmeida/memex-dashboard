@@ -6,13 +6,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { ContentType, CONTENT_TYPE_METADATA } from '@/lib/contentTypes/patterns';
 import { cn } from '@/lib/utils';
 
+
+
 interface MetadataPanelProps {
   item: any;
   contentType: ContentType;
+  onContentTypeChange: (newContentType: ContentType) => void;
   className?: string;
 }
 
-export function MetadataPanel({ item, contentType, className }: MetadataPanelProps) {
+export function MetadataPanel({ item, contentType, onContentTypeChange, className }: MetadataPanelProps) {
   // Fallback to 'unknown' if content type is not found
   const typeMetadata = CONTENT_TYPE_METADATA[contentType] || CONTENT_TYPE_METADATA.unknown;
   
@@ -26,11 +29,21 @@ export function MetadataPanel({ item, contentType, className }: MetadataPanelPro
 
   return (
     <div className={cn("space-y-6 p-4", className)}>
-      {/* Content Type Badge */}
+      {/* Content Type Dropdown */}
       {typeMetadata && (
         <div className="flex items-center gap-2">
           <span className="text-2xl">{typeMetadata.icon}</span>
-          <span className="font-medium">{typeMetadata.displayName}</span>
+          <select
+            value={contentType}
+            onChange={(e) => onContentTypeChange(e.target.value as ContentType)}
+            className="font-medium bg-transparent"
+          >
+            {Object.keys(CONTENT_TYPE_METADATA).map((type) => (
+              <option key={type} value={type}>
+                {CONTENT_TYPE_METADATA[type as ContentType].displayName}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 

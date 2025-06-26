@@ -126,6 +126,12 @@ export function ItemDetailModal({
 
   if (!isOpen || !item) return null;
 
+  const [selectedContentType, setSelectedContentType] = useState<ContentType>(contentType);
+
+  useEffect(() => {
+    setSelectedContentType(contentType);
+  }, [contentType]);
+
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
@@ -137,7 +143,8 @@ export function ItemDetailModal({
         },
         body: JSON.stringify({ 
           itemId: item.id,
-          url: item.url 
+          url: item.url,
+          contentType: selectedContentType
         }),
       });
 
@@ -265,7 +272,7 @@ export function ItemDetailModal({
           <MetadataSkeleton />
         ) : (
           <>
-            <MetadataPanel item={item} contentType={contentType} />
+            <MetadataPanel item={item} contentType={selectedContentType} onContentTypeChange={setSelectedContentType} />
             <div className="p-4 border-t">
               <h3 className="text-sm font-medium mb-3">Space</h3>
               <SpaceSelector

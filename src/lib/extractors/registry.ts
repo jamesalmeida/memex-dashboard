@@ -45,8 +45,16 @@ class ExtractorRegistry {
   /**
    * Extract metadata from a URL
    */
-  async extract(url: string, options?: Partial<ExtractorOptions>): Promise<ExtractorResult> {
-    let extractor = this.findExtractor(url);
+  async extract(url: string, options?: Partial<ExtractorOptions> & { contentType?: ContentType }): Promise<ExtractorResult> {
+    let extractor: BaseExtractor | null = null;
+
+    if (options?.contentType) {
+      extractor = this.extractors.find(e => e.name.toLowerCase() === options.contentType) || null;
+    }
+
+    if (!extractor) {
+      extractor = this.findExtractor(url);
+    }
     
     if (!extractor) {
       // No specific extractor found, try to detect from HTML/OpenGraph
