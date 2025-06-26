@@ -21,6 +21,7 @@ export interface TagGenerationInput {
   content?: string | null;
   description?: string | null;
   url?: string | null;
+  thumbnailUrl?: string | null;
   contentType?: string;
   existingTags?: string[];
 }
@@ -50,11 +51,13 @@ export const openaiService = {
     URL: ${input.url || 'No URL'}
     Description: ${input.description || 'No description'}
     Content excerpt: ${contentExcerpt || 'No content'}
+    ${input.thumbnailUrl ? 'Image: Provided below' : ''}
 
     Current tags: ${input.existingTags?.join(', ') || 'None'}
 
     Generate tags that:
     - Describe key topics and themes
+    - Consider visual elements if an image is provided
     - Are relevant to the content type
     - Are 1-2 words each
     - Are lowercase without special characters
@@ -64,6 +67,32 @@ export const openaiService = {
     Return only the tags as a JSON array, like ["tag1", "tag2", "tag3"]`;
 
     try {
+      // Build the user message content
+      const userContent: any[] = [
+        {
+          type: 'text',
+          text: prompt,
+        },
+      ];
+
+      // Add image if thumbnail URL is provided
+      if (input.thumbnailUrl) {
+        userContent.push({
+          type: 'image_url',
+          image_url: {
+            url: input.thumbnailUrl,
+            detail: 'low', // Use 'low' to save tokens
+          },
+        });
+      }
+
+      // Log the prompt for debugging
+      console.log('=== OpenAI Tag Generation ===');
+      console.log('Prompt:', prompt);
+      if (input.thumbnailUrl) {
+        console.log('Including image:', input.thumbnailUrl);
+      }
+
       const completion = await client.chat.completions.create({
         model: 'gpt-4o',
         messages: [
@@ -73,7 +102,7 @@ export const openaiService = {
           },
           {
             role: 'user',
-            content: prompt,
+            content: userContent,
           },
         ],
         temperature: 0.7,
@@ -87,7 +116,19 @@ export const openaiService = {
 
       // Parse the JSON response
       try {
-        const tags = JSON.parse(response);
+        // Remove markdown code block formatting if present
+        let cleanResponse = response.trim();
+        if (cleanResponse.startsWith('```json')) {
+          cleanResponse = cleanResponse.slice(7); // Remove ```json
+        } else if (cleanResponse.startsWith('```')) {
+          cleanResponse = cleanResponse.slice(3); // Remove ```
+        }
+        if (cleanResponse.endsWith('```')) {
+          cleanResponse = cleanResponse.slice(0, -3); // Remove trailing ```
+        }
+        cleanResponse = cleanResponse.trim();
+
+        const tags = JSON.parse(cleanResponse);
         if (!Array.isArray(tags)) {
           throw new Error('Response is not an array');
         }

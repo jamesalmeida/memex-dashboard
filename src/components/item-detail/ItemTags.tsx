@@ -17,6 +17,7 @@ interface ItemTagsProps {
     content?: string | null;
     description?: string | null;
     url?: string | null;
+    thumbnailUrl?: string | null;
   };
 }
 
@@ -107,6 +108,7 @@ export function ItemTags({
           content: item.content,
           description: item.description,
           url: item.url,
+          thumbnailUrl: item.thumbnailUrl,
           contentType,
           existingTags: allTags,
         }),

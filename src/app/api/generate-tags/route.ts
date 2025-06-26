@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json();
-    const { title, content, description, url, contentType, existingTags } = body;
+    const { title, content, description, url, thumbnailUrl, contentType, existingTags } = body;
 
     // Validate input
     if (!title && !content && !description) {
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       content,
       description,
       url,
+      thumbnailUrl,
       contentType,
       existingTags,
     });

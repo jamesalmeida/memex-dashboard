@@ -290,6 +290,7 @@ export function ItemDetailModalRefactored({
                   content: item.content,
                   description: item.description,
                   url: item.url,
+                  thumbnailUrl: item.thumbnail_url,
                 }}
               />
             </div>
