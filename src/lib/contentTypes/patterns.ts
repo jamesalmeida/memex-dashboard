@@ -137,6 +137,33 @@ export const URL_PATTERNS = {
     /^https?:\/\/maps\.google\.(com|[\w.]+)/,
     /^https?:\/\/goo\.gl\/maps\/[\w-]+/,
   ],
+  
+  // E-commerce
+  amazon: [
+    /^https?:\/\/(www\.)?amazon\.(com|co\.\w+|ca|de|fr|es|it|co\.uk|co\.jp|com\.br|com\.mx|com\.au|in|nl|sg|ae)\/.*\/dp\/[\w-]+/,
+    /^https?:\/\/(www\.)?amazon\.(com|co\.\w+|ca|de|fr|es|it|co\.uk|co\.jp|com\.br|com\.mx|com\.au|in|nl|sg|ae)\/dp\/[\w-]+/,
+    /^https?:\/\/(www\.)?amazon\.(com|co\.\w+|ca|de|fr|es|it|co\.uk|co\.jp|com\.br|com\.mx|com\.au|in|nl|sg|ae)\/gp\/product\/[\w-]+/,
+    /^https?:\/\/(www\.)?amzn\.to\/[\w-]+/,  // Amazon short links
+  ],
+  etsy: [
+    /^https?:\/\/(www\.)?etsy\.com\/listing\/\d+/,
+    /^https?:\/\/(www\.)?etsy\.com\/[\w-]+\/listing\/\d+/,
+  ],
+  ebay: [
+    /^https?:\/\/(www\.)?ebay\.(com|co\.\w+|ca|de|fr|es|it|co\.uk|com\.au)\/itm\/[\w-]+\/\d+/,
+    /^https?:\/\/(www\.)?ebay\.(com|co\.\w+|ca|de|fr|es|it|co\.uk|com\.au)\/i\/\d+/,
+  ],
+  shopify: [
+    /^https?:\/\/[\w-]+\.myshopify\.com\/products\/[\w-]+/,
+    /^https?:\/\/shop\.[\w-]+\.com\/products\/[\w-]+/,
+  ],
+  product: [
+    // Generic product patterns for various e-commerce sites
+    /^https?:\/\/[^\/]+\/(store|shop|product|item|buy|purchase)\/[\w-]+/,
+    /^https?:\/\/[^\/]+\/[\w-]+\/(store|shop|products?)\/[\w-]+/,
+    // Matches patterns like teenage.engineering/store/tp-7
+    /^https?:\/\/[^\/]+\.(engineering|design|tech|gear|audio)\/store\/[\w-]+/,
+  ],
 } as const;
 
 // Content type definitions

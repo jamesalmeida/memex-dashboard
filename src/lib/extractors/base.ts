@@ -148,7 +148,7 @@ export abstract class BaseExtractor {
       url,
       title: this.extractTitle($),
       description: this.extractDescription($),
-      thumbnail: this.extractThumbnail($),
+      thumbnail: this.extractThumbnail($, urlObj.origin),
       favicon: this.extractFavicon($, urlObj.origin),
       siteName: $('meta[property="og:site_name"]').attr('content') || urlObj.hostname,
       publishedAt: this.extractPublishedDate($),
@@ -175,12 +175,22 @@ export abstract class BaseExtractor {
     );
   }
   
-  private extractThumbnail($: cheerio.CheerioAPI): string | undefined {
-    return (
+  private extractThumbnail($: cheerio.CheerioAPI, origin?: string): string | undefined {
+    const thumbnail = (
       $('meta[property="og:image"]').attr('content') ||
       $('meta[name="twitter:image"]').attr('content') ||
       $('meta[itemprop="image"]').attr('content')
     );
+    
+    if (thumbnail && origin) {
+      try {
+        return new URL(thumbnail, origin).href;
+      } catch {
+        return thumbnail;
+      }
+    }
+    
+    return thumbnail;
   }
   
   private extractFavicon($: cheerio.CheerioAPI, origin: string): string | undefined {

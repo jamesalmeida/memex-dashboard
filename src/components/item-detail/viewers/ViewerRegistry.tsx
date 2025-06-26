@@ -7,6 +7,7 @@ import { YouTubeViewer } from './YouTubeViewer';
 import { ArticleViewer } from './ArticleViewer';
 import { RedditViewer } from './RedditViewer';
 import { TikTokViewer } from './TikTokViewer';
+import { ProductViewer } from './ProductViewer';
 import { ContentType } from '@/lib/contentTypes/patterns';
 import { extractPlatformId } from '@/lib/contentTypes/detector';
 import { cn } from '@/lib/utils';
@@ -150,6 +151,26 @@ export function ContentViewer({
         />
       );
 
+    case 'product':
+    case 'amazon':
+    case 'etsy':
+    case 'ebay':
+    case 'shopify':
+      return (
+        <ProductViewer
+          title={item.title}
+          productId={item.metadata?.product_id || item.metadata?.retailer_part_no}
+          brand={item.metadata?.brand}
+          price={item.metadata?.price}
+          availability={item.metadata?.availability}
+          rating={item.metadata?.rating}
+          description={item.description}
+          thumbnail={item.thumbnail_url}
+          specifications={item.metadata?.specifications}
+          seller={item.metadata?.seller}
+        />
+      );
+
     case 'facebook':
     case 'linkedin':
     case 'pinterest':
@@ -199,78 +220,3 @@ export function ImageViewer({ url, title }: { url: string; title?: string }) {
   );
 }
 
-// Product viewer for e-commerce items
-export function ProductViewer({ item }: { item: any }) {
-  return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Product Image */}
-        {item.thumbnail_url && (
-          <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-            <img
-              src={item.thumbnail_url}
-              alt={item.title}
-              className="w-full h-full object-contain"
-            />
-          </div>
-        )}
-        
-        {/* Product Info */}
-        <div>
-          <h1 className="text-2xl font-bold mb-2">{item.title}</h1>
-          
-          {item.brand && (
-            <p className="text-muted-foreground mb-4">{item.brand}</p>
-          )}
-          
-          {item.price && (
-            <div className="text-3xl font-bold mb-4">
-              ${item.price}
-            </div>
-          )}
-          
-          {item.rating && (
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <svg
-                    key={i}
-                    className={cn(
-                      "w-5 h-5",
-                      i < Math.floor(item.rating) ? "text-yellow-500 fill-current" : "text-muted"
-                    )}
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                  </svg>
-                ))}
-              </div>
-              <span className="text-muted-foreground">
-                {item.rating} ({item.reviews || 0} reviews)
-              </span>
-            </div>
-          )}
-          
-          {item.description && (
-            <div className="prose prose-sm dark:prose-invert">
-              <p>{item.description}</p>
-            </div>
-          )}
-          
-          {item.availability && (
-            <div className="mt-4">
-              <span className={cn(
-                "inline-flex items-center px-3 py-1 rounded-full text-sm font-medium",
-                item.availability === 'in_stock' 
-                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-              )}>
-                {item.availability === 'in_stock' ? 'In Stock' : 'Out of Stock'}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -3,6 +3,7 @@ import { TwitterExtractor } from './twitter';
 import { InstagramExtractor } from './instagram';
 import { YouTubeExtractor } from './youtube';
 import { ArticleExtractor } from './article';
+import { ProductExtractor } from './product';
 import { detectContentType } from '@/lib/contentTypes/detector';
 import { ContentMetadata } from '@/types/metadata';
 
@@ -17,6 +18,7 @@ class ExtractorRegistry {
     this.register(new TwitterExtractor());
     this.register(new InstagramExtractor());
     this.register(new YouTubeExtractor());
+    this.register(new ProductExtractor());
     this.register(new ArticleExtractor()); // Fallback extractor
   }
   
@@ -44,26 +46,72 @@ class ExtractorRegistry {
    * Extract metadata from a URL
    */
   async extract(url: string, options?: Partial<ExtractorOptions>): Promise<ExtractorResult> {
-    const extractor = this.findExtractor(url);
+    let extractor = this.findExtractor(url);
     
     if (!extractor) {
-      // No specific extractor found, use generic detection
-      const detection = detectContentType(url);
+      // No specific extractor found, try to detect from HTML/OpenGraph
+      const html = options?.html || await this.fetchHtml(url);
+      const $ = this.parseHtml(html);
       
-      return {
-        metadata: {
-          url,
-          title: 'Unknown Content',
-          contentType: detection.type,
-          category: detection.category,
-          extractedAt: new Date().toISOString(),
-        } as ContentMetadata,
-        confidence: 0.1,
-        source: 'scraping',
-      };
+      // Check og:type for content type hints
+      const ogType = $('meta[property="og:type"]').attr('content')?.toLowerCase();
+      
+      // Check for product-specific OpenGraph tags
+      const hasProductTags = $('meta[property^="product:"]').length > 0;
+      
+      if (hasProductTags || ogType === 'product' || ogType === 'og:product') {
+        // Use ProductExtractor for items with product metadata
+        extractor = this.extractors.find(e => e.constructor.name === 'ProductExtractor') || null;
+      }
+      
+      if (!extractor) {
+        // Still no extractor, use generic detection
+        const detection = detectContentType(url);
+        
+        return {
+          metadata: {
+            url,
+            title: 'Unknown Content',
+            contentType: detection.type,
+            category: detection.category,
+            extractedAt: new Date().toISOString(),
+          } as ContentMetadata,
+          confidence: 0.1,
+          source: 'scraping',
+        };
+      }
+      
+      // Pass the already fetched HTML to avoid duplicate requests
+      return extractor.extract({ url, html, $, ...options });
     }
     
     return extractor.extract({ url, ...options });
+  }
+  
+  /**
+   * Helper method to fetch HTML
+   */
+  private async fetchHtml(url: string): Promise<string> {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; MemexBot/1.0; +https://memex.com/bot)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return response.text();
+  }
+  
+  /**
+   * Helper method to parse HTML
+   */
+  private parseHtml(html: string): cheerio.CheerioAPI {
+    const cheerio = require('cheerio');
+    return cheerio.load(html);
   }
   
   /**
