@@ -45,6 +45,7 @@ export interface Item {
   is_archived: boolean;
   is_favorite: boolean;
   user_notes?: string | null;
+  tldr_summary?: string | null;
 }
 
 export interface Tag {

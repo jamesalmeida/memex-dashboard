@@ -9,16 +9,20 @@ interface YouTubeTranscriptProps {
   url: string;
   videoId?: string;
   existingTranscript?: string;
-  onTranscriptFetch?: (transcript: string) => void;
+  onTranscriptFetch?: (transcript: string, tldr_summary?: string) => void;
+  existingSummary?: string;
   onClose?: () => void;
   className?: string;
 }
 
-export function YouTubeTranscript({ itemId, url, videoId, existingTranscript, onTranscriptFetch, onClose, className }: YouTubeTranscriptProps) {
+export function YouTubeTranscript({ itemId, url, videoId, existingTranscript, existingSummary, onTranscriptFetch, onClose, className }: YouTubeTranscriptProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(existingTranscript || null);
   const [copied, setCopied] = useState(false);
+  const [summary, setSummary] = useState<string | null>(existingSummary || null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [showFullTranscript, setShowFullTranscript] = useState(false);
 
   const fetchTranscript = async () => {
     setIsLoading(true);
@@ -89,12 +93,49 @@ export function YouTubeTranscript({ itemId, url, videoId, existingTranscript, on
     URL.revokeObjectURL(url);
   };
 
+  const handleSummarize = async () => {
+    if (!transcript) return;
+
+    setIsSummarizing(true);
+    setSummary(null);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/summarize-transcript', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transcript, itemId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to summarize transcript');
+      }
+
+      setSummary(data.summary);
+      if (onTranscriptFetch) {
+        onTranscriptFetch(transcript, data.summary);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to summarize transcript';
+      setError(errorMessage);
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
   useEffect(() => {
     // Only fetch if we don't have an existing transcript
     if (!existingTranscript && itemId && url) {
       fetchTranscript();
     }
-  }, [itemId, url, existingTranscript]);
+    if (existingSummary) {
+      setSummary(existingSummary);
+    }
+  }, [itemId, url, existingTranscript, existingSummary]);
 
   return (
     <div className={cn("h-full flex flex-col", className)}>
@@ -108,6 +149,18 @@ export function YouTubeTranscript({ itemId, url, videoId, existingTranscript, on
         <div className="flex items-center gap-1">
           {transcript && (
             <>
+              <button
+                onClick={handleSummarize}
+                className="p-2 hover:bg-muted rounded-md transition-colors"
+                title="Summarize transcript"
+                disabled={isSummarizing}
+              >
+                {isSummarizing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "TL;DR"
+                )}
+              </button>
               <button
                 onClick={copyTranscript}
                 className="p-2 hover:bg-muted rounded-md transition-colors"
@@ -161,13 +214,36 @@ export function YouTubeTranscript({ itemId, url, videoId, existingTranscript, on
           </div>
         )}
         
-        {transcript && (
+        {summary ? (
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <div className="border border-gray-300 dark:border-gray-700 rounded-md p-4 mb-4">
+              <h4 className="font-semibold mb-2">TL;DR Summary:</h4>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">{summary}</p>
+            </div>
+            {transcript && (
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowFullTranscript(!showFullTranscript)}
+                  className="text-blue-500 hover:underline text-sm"
+                >
+                  {showFullTranscript ? "Hide Original Transcript" : "Show Original Transcript"}
+                </button>
+                {showFullTranscript && (
+                  <div className="prose prose-sm dark:prose-invert max-w-none mt-2">
+                    <h4 className="font-semibold mb-2">Original Transcript:</h4>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{transcript}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : transcript && (
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <p className="whitespace-pre-wrap text-sm leading-relaxed">{transcript}</p>
           </div>
         )}
         
-        {!isLoading && !error && !transcript && (
+        {!isLoading && !error && !transcript && !summary && (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground">No transcript available</p>
           </div>

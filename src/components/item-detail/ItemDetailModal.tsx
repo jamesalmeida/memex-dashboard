@@ -205,7 +205,7 @@ export function ItemDetailModal({
     }
   };
 
-  const handleTranscriptFetch = (transcript: string) => {
+  const handleTranscriptFetch = (transcript: string, tldr_summary?: string) => {
     // Update the item with the fetched transcript
     if (onUpdateItem) {
       onUpdateItem(item.id, {
@@ -216,6 +216,7 @@ export function ItemDetailModal({
             transcript,
           },
         },
+        tldr_summary: tldr_summary || item.tldr_summary, // Preserve existing if not new
       });
     }
   };
@@ -331,6 +332,7 @@ export function ItemDetailModal({
       videoId={item.video_id || item.metadata?.extra_data?.video_id || 
                (item.url ? extractPlatformId(item.url, 'youtube') : null)}
       existingTranscript={hasExistingTranscript}
+      existingSummary={item.tldr_summary}
       onTranscriptFetch={handleTranscriptFetch}
       onClose={() => setShowTranscript(false)}
     />
