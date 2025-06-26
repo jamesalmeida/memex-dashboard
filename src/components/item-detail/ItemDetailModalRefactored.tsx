@@ -80,6 +80,22 @@ export function ItemDetailModalRefactored({
     };
   }, [isOpen, onClose]);
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Store the original overflow value
+      const originalOverflow = document.body.style.overflow;
+      
+      // Prevent scrolling on the body
+      document.body.style.overflow = 'hidden';
+      
+      // Cleanup function to restore scroll
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (item?.content_type) {
       // Use the existing content_type from the item
