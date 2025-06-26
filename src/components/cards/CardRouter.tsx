@@ -10,6 +10,7 @@ import GithubCard from './GithubCard';
 import InstagramCard from './InstagramCard';
 import TikTokCard from './TikTokCard';
 import MovieCard from './MovieCard';
+import ProductCard from './ProductCard';
 import StandardCard from './StandardCard';
 
 interface CardRouterProps {
@@ -106,6 +107,18 @@ export default function CardRouter({ item, onArchive, onDelete, onClick }: CardR
     case 'tv-show':
       return (
         <MovieCard 
+          item={item}
+          onArchive={onArchive}
+          onDelete={onDelete}
+          onClick={onClick}
+        />
+      );
+    
+    case 'product':
+    case 'amazon':
+    case 'etsy':
+      return (
+        <ProductCard 
           item={item}
           onArchive={onArchive}
           onDelete={onDelete}
