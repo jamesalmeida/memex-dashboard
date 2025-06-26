@@ -19,7 +19,7 @@ import { extractPlatformId } from '@/lib/contentTypes/detector';
 import { cn } from '@/lib/utils';
 import type { Space } from '@/types/database';
 
-interface ItemDetailModalRefactoredProps {
+interface ItemDetailModalProps {
   item: any; // TODO: Type this properly
   isOpen: boolean;
   onClose: () => void;
@@ -33,7 +33,7 @@ interface ItemDetailModalRefactoredProps {
   className?: string;
 }
 
-export function ItemDetailModalRefactored({
+export function ItemDetailModal({
   item,
   isOpen,
   onClose,
@@ -45,7 +45,7 @@ export function ItemDetailModalRefactored({
   onRemoveTag,
   spaces = [],
   className,
-}: ItemDetailModalRefactoredProps) {
+}: ItemDetailModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [contentType, setContentType] = useState<ContentType>('unknown');
   const [showTranscript, setShowTranscript] = useState(false);

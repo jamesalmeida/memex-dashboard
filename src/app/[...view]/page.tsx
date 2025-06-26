@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, use } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import ItemCard from '@/components/ItemCard';
 import CaptureModal from '@/components/CaptureModal';
-import { ItemDetailModalRefactored } from '@/components/item-detail/ItemDetailModalRefactored';
+import { ItemDetailModal } from '@/components/item-detail/ItemDetailModal';
 import NewItemCard from '@/components/NewItemCard';
 import SpaceCard from '@/components/SpaceCard';
 import NewSpaceModal from '@/components/NewSpaceModal';
@@ -1535,7 +1535,7 @@ export default function Dashboard({ params }: DashboardProps) {
         onAdd={handleAddItem}
       />
 
-      <ItemDetailModalRefactored
+      <ItemDetailModal
         item={selectedItem}
         isOpen={showItemDetail}
         onClose={() => {
