@@ -20,6 +20,7 @@ export function YouTubeTranscript({ itemId, url, videoId, existingTranscript, ex
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(existingTranscript || null);
   const [copied, setCopied] = useState(false);
+  const [copiedSummary, setCopiedSummary] = useState(false);
   const [summary, setSummary] = useState<string | null>(existingSummary || null);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [showFullTranscript, setShowFullTranscript] = useState(false);
@@ -127,6 +128,17 @@ export function YouTubeTranscript({ itemId, url, videoId, existingTranscript, ex
     }
   };
 
+  const copySummary = async () => {
+    if (!summary) return;
+    try {
+      await navigator.clipboard.writeText(summary);
+      setCopiedSummary(true);
+      setTimeout(() => setCopiedSummary(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy summary:', error);
+    }
+  };
+
   useEffect(() => {
     // Only fetch if we don't have an existing transcript
     if (!existingTranscript && itemId && url) {
@@ -217,7 +229,20 @@ export function YouTubeTranscript({ itemId, url, videoId, existingTranscript, ex
         {summary ? (
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <div className="border border-gray-300 dark:border-gray-700 rounded-md p-4 mb-4">
-              <h4 className="font-semibold mb-2">TL;DR Summary:</h4>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-semibold">TL;DR Summary:</h4>
+                <button
+                  onClick={copySummary}
+                  className="p-1 hover:bg-muted rounded-md transition-colors text-sm"
+                  title={copiedSummary ? "Copied!" : "Copy summary"}
+                >
+                  {copiedSummary ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
               <p className="whitespace-pre-wrap text-sm leading-relaxed">{summary}</p>
             </div>
             {transcript && (
