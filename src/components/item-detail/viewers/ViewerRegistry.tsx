@@ -17,13 +17,15 @@ interface ViewerProps {
   contentType: ContentType;
   onTranscriptToggle?: () => void;
   isTranscriptOpen?: boolean;
+  onUpdateMetadata?: (metadata: any) => void;
 }
 
 export function ContentViewer({ 
   item, 
   contentType, 
   onTranscriptToggle, 
-  isTranscriptOpen
+  isTranscriptOpen,
+  onUpdateMetadata
 }: ViewerProps) {
   // Handle missing or unknown content types
   if (!contentType || contentType === 'unknown') {
@@ -161,13 +163,27 @@ export function ContentViewer({
           title={item.title}
           productId={item.metadata?.product_id || item.metadata?.retailer_part_no}
           brand={item.metadata?.brand}
-          price={item.metadata?.price}
+          price={item.metadata?.price !== undefined && item.metadata?.price !== null ? {
+            current: item.metadata.price,
+            currency: item.metadata?.extra_data?.price_currency || 'USD'
+          } : undefined}
           availability={item.metadata?.availability}
           rating={item.metadata?.rating}
           description={item.description}
           thumbnail={item.thumbnail_url}
           specifications={item.metadata?.specifications}
           seller={item.metadata?.seller}
+          onUpdatePrice={(price) => {
+            if (onUpdateMetadata) {
+              onUpdateMetadata({
+                price: price.current,
+                extra_data: {
+                  ...(item.metadata?.extra_data || {}),
+                  price_currency: price.currency,
+                }
+              });
+            }
+          }}
         />
       );
 

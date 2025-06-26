@@ -227,6 +227,21 @@ export function ItemDetailModalRefactored({
       contentType={contentType}
       onTranscriptToggle={canShowTranscript ? () => setShowTranscript(!showTranscript) : undefined}
       isTranscriptOpen={showTranscript}
+      onUpdateMetadata={async (metadata) => {
+        try {
+          // Import itemsService at the top of the file
+          const { itemsService } = await import('@/lib/supabase/services');
+          await itemsService.updateItemMetadata(item.id, metadata);
+          
+          // Force a refetch of the item to get updated metadata
+          if (onUpdateItem) {
+            // Trigger an update to force React Query to refetch
+            await onUpdateItem(item.id, {});
+          }
+        } catch (error) {
+          console.error('Error updating metadata:', error);
+        }
+      }}
     />
   );
 

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ShoppingCart, Package, Star, Tag, Store } from 'lucide-react';
+import { EditablePrice } from '../EditablePrice';
 
 interface ProductViewerProps {
   title: string;
@@ -26,6 +27,7 @@ interface ProductViewerProps {
     rating?: number;
     url?: string;
   };
+  onUpdatePrice?: (price: { current: number; currency: string }) => void;
 }
 
 export function ProductViewer({
@@ -39,6 +41,7 @@ export function ProductViewer({
   thumbnail,
   specifications,
   seller,
+  onUpdatePrice,
 }: ProductViewerProps) {
   const formatPrice = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -80,33 +83,14 @@ export function ProductViewer({
         {/* <h1 className="text-2xl font-semibold mb-4">{title}</h1> */}
 
         {/* Price */}
-        { price ? 
         <div className="bg-muted/50 rounded-lg p-4 mb-4">
           <div className="flex items-start justify-between">
-            <div>
-              {price && (
-                <div className="mb-2">
-                  <span className="text-2xl font-bold">
-                    {formatPrice(price.current, price.currency)}
-                  </span>
-                  {price.original && price.original > price.current && (
-                    <>
-                      <span className="text-lg text-muted-foreground line-through ml-2">
-                        {formatPrice(price.original, price.currency)}
-                      </span>
-                      {price.discount && (
-                        <span className="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-sm rounded">
-                          {price.discount}% off
-                        </span>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+            <EditablePrice 
+              price={price} 
+              onSave={onUpdatePrice || (() => {})}
+            />
           </div>
         </div>
-        : <span></span>}
 
         {/* Description */}
         {description && (
