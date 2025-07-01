@@ -13,6 +13,7 @@ import { MetadataSkeleton } from './skeletons/MetadataSkeleton';
 import { SpaceSelector } from './SpaceSelector';
 import { EditableTitle } from './EditableTitle';
 import { ItemTags } from './ItemTags';
+import { ToolsSection } from './ToolsSection';
 import { detectContentType, extractPlatformId } from '@/lib/contentDetection/unifiedDetector';
 import { ContentType } from '@/types/database';
 import { cn } from '@/lib/utils';
@@ -300,6 +301,12 @@ export function ItemDetailModal({
                 }}
               />
             </div>
+            <ToolsSection
+              contentType={contentType}
+              item={item}
+              isTranscriptOpen={showTranscript}
+              onTranscriptToggle={canShowTranscript ? () => setShowTranscript(!showTranscript) : undefined}
+            />
             <div className="p-4 border-t">
               <UserNotes
                 itemId={item.id}

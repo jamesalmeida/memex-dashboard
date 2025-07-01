@@ -107,9 +107,6 @@ export function ContentViewer({
           likes={item.metadata?.likes || item.likes}
           duration={item.metadata?.duration || item.duration}
           isShort={item.metadata?.extra_data?.is_short || item.is_short}
-          onTranscriptToggle={onTranscriptToggle}
-          isTranscriptOpen={isTranscriptOpen}
-          hasTranscript={!!item.metadata?.extra_data?.transcript}
         />
       );
 
