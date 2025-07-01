@@ -124,7 +124,7 @@ export function extractPlatformId(url: string, type: ContentType): string | null
       }
       
       case 'youtube': {
-        const videoIdMatch = url.match(/(?:v=|\/shorts\/|\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        const videoIdMatch = url.match(/(?:v=|\/shorts\/|\/embed\/|\/live\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
         if (videoIdMatch) return videoIdMatch[1];
         
         const channelMatch = url.match(/\/@([\w-]+)/);

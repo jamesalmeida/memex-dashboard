@@ -19,6 +19,7 @@ export const URL_PATTERNS = {
   youtube: [
     /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=|embed\/|v\/|shorts\/)[\w-]+/,
     /^https?:\/\/youtu\.be\/[\w-]+/,
+    /^https?:\/\/(www\.)?youtube\.com\/live\/[\w-]+/,
     /^https?:\/\/(www\.)?youtube\.com\/@[\w-]+/,
     /^https?:\/\/(www\.)?youtube\.com\/channel\/[\w-]+/,
     /^https?:\/\/(www\.)?youtube\.com\/c\/[\w-]+/,

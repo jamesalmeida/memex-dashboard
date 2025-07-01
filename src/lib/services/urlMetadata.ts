@@ -40,7 +40,8 @@ export interface UrlAnalysisResult {
 const PLATFORM_PATTERNS = {
   youtube: [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/live\/([a-zA-Z0-9_-]+)/
   ],
   x: [
     /(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/,

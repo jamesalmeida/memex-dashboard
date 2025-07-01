@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract video ID from YouTube URL
-    const videoIdMatch = url.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]+)/)
+    const videoIdMatch = url.match(/(?:v=|youtu\.be\/|shorts\/|live\/)([a-zA-Z0-9_-]+)/)
     const videoId = videoIdMatch?.[1]
     
     if (!videoId) {
