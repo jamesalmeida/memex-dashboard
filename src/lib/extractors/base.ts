@@ -1,5 +1,5 @@
 import { BaseMetadata, ContentMetadata } from '@/types/metadata';
-import { ContentType } from '@/lib/contentTypes/patterns';
+import { ContentType } from '@/types/database';
 import * as cheerio from 'cheerio';
 
 export interface ExtractorOptions {

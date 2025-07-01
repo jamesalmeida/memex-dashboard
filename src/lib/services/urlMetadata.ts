@@ -1,4 +1,5 @@
 import type { ContentType } from '@/types/database'
+import { detectContentType as unifiedDetectContentType, normalizeUrl as unifiedNormalizeUrl } from '@/lib/contentDetection/unifiedDetector'
 
 export interface ExtractedMetadata {
   title: string
@@ -36,8 +37,11 @@ export interface UrlAnalysisResult {
   confidence: number // 0-1 score for extraction confidence
 }
 
-// Platform-specific URL patterns
-const PLATFORM_PATTERNS = {
+// Platform-specific URL patterns - REMOVED - Now using unified detector patterns
+// See /src/lib/contentDetection/patterns.ts for all patterns
+
+// Legacy platform patterns for metadata extraction only
+const LEGACY_EXTRACTION_PATTERNS = {
   youtube: [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/,
     /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
@@ -49,59 +53,11 @@ const PLATFORM_PATTERNS = {
   ],
   github: [
     /github\.com\/([^\/]+)\/([^\/]+)(?:\/.*)?/
-  ],
-  instagram: [
-    /instagram\.com\/p\/([a-zA-Z0-9_-]+)/,
-    /instagram\.com\/reel\/([a-zA-Z0-9_-]+)/
-  ],
-  linkedin: [
-    /linkedin\.com\/posts\/.*-(\d+)-/,
-    /linkedin\.com\/pulse\/([^\/]+)/
-  ],
-  reddit: [
-    /reddit\.com\/r\/([^\/]+)\/comments\/([^\/]+)/
-  ],
-  tiktok: [
-    /tiktok\.com\/@([^\/]+)\/video\/(\d+)/
-  ],
-  amazon: [
-    /amazon\.com\/.*\/dp\/([A-Z0-9]+)/,
-    /amazon\.com\/dp\/([A-Z0-9]+)/
-  ],
-  stackoverflow: [
-    /stackoverflow\.com\/questions\/(\d+)/
-  ],
-  audio: [
-    /podcasts\.apple\.com\/.*\/podcast\//,
-    /open\.spotify\.com\/episode\//,
-    /open\.spotify\.com\/show\//,
-    /soundcloud\.com\//,
-    /anchor\.fm\//,
-    /overcast\.fm\//,
-    /pocketcasts\.com\//,
-    /castbox\.fm\//
-  ],
-  npm: [
-    /npmjs\.com\/package\/([^\/]+)/
-  ],
-  wikipedia: [
-    /(?:\w+\.)?wikipedia\.org\/wiki\/([^\/]+)/
-  ],
-  video: [
-    /\.(mp4|webm|ogg|avi|mov)(?:\?.*)?$/i
-  ],
-  movie: [
-    /imdb\.com\/title\/(tt\d+)/i  // IMDB movies and TV shows
   ]
 }
 
-// File extension patterns
-const FILE_PATTERNS = {
-  pdf: /\.pdf(?:\?.*)?$/i,
-  image: /\.(jpg|jpeg|png|gif|webp|svg)(?:\?.*)?$/i,
-  video: /\.(mp4|webm|ogg|avi|mov)(?:\?.*)?$/i,
-  audio: /\.(mp3|wav|ogg|flac|aac)(?:\?.*)?$/i
-}
+// File extension patterns - REMOVED - Now using unified detector
+// See /src/lib/contentDetection/patterns.ts
 
 export class UrlMetadataService {
   /**
@@ -128,16 +84,7 @@ export class UrlMetadataService {
       
       // Extract platform-specific metadata
       const metadata = await this.extractMetadata(normalizedUrl, contentType)
-      console.log('Extracted metadata:', {
-        title: metadata.title,
-        content: metadata.content,
-        domain: metadata.domain,
-        description: metadata.description,
-        thumbnail_url: metadata.thumbnail_url,
-        author: metadata.author,
-        username: metadata.username,
-        display_name: metadata.display_name
-      });
+      console.log('Extracted metadata:', JSON.stringify(metadata, null, 2));
       
       // Check if we need to update content type based on metadata
       let finalContentType = contentType;
@@ -179,6 +126,7 @@ export class UrlMetadataService {
         confidence
       };
       
+      console.log('Final metadata before return:', JSON.stringify(metadata, null, 2));
       console.log('=== UrlMetadataService: analyzeUrl Completed ===');
       return result;
     } catch (error) {
@@ -205,48 +153,9 @@ export class UrlMetadataService {
    */
   private detectContentType(url: string): ContentType {
     console.log('Detecting content type for URL:', url);
-    const urlLower = url.toLowerCase()
-    
-    // Check file extensions first
-    for (const [type, pattern] of Object.entries(FILE_PATTERNS)) {
-      if (pattern.test(url)) {
-        console.log(`Matched file pattern: ${type}`);
-        return type as ContentType
-      }
-    }
-    
-    // Check platform patterns
-    for (const [platform, patterns] of Object.entries(PLATFORM_PATTERNS)) {
-      for (const pattern of patterns) {
-        if (pattern.test(url)) {
-          console.log(`Matched platform pattern: ${platform}`);
-          return platform as ContentType
-        }
-      }
-    }
-    
-    // Special cases
-    if (urlLower.includes('arxiv.org')) {
-      console.log('Matched special case: paper (arxiv.org)');
-      return 'paper'
-    }
-    if (urlLower.includes('medium.com') || urlLower.includes('substack.com')) {
-      console.log('Matched special case: article (medium/substack)');
-      return 'article'
-    }
-    if (urlLower.includes('docs.google.com')) {
-      console.log('Matched special case: documentation (Google Docs)');
-      return 'documentation'
-    }
-    if (urlLower.includes('notion.so')) {
-      console.log('Matched special case: note (Notion)');
-      return 'note'
-    }
-    
-    // Default to bookmark for HTTP(S) URLs
-    const defaultType = url.startsWith('http') ? 'bookmark' : 'note';
-    console.log(`No specific match, defaulting to: ${defaultType}`);
-    return defaultType
+    const result = unifiedDetectContentType(url)
+    console.log(`Detected content type: ${result.type} (confidence: ${result.confidence})`);
+    return result.type
   }
 
   /**
@@ -262,7 +171,8 @@ export class UrlMetadataService {
     // Base metadata - only add fallback title for specific content types
     const metadata: ExtractedMetadata = {
       title: contentTypesWithAutoTitle.includes(contentType) ? this.generateFallbackTitle(url) : '',
-      domain
+      domain,
+      extra_data: {}
     }
     console.log('Base metadata:', metadata);
 
@@ -270,8 +180,39 @@ export class UrlMetadataService {
       // Try to fetch and parse the page
       console.log('Fetching page metadata from API...');
       const pageData = await this.fetchPageMetadata(url)
-      console.log('Page metadata from API:', pageData);
-      Object.assign(metadata, pageData)
+      console.log('Page metadata from API - keys:', Object.keys(pageData));
+      console.log('Page metadata - has content?', !!pageData.content);
+      console.log('Page metadata - has video_url?', !!pageData.video_url);
+      
+      // Don't use Object.assign for everything - be selective
+      // This prevents undefined values from overwriting good data
+      
+      // Copy over non-undefined values from pageData
+      if (pageData.title !== undefined) metadata.title = pageData.title;
+      if (pageData.description !== undefined) metadata.description = pageData.description;
+      if (pageData.content !== undefined) metadata.content = pageData.content;
+      if (pageData.thumbnail_url !== undefined) metadata.thumbnail_url = pageData.thumbnail_url;
+      if (pageData.author !== undefined) metadata.author = pageData.author;
+      if (pageData.username !== undefined) metadata.username = pageData.username;
+      if (pageData.display_name !== undefined) metadata.display_name = pageData.display_name;
+      if (pageData.profile_image !== undefined) metadata.profile_image = pageData.profile_image;
+      if (pageData.published_date !== undefined) metadata.published_date = pageData.published_date;
+      if (pageData.video_url !== undefined) metadata.video_url = pageData.video_url;
+      if (pageData.video_type !== undefined) metadata.video_type = pageData.video_type;
+      if (pageData.video_width !== undefined) metadata.video_width = pageData.video_width;
+      if (pageData.video_height !== undefined) metadata.video_height = pageData.video_height;
+      if (pageData.likes !== undefined) metadata.likes = pageData.likes;
+      if (pageData.replies !== undefined) metadata.replies = pageData.replies;
+      if (pageData.retweets !== undefined) metadata.retweets = pageData.retweets;
+      if (pageData.views !== undefined) metadata.views = pageData.views;
+      if (pageData.stars !== undefined) metadata.stars = pageData.stars;
+      if (pageData.forks !== undefined) metadata.forks = pageData.forks;
+      if (pageData.language !== undefined) metadata.language = pageData.language;
+      if (pageData.price !== undefined) metadata.price = pageData.price;
+      if (pageData.rating !== undefined) metadata.rating = pageData.rating;
+      if (pageData.duration !== undefined) metadata.duration = pageData.duration;
+      if (pageData.file_size !== undefined) metadata.file_size = pageData.file_size;
+      if (pageData.page_count !== undefined) metadata.page_count = pageData.page_count;
       
       // Store all Open Graph data in extra_data for future use
       if (!metadata.extra_data) {
@@ -316,8 +257,14 @@ export class UrlMetadataService {
                         pageData.extra_data?.is_video;
       
       if (isFromXApi) {
-        console.log('Detected X API response, skipping frontend enhancements');
-        return metadata; // Return as-is, don't apply frontend enhancements
+        console.log('Detected X API response, preserving full data and skipping enhancements');
+        // Make sure we have all the critical fields from pageData
+        metadata.content = metadata.content || pageData.content;
+        metadata.video_url = metadata.video_url || pageData.video_url;
+        metadata.thumbnail_url = metadata.thumbnail_url || pageData.thumbnail_url;
+        
+        console.log('Metadata at X API return point:', JSON.stringify(metadata, null, 2));
+        return metadata;
       }
       
       // For non-whitelisted content types, keep meaningful titles from Jina/API but clear generic ones
@@ -426,8 +373,16 @@ export class UrlMetadataService {
   private async fetchPageMetadata(url: string): Promise<Partial<ExtractedMetadata>> {
     try {
       console.log('Calling backend API to extract metadata for:', url);
-      // Use a CORS proxy or server-side endpoint for fetching
-      const response = await fetch('/api/extract-metadata', {
+      
+      // Determine the base URL based on environment
+      const baseUrl = typeof window !== 'undefined' 
+        ? '' // Client-side: use relative URL
+        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'; // Server-side: use full URL
+      
+      const apiUrl = `${baseUrl}/api/extract-metadata`;
+      console.log('API URL:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
@@ -565,8 +520,9 @@ export class UrlMetadataService {
    * Enhance Twitter/X post metadata
    */
   private async enhanceXMetadata(url: string, metadata: ExtractedMetadata): Promise<void> {
+    console.log('!!!! enhanceXMetadata SHOULD NOT BE CALLED for X API responses!');
     console.log('Enhancing X metadata for:', url);
-    console.log('Initial metadata:', metadata);
+    console.log('Initial metadata:', JSON.stringify(metadata, null, 2));
     
     // Extract username and post ID from URL
     const statusMatch = url.match(/(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/)
@@ -1053,10 +1009,7 @@ export class UrlMetadataService {
    * Normalize URL format
    */
   private normalizeUrl(url: string): string {
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return `https://${url}`
-    }
-    return url
+    return unifiedNormalizeUrl(url)
   }
 
   /**

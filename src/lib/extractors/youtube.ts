@@ -1,6 +1,6 @@
 import { BaseExtractor, ExtractorOptions, ExtractorResult } from './base';
 import { YouTubeMetadata } from '@/types/metadata';
-import { detectContentType, extractPlatformId } from '@/lib/contentTypes/detector';
+import { detectContentType, extractPlatformId } from '@/lib/contentDetection/unifiedDetector';
 
 export class YouTubeExtractor extends BaseExtractor {
   constructor() {

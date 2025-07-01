@@ -60,6 +60,7 @@ function transformMetadataForLegacyAPI(metadata: any): any {
   // Content type specific transformations
   switch (metadata.contentType) {
     case 'twitter':
+    case 'x':
       response.title = ''; // Twitter posts don't have titles
       response.content = metadata.description || metadata.title;
       response.username = metadata.author?.username;

@@ -1,6 +1,6 @@
 import { BaseExtractor, ExtractorOptions, ExtractorResult } from './base';
 import { ProductMetadata } from '@/types/metadata';
-import { URL_PATTERNS } from '@/lib/contentTypes/patterns';
+import { CONTENT_PATTERNS } from '@/lib/contentDetection/patterns';
 
 export class ProductExtractor extends BaseExtractor {
   constructor() {
@@ -10,11 +10,11 @@ export class ProductExtractor extends BaseExtractor {
   canHandle(url: string): boolean {
     // Check if URL matches any e-commerce patterns
     const patterns = [
-      ...(URL_PATTERNS.amazon || []),
-      ...(URL_PATTERNS.etsy || []),
-      ...(URL_PATTERNS.ebay || []),
-      ...(URL_PATTERNS.shopify || []),
-      ...(URL_PATTERNS.product || []),
+      ...(CONTENT_PATTERNS.amazon || []),
+      ...(CONTENT_PATTERNS.etsy || []),
+      ...(CONTENT_PATTERNS.ebay || []),
+      ...(CONTENT_PATTERNS.shopify || []),
+      ...(CONTENT_PATTERNS.product || []),
     ];
     
     return patterns.some(pattern => pattern.test(url.toLowerCase()));

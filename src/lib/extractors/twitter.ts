@@ -1,6 +1,6 @@
 import { BaseExtractor, ExtractorOptions, ExtractorResult } from './base';
 import { TwitterMetadata } from '@/types/metadata';
-import { detectContentType, extractPlatformId } from '@/lib/contentTypes/detector';
+import { detectContentType, extractPlatformId, mapLegacyType } from '@/lib/contentDetection/unifiedDetector';
 import { xApiService } from '@/lib/services/xApiService';
 
 export class TwitterExtractor extends BaseExtractor {
@@ -10,7 +10,8 @@ export class TwitterExtractor extends BaseExtractor {
   
   canHandle(url: string): boolean {
     const detection = detectContentType(url);
-    return detection.type === 'twitter';
+    // Handle both 'x' (new) and 'twitter' (legacy) types
+    return detection.type === 'x' || mapLegacyType(detection.type) === 'x';
   }
   
   async extract(options: ExtractorOptions): Promise<ExtractorResult> {

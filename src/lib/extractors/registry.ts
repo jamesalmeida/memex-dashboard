@@ -4,7 +4,7 @@ import { InstagramExtractor } from './instagram';
 import { YouTubeExtractor } from './youtube';
 import { ArticleExtractor } from './article';
 import { ProductExtractor } from './product';
-import { detectContentType } from '@/lib/contentTypes/detector';
+import { detectContentType } from '@/lib/contentDetection/unifiedDetector';
 import { ContentMetadata } from '@/types/metadata';
 
 /**

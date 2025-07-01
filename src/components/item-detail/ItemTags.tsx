@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Plus, Hash, Sparkles, Loader2, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ContentType, CONTENT_TYPE_METADATA } from '@/lib/contentTypes/patterns';
+import { ContentType } from '@/types/database';
+import { CONTENT_TYPE_METADATA } from '@/lib/contentDetection/patterns';
 
 interface ItemTagsProps {
   itemId: string;
@@ -37,8 +38,8 @@ export function ItemTags({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Get content type metadata for the auto-tag
-  const contentTypeMetadata = CONTENT_TYPE_METADATA[contentType] || CONTENT_TYPE_METADATA.unknown;
-  const contentTypeTag = contentType !== 'unknown' ? contentType : null;
+  const contentTypeMetadata = contentType ? CONTENT_TYPE_METADATA[contentType] : null;
+  const contentTypeTag = contentType && contentType !== 'unknown' && contentType !== 'note' && contentType !== 'bookmark' ? contentType : null;
 
   // Combine user tags with content type tag
   const allTags = [...tags];
@@ -177,7 +178,7 @@ export function ItemTags({
         {contentTypeTag && !hasContentTypeTag && (
           <span
             className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm"
-            title={`Content type: ${contentTypeMetadata.displayName}`}
+            title={`Content type: ${contentTypeMetadata?.displayName || contentType}`}
           >
             {contentTypeTag}
           </span>

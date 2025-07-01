@@ -3,7 +3,8 @@
 import React from 'react';
 import { Calendar, Link, Tag, User, Eye, Heart, MessageCircle, Share2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { ContentType, CONTENT_TYPE_METADATA } from '@/lib/contentTypes/patterns';
+import { ContentType } from '@/types/database';
+import { CONTENT_TYPE_METADATA } from '@/lib/contentDetection/patterns';
 import { cn } from '@/lib/utils';
 
 

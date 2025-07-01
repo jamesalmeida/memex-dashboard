@@ -1,4 +1,4 @@
-import { ContentType, ContentCategory } from '@/lib/contentTypes/patterns';
+import { ContentType } from '@/types/database';
 
 /**
  * Base metadata interface that all content types extend

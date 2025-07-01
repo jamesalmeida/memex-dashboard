@@ -1,6 +1,6 @@
 import { BaseExtractor, ExtractorOptions, ExtractorResult } from './base';
 import { InstagramMetadata, MediaItem } from '@/types/metadata';
-import { detectContentType, extractPlatformId } from '@/lib/contentTypes/detector';
+import { detectContentType, extractPlatformId } from '@/lib/contentDetection/unifiedDetector';
 
 export class InstagramExtractor extends BaseExtractor {
   constructor() {

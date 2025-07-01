@@ -14,7 +14,9 @@ export type ContentType =
   // Entertainment  
   | 'movie' | 'tv-show'
   // Personal
-  | 'note' | 'bookmark' | 'recipe' | 'location';
+  | 'note' | 'bookmark' | 'recipe' | 'location'
+  // Fallback
+  | 'unknown';
 
 export interface Space {
   id: string;

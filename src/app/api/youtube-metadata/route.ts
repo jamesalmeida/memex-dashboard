@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { extractPlatformId } from '@/lib/contentDetection/unifiedDetector'
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,8 +10,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract video ID from YouTube URL
-    const videoIdMatch = url.match(/(?:v=|youtu\.be\/|shorts\/|live\/)([a-zA-Z0-9_-]+)/)
-    const videoId = videoIdMatch?.[1]
+    const videoId = extractPlatformId(url, 'youtube')
     
     if (!videoId) {
       return NextResponse.json({ error: 'Invalid YouTube URL' }, { status: 400 })

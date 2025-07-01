@@ -13,9 +13,8 @@ import { MetadataSkeleton } from './skeletons/MetadataSkeleton';
 import { SpaceSelector } from './SpaceSelector';
 import { EditableTitle } from './EditableTitle';
 import { ItemTags } from './ItemTags';
-import { detectContentType } from '@/lib/contentTypes/detector';
-import { ContentType } from '@/lib/contentTypes/patterns';
-import { extractPlatformId } from '@/lib/contentTypes/detector';
+import { detectContentType, extractPlatformId } from '@/lib/contentDetection/unifiedDetector';
+import { ContentType } from '@/types/database';
 import { cn } from '@/lib/utils';
 import type { Space } from '@/types/database';
 

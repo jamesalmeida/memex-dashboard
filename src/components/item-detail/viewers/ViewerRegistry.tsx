@@ -8,8 +8,8 @@ import { ArticleViewer } from './ArticleViewer';
 import { RedditViewer } from './RedditViewer';
 import { TikTokViewer } from './TikTokViewer';
 import { ProductViewer } from './ProductViewer';
-import { ContentType } from '@/lib/contentTypes/patterns';
-import { extractPlatformId } from '@/lib/contentTypes/detector';
+import { ContentType } from '@/types/database';
+import { extractPlatformId } from '@/lib/contentDetection/unifiedDetector';
 import { cn } from '@/lib/utils';
 
 interface ViewerProps {
@@ -44,7 +44,8 @@ export function ContentViewer({
 
   // Map the item data to viewer props based on content type
   switch (contentType) {
-    case 'twitter':
+    case 'x':
+    case 'twitter': // Legacy support
       console.log('Twitter viewer - item:', item);
       console.log('Twitter viewer - metadata:', item.metadata);
       return (
