@@ -8,12 +8,15 @@ import { MetadataPanel } from './MetadataPanel';
 import { UserNotes } from './UserNotes';
 import { ActionButtons } from './ActionButtons';
 import { YouTubeTranscript } from './center-shelf/YouTubeTranscript';
+import { TranscriptViewer } from './center-shelf/TranscriptViewer';
+import { Chat } from './center-shelf/Chat';
 import { ContentSkeleton } from './skeletons/ContentSkeleton';
 import { MetadataSkeleton } from './skeletons/MetadataSkeleton';
 import { SpaceSelector } from './SpaceSelector';
 import { EditableTitle } from './EditableTitle';
 import { ItemTags } from './ItemTags';
 import { ToolsSection } from './ToolsSection';
+import { XToolsSection } from './XToolsSection';
 import { detectContentType, extractPlatformId } from '@/lib/contentDetection/unifiedDetector';
 import { ContentType } from '@/types/database';
 import { cn } from '@/lib/utils';
@@ -48,27 +51,26 @@ export function ItemDetailModal({
 }: ItemDetailModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [contentType, setContentType] = useState<ContentType>('unknown');
-  const [showTranscript, setShowTranscript] = useState(false);
+  const [centerShelfView, setCenterShelfView] = useState<'transcript' | 'image-description' | 'chat' | null>(null);
   const [userNotes, setUserNotes] = useState(item?.user_notes || '');
   const [selectedContentType, setSelectedContentType] = useState<ContentType>(contentType);
+  const [xTranscript, setXTranscript] = useState<string | null>(null);
+  const [xImageDescription, setXImageDescription] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedContentType(contentType);
   }, [contentType]);
 
-  // Initialize contentType on mount if item exists
   useEffect(() => {
     if (item && !contentType) {
       setContentType('unknown');
     }
   }, []);
 
-  // Update userNotes when item changes
   useEffect(() => {
     setUserNotes(item?.user_notes || '');
-  }, [item?.id]); // Use item.id to trigger update when switching items
+  }, [item?.id]);
 
-  // Handle ESC key to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -85,16 +87,10 @@ export function ItemDetailModal({
     };
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      // Store the original overflow value
       const originalOverflow = document.body.style.overflow;
-      
-      // Prevent scrolling on the body
       document.body.style.overflow = 'hidden';
-      
-      // Cleanup function to restore scroll
       return () => {
         document.body.style.overflow = originalOverflow;
       };
@@ -103,29 +99,19 @@ export function ItemDetailModal({
 
   useEffect(() => {
     if (item?.content_type) {
-      // Use the existing content_type from the item
-      console.log('Item content_type:', item.content_type);
-      console.log('Item metadata:', item.metadata);
-      // Map legacy content types to our new types
       const mappedType = mapLegacyContentType(item.content_type);
-      console.log('Mapped to:', mappedType);
       setContentType(mappedType);
     } else if (item?.url) {
-      // Fallback to detection if no content_type is set
       const detection = detectContentType(item.url);
-      console.log('Detected content type:', detection.type);
       setContentType(detection.type);
     }
   }, [item]);
 
-  // Map legacy content types to our new content type system
   const mapLegacyContentType = (legacyType: string): ContentType => {
     const mapping: Record<string, ContentType> = {
       'x': 'twitter',
       'twitter/x': 'twitter',
-      // Add other mappings as needed
     };
-    
     return (mapping[legacyType] || legacyType) as ContentType;
   };
 
@@ -134,33 +120,19 @@ export function ItemDetailModal({
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
-      // Call the refresh-metadata API which properly updates both item and metadata
       const response = await fetch('/api/refresh-metadata', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           itemId: item.id,
           url: item.url,
           contentType: selectedContentType
         }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to refresh metadata');
-      }
-
-      const result = await response.json();
-      
-      // Force a refetch of the item to get updated metadata
-      if (onUpdateItem) {
-        // Trigger an update to force React Query to refetch
-        await onUpdateItem(item.id, {});
-      }
+      if (!response.ok) throw new Error('Failed to refresh metadata');
+      if (onUpdateItem) await onUpdateItem(item.id, {});
     } catch (error) {
       console.error('Error refreshing metadata:', error);
-      // TODO: Show error toast
     } finally {
       setIsLoading(false);
     }
@@ -194,57 +166,74 @@ export function ItemDetailModal({
   };
 
   const handleAddTag = async (tag: string) => {
-    if (onAddTag) {
-      await onAddTag(item.id, tag);
-    }
+    if (onAddTag) await onAddTag(item.id, tag);
   };
 
   const handleRemoveTag = async (tag: string) => {
-    if (onRemoveTag) {
-      await onRemoveTag(item.id, tag);
-    }
+    if (onRemoveTag) await onRemoveTag(item.id, tag);
   };
 
-  const handleTranscriptFetch = (transcript: string, tldr_summary?: string) => {
-    // Update the item with the fetched transcript
+  const handleYouTubeTranscriptFetch = (transcript: string) => {
     if (onUpdateItem) {
       onUpdateItem(item.id, {
-        metadata: {
-          ...item.metadata,
-          extra_data: {
-            ...item.metadata?.extra_data,
-            transcript,
-          },
-        },
-        tldr_summary: tldr_summary || item.tldr_summary, // Preserve existing if not new
+        metadata: { ...item.metadata, extra_data: { ...item.metadata?.extra_data, transcript } },
       });
     }
   };
 
-  // Determine if we should show the transcript button/shelf
-  const canShowTranscript = contentType === 'youtube';
-  const hasExistingTranscript = item.metadata?.extra_data?.transcript;
+  const handleXTranscript = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/transcribe-x-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoUrl: item.metadata.video_url }),
+      });
+      if (!response.ok) throw new Error('Failed to transcribe video');
+      const data = await response.json();
+      setXTranscript(data.transcript);
+      setCenterShelfView('transcript');
+    } catch (error) {
+      console.error('Error transcribing X video:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Left column content
+  const handleXImageDescription = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/describe-x-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: item.thumbnail_url, text: item.content }),
+      });
+      if (!response.ok) throw new Error('Failed to describe image');
+      const data = await response.json();
+      setXImageDescription(data.description);
+      setCenterShelfView('image-description');
+    } catch (error) {
+      console.error('Error describing X image:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCopyXText = () => {
+    navigator.clipboard.writeText(item.content);
+  };
+
   const leftColumn = isLoading ? (
     <ContentSkeleton type={contentType === 'unknown' ? 'default' : contentType as any} />
   ) : (
     <ContentViewer 
       item={item} 
       contentType={contentType}
-      onTranscriptToggle={canShowTranscript ? () => setShowTranscript(!showTranscript) : undefined}
-      isTranscriptOpen={showTranscript}
       onUpdateMetadata={async (metadata) => {
         try {
-          // Import itemsService at the top of the file
           const { itemsService } = await import('@/lib/supabase/services');
           await itemsService.updateItemMetadata(item.id, metadata);
-          
-          // Force a refetch of the item to get updated metadata
-          if (onUpdateItem) {
-            // Trigger an update to force React Query to refetch
-            await onUpdateItem(item.id, {});
-          }
+          if (onUpdateItem) await onUpdateItem(item.id, {});
         } catch (error) {
           console.error('Error updating metadata:', error);
         }
@@ -252,21 +241,15 @@ export function ItemDetailModal({
     />
   );
 
-  // Right column content
   const rightColumn = (
     <div className="h-full flex flex-col">
-      {/* Title section - outside scrollable area */}
       <div className="p-4 border-b">
         {isLoading ? (
           <div className="h-7 w-3/4 bg-muted rounded animate-pulse" />
         ) : (
-          <EditableTitle
-            title={item.title}
-            onSave={handleSaveTitle}
-          />
+          <EditableTitle title={item.title} onSave={handleSaveTitle} />
         )}
       </div>
-      
       <div className="flex-1 overflow-auto">
         {isLoading ? (
           <MetadataSkeleton />
@@ -279,9 +262,7 @@ export function ItemDetailModal({
                 spaces={spaces}
                 currentSpaceId={item.space_id}
                 onSelect={(spaceId) => {
-                  if (onChangeSpace) {
-                    onChangeSpace(item.id, spaceId);
-                  }
+                  if (onChangeSpace) onChangeSpace(item.id, spaceId);
                 }}
               />
             </div>
@@ -292,72 +273,106 @@ export function ItemDetailModal({
                 contentType={contentType}
                 onAddTag={handleAddTag}
                 onRemoveTag={handleRemoveTag}
-                item={{
-                  title: item.title,
-                  content: item.content,
-                  description: item.description,
-                  url: item.url,
-                  thumbnailUrl: item.thumbnail_url,
-                }}
+                item={{...item}}
               />
             </div>
-            <ToolsSection
-              contentType={contentType}
-              item={item}
-              isTranscriptOpen={showTranscript}
-              onTranscriptToggle={canShowTranscript ? () => setShowTranscript(!showTranscript) : undefined}
-            />
-            <div className="p-4 border-t">
-              <UserNotes
-                itemId={item.id}
-                initialNotes={userNotes}
-                onSave={handleSaveNotes}
+            {contentType === 'youtube' && (
+              <ToolsSection
+                contentType={contentType}
+                item={item}
+                isTranscriptOpen={centerShelfView === 'transcript'}
+                onTranscriptToggle={() => setCenterShelfView(centerShelfView === 'transcript' ? null : 'transcript')}
+                onChat={() => setCenterShelfView('chat')}
               />
+            )}
+            {contentType === 'twitter' && (
+              <XToolsSection
+                postType={item.postType}
+                onChat={() => setCenterShelfView('chat')}
+                onCopy={handleCopyXText}
+                onShowTranscript={handleXTranscript}
+                onShowImageDescription={handleXImageDescription}
+              />
+            )}
+            <div className="p-4 border-t">
+              <UserNotes itemId={item.id} initialNotes={userNotes} onSave={handleSaveNotes} />
             </div>
           </>
         )}
       </div>
-      
       <ActionButtons
         itemId={item.id}
         itemUrl={item.url}
         isArchived={item.is_archived}
         onRefresh={handleRefresh}
-        onChangeSpace={undefined}
         onDelete={handleDelete}
         onArchive={handleArchive}
       />
     </div>
   );
 
-  // Center shelf content (YouTube transcript only for now)
-  const centerShelf = canShowTranscript ? (
-    <YouTubeTranscript
-      itemId={item.id}
-      url={item.url}
-      videoId={item.video_id || item.metadata?.extra_data?.video_id || 
-               (item.url ? extractPlatformId(item.url, 'youtube') : null)}
-      existingTranscript={hasExistingTranscript}
-      existingSummary={item.tldr_summary}
-      onTranscriptFetch={handleTranscriptFetch}
-      onClose={() => setShowTranscript(false)}
-    />
-  ) : undefined;
+  const getChatContext = () => {
+    let context = `Title: ${item.title}\nURL: ${item.url}\n`;
+    if (item.metadata?.author) context += `Author: ${item.metadata.author}\n`;
+    if (item.metadata?.timestamp) context += `Timestamp: ${item.metadata.timestamp}\n`;
+
+    if (contentType === 'youtube' && item.metadata?.extra_data?.transcript) {
+      context += `\nTranscript:\n${item.metadata.extra_data.transcript}`;
+    } else if (contentType === 'twitter') {
+      if (item.postType === 'video' && xTranscript) {
+        context += `\nTranscript:\n${xTranscript}`;
+      } else if (item.postType === 'image' && xImageDescription) {
+        context += `\nImage Description:\n${xImageDescription}`;
+      } else {
+        context += `\nPost Text:\n${item.content}`;
+      }
+    }
+    return context;
+  };
+
+  let centerShelfContent;
+  if (centerShelfView === 'transcript') {
+    if (contentType === 'youtube') {
+      centerShelfContent = (
+        <YouTubeTranscript
+          itemId={item.id}
+          url={item.url}
+          existingTranscript={item.metadata?.extra_data?.transcript}
+          onTranscriptFetch={handleYouTubeTranscriptFetch}
+          onClose={() => setCenterShelfView(null)}
+        />
+      );
+    } else if (contentType === 'twitter') {
+      centerShelfContent = (
+        <TranscriptViewer
+          transcript={xTranscript}
+          isLoading={isLoading}
+          error={null}
+          onClose={() => setCenterShelfView(null)}
+          title="X Video Transcript"
+        />
+      );
+    }
+  } else if (centerShelfView === 'image-description') {
+    centerShelfContent = (
+      <TranscriptViewer
+        transcript={xImageDescription}
+        isLoading={isLoading}
+        error={null}
+        onClose={() => setCenterShelfView(null)}
+        title="Image Description"
+      />
+    );
+  } else if (centerShelfView === 'chat') {
+    centerShelfContent = <Chat initialContext={getChatContext()} onClose={() => setCenterShelfView(null)} />;
+  }
 
   return (
     <div
-      className={cn(
-        "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm",
-        className
-      )}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
+      className={cn("fixed inset-0 z-50 bg-black/80 backdrop-blur-sm", className)}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="fixed inset-4 md:inset-8 bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden">
-        {/* Header */}
         <div className="absolute top-4 right-4 z-10">
           <button
             onClick={onClose}
@@ -366,14 +381,12 @@ export function ItemDetailModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Content */}
         <ItemDetailLayout
           leftColumn={leftColumn}
           rightColumn={rightColumn}
-          centerShelf={centerShelf}
-          showCenterShelf={showTranscript}
-          onCenterShelfToggle={setShowTranscript}
+          centerShelf={centerShelfContent}
+          showCenterShelf={!!centerShelfView}
+          onCenterShelfToggle={() => setCenterShelfView(null)}
           className="h-full"
         />
       </div>

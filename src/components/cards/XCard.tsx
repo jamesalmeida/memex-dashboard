@@ -25,10 +25,12 @@ export default function XCard({ item, onArchive, onDelete, onClick }: XCardProps
     setIsHoverUnmuteEnabled(!isHoverUnmuteEnabled);
   };
 
+  const postType = item.metadata?.video_url ? 'video' : item.thumbnail_url ? 'image' : 'text';
+
   return (
     <div className="flex flex-col">
     <BaseCard 
-      item={item} 
+      item={{...item, postType}}
       onArchive={onArchive} 
       onDelete={onDelete} 
       onClick={onClick}
