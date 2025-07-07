@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Send, X } from 'lucide-react';
+import { MessageSquare, Send, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatProps {
@@ -16,8 +16,13 @@ export function Chat({ initialContext, itemId, spaceId, onClose, className }: Ch
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [input, setInput] = useState('');
   const [chatId, setChatId] = useState<string | null>(null);
+  const [isContextExpanded, setIsContextExpanded] = useState(false);
+
+  const displayedContext = isContextExpanded ? initialContext : initialContext.split('\n').slice(0, 5).join('\n');
+  const needsTruncation = initialContext.split('\n').length > 5 || initialContext.length > 500; // Arbitrary length for truncation
 
   useEffect(() => {
+
     const initiateChat = async () => {
       try {
         const response = await fetch('/api/chat/initiate', {
@@ -122,10 +127,22 @@ export function Chat({ initialContext, itemId, spaceId, onClose, className }: Ch
 
       {/* Messages */}
       <div className="flex-1 overflow-auto p-4">
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed bg-muted/50 p-4 rounded-lg">
-            {initialContext}
+        <div className="prose prose-sm dark:prose-invert max-w-none mb-4 p-4 border border-gray-300 dark:border-gray-700 rounded-lg">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+            {displayedContext}
           </p>
+          {needsTruncation && (
+            <button
+              onClick={() => setIsContextExpanded(!isContextExpanded)}
+              className="mt-2 text-blue-500 hover:underline flex items-center gap-1"
+            >
+              {isContextExpanded ? (
+                <><ChevronUp className="w-4 h-4" /> Show Less</>
+              ) : (
+                <><ChevronDown className="w-4 h-4" /> Show More</>
+              )}
+            </button>
+          )}
         </div>
         {messages.map((message, index) => (
           <div
