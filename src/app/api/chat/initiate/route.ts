@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
   );
 
   const { item_id, space_id } = await req.json();
+  console.log('Initiate chat API received - item_id:', item_id, 'space_id:', space_id);
 
   if (!item_id && !space_id) {
     return NextResponse.json({ error: 'Either item_id or space_id is required' }, { status: 400 });
@@ -29,12 +30,14 @@ export async function POST(req: NextRequest) {
         .select('*')
         .eq('item_id', item_id)
         .limit(1));
+      console.log('Supabase query for existing chat (item_id):', chatData, chatError);
     } else if (space_id) {
       ({ data: chatData, error: chatError } = await supabase
         .from('chats')
         .select('*')
         .eq('space_id', space_id)
         .limit(1));
+      console.log('Supabase query for existing chat (space_id):', chatData, chatError);
     }
 
     let chatId;

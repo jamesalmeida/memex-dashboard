@@ -368,6 +368,7 @@ export function ItemDetailModal({
     );
   } else if (centerShelfView === 'chat') {
     centerShelfContent = <Chat initialContext={getChatContext()} itemId={item.id} spaceId={null} onClose={() => setCenterShelfView(null)} />;
+    console.log('Chat component rendered with itemId:', item.id, 'and spaceId:', null);
   }
 
   return (
