@@ -69,6 +69,7 @@ export function ItemDetailModal({
 
   useEffect(() => {
     setUserNotes(item?.user_notes || '');
+    setCenterShelfView(null); // Close chat when item changes
   }, [item?.id]);
 
   useEffect(() => {
@@ -241,6 +242,25 @@ export function ItemDetailModal({
     />
   );
 
+  const getChatContext = () => {
+    let context = `Title: ${item.title}\nURL: ${item.url}\n`;
+    if (item.metadata?.author) context += `Author: ${item.metadata.author}\n`;
+    if (item.metadata?.timestamp) context += `Timestamp: ${item.metadata.timestamp}\n`;
+
+    if (contentType === 'youtube' && item.metadata?.extra_data?.transcript) {
+      context += `\nTranscript:\n${item.metadata.extra_data.transcript}`;
+    } else if (contentType === 'twitter') {
+      if (item.postType === 'video' && xTranscript) {
+        context += `\nTranscript:\n${xTranscript}`;
+      } else if (item.postType === 'image' && xImageDescription) {
+        context += `\nImage Description:\n${xImageDescription}`;
+      } else {
+        context += `\nPost Text:\n${item.content}`;
+      }
+    }
+    return context;
+  };
+
   const rightColumn = (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
@@ -282,16 +302,18 @@ export function ItemDetailModal({
                 item={item}
                 isTranscriptOpen={centerShelfView === 'transcript'}
                 onTranscriptToggle={() => setCenterShelfView(centerShelfView === 'transcript' ? null : 'transcript')}
-                onChat={() => setCenterShelfView('chat')}
+                onChat={(context) => setCenterShelfView('chat')}
+                chatContext={getChatContext()}
               />
             )}
             {contentType === 'twitter' && (
               <XToolsSection
                 postType={item.postType}
-                onChat={() => setCenterShelfView('chat')}
+                onChat={(context) => setCenterShelfView('chat')}
                 onCopy={handleCopyXText}
                 onShowTranscript={handleXTranscript}
                 onShowImageDescription={handleXImageDescription}
+                chatContext={getChatContext()}
               />
             )}
             <div className="p-4 border-t">
@@ -310,25 +332,6 @@ export function ItemDetailModal({
       />
     </div>
   );
-
-  const getChatContext = () => {
-    let context = `Title: ${item.title}\nURL: ${item.url}\n`;
-    if (item.metadata?.author) context += `Author: ${item.metadata.author}\n`;
-    if (item.metadata?.timestamp) context += `Timestamp: ${item.metadata.timestamp}\n`;
-
-    if (contentType === 'youtube' && item.metadata?.extra_data?.transcript) {
-      context += `\nTranscript:\n${item.metadata.extra_data.transcript}`;
-    } else if (contentType === 'twitter') {
-      if (item.postType === 'video' && xTranscript) {
-        context += `\nTranscript:\n${xTranscript}`;
-      } else if (item.postType === 'image' && xImageDescription) {
-        context += `\nImage Description:\n${xImageDescription}`;
-      } else {
-        context += `\nPost Text:\n${item.content}`;
-      }
-    }
-    return context;
-  };
 
   let centerShelfContent;
   if (centerShelfView === 'transcript') {
@@ -364,7 +367,7 @@ export function ItemDetailModal({
       />
     );
   } else if (centerShelfView === 'chat') {
-    centerShelfContent = <Chat initialContext={getChatContext()} onClose={() => setCenterShelfView(null)} />;
+    centerShelfContent = <Chat initialContext={getChatContext()} itemId={item.id} spaceId={null} onClose={() => setCenterShelfView(null)} />;
   }
 
   return (

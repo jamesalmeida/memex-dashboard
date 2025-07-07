@@ -5,10 +5,11 @@ import { MessageSquare, Copy, FileText, Image, Video } from 'lucide-react';
 
 interface XToolsSectionProps {
   postType: 'video' | 'image' | 'text';
-  onChat: () => void;
+  onChat: (context: string) => void;
   onCopy: () => void;
   onShowTranscript: () => void;
   onShowImageDescription: () => void;
+  chatContext: string;
 }
 
 export function XToolsSection({
@@ -17,6 +18,7 @@ export function XToolsSection({
   onCopy,
   onShowTranscript,
   onShowImageDescription,
+  chatContext,
 }: XToolsSectionProps) {
   return (
     <div className="p-4 border-t">
@@ -50,7 +52,7 @@ export function XToolsSection({
           </button>
         )}
         <button
-          onClick={onChat}
+          onClick={() => onChat(chatContext)}
           className="flex items-center gap-2 p-2 hover:bg-muted rounded-md transition-colors"
         >
           <MessageSquare className="w-4 h-4" />

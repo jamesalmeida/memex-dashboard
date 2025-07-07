@@ -1,27 +1,104 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageSquare, Send, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatProps {
   initialContext: string;
+  itemId?: string;
+  spaceId?: string;
   onClose?: () => void;
   className?: string;
 }
 
-export function Chat({ initialContext, onClose, className }: ChatProps) {
+export function Chat({ initialContext, itemId, spaceId, onClose, className }: ChatProps) {
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [input, setInput] = useState('');
+  const [chatId, setChatId] = useState<string | null>(null);
 
-  const handleSend = () => {
+  useEffect(() => {
+    const initiateChat = async () => {
+      try {
+        const response = await fetch('/api/chat/initiate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ item_id: itemId, space_id: spaceId }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to initiate chat');
+        }
+
+        const data = await response.json();
+        setChatId(data.chatId);
+        setMessages(data.messages);
+      } catch (error) {
+        console.error('Error initiating chat:', error);
+      }
+    };
+
+    if ((itemId || spaceId) && !chatId) {
+      initiateChat();
+    }
+  }, [itemId, spaceId, chatId]);
+
+  const handleSend = async () => {
     if (input.trim() === '') return;
+    if (!chatId) {
+      console.error('Chat ID not available. Cannot send message.');
+      return;
+    }
 
-    const newMessages = [...messages, { role: 'user' as const, content: input }];
+    const userMessage = { role: 'user' as const, content: input };
+    const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
 
-    // TODO: Implement LLM call here
+    try {
+      // Save user message to DB
+      await fetch('/api/chat/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, role: userMessage.role, content: userMessage.content }),
+      });
+
+      // Call LLM
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: newMessages,
+          context: initialContext,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('API error');
+      }
+
+      const assistantMessage = await response.json();
+      setMessages((prevMessages) => [...prevMessages, assistantMessage]);
+
+      // Save assistant message to DB
+      await fetch('/api/chat/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, role: assistantMessage.role, content: assistantMessage.content }),
+      });
+
+    } catch (error) {
+      console.error('Failed to get response from chat API or save message', error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.',
+        },
+      ]);
+    }
   };
 
   return (
