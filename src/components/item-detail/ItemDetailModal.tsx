@@ -386,15 +386,132 @@ export function ItemDetailModal({
     if (contentType === 'youtube' && item.metadata?.extra_data?.transcript) {
       context += `\nTranscript:\n${item.metadata.extra_data.transcript}`;
     } else if (contentType === 'twitter') {
-      if (item.postType === 'video' && xTranscript) {
+      if (twitterPostType === 'video' && xTranscript) {
         context += `\nTranscript:\n${xTranscript}`;
-      } else if (item.postType === 'image' && xImageDescription) {
+      } else if (twitterPostType === 'image' && xImageDescription) {
         context += `\nImage Description:\n${xImageDescription}`;
       } else {
         context += `\nPost Text:\n${item.content}`;
       }
     }
     return context;
+  };
+
+  const handleOpenChat = async () => {
+    // Open chat immediately
+    setCenterShelfView('chat');
+    setIsLoading(true);
+    
+    try {
+      // For YouTube videos, fetch transcript if not already available
+      if (contentType === 'youtube' && !item.metadata?.extra_data?.transcript) {
+        try {
+          const response = await fetch('/api/transcript', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: item.url }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.transcript) {
+              // Save the transcript to metadata
+              await fetch('/api/update-metadata', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  itemId: item.id,
+                  metadata: {
+                    ...item.metadata,
+                    extra_data: { ...item.metadata?.extra_data, transcript: data.transcript }
+                  }
+                }),
+              });
+              // Refresh the item data
+              if (onUpdateItem) await onUpdateItem(item.id, {});
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching YouTube transcript for chat:', error);
+        }
+      }
+      
+      // For X posts, fetch transcript or image description if not already available
+      if (contentType === 'twitter') {
+        if (twitterPostType === 'video' && !xTranscript && !item.metadata?.extra_data?.x_transcript) {
+          // Fetch video transcript inline without opening transcript view
+          try {
+            const videoUrl = item.metadata.video_url;
+            if (videoUrl) {
+              const headResponse = await fetch(videoUrl, { method: 'HEAD' });
+              const contentLength = headResponse.headers.get('Content-Length');
+              const videoSizeMB = contentLength ? parseInt(contentLength, 10) / (1024 * 1024) : 0;
+
+              if (videoSizeMB <= 25) {
+                const response = await fetch('/api/transcribe-x-video', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ videoUrl: item.metadata.video_url }),
+                });
+                
+                if (response.ok) {
+                  const data = await response.json();
+                  setXTranscript(data.transcript);
+                  
+                  // Save to metadata
+                  await fetch('/api/update-metadata', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      itemId: item.id,
+                      metadata: {
+                        ...item.metadata,
+                        extra_data: { ...item.metadata?.extra_data, x_transcript: data.transcript }
+                      }
+                    }),
+                  });
+                  if (onUpdateItem) await onUpdateItem(item.id, {});
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching X video transcript for chat:', error);
+          }
+        } else if (twitterPostType === 'image' && !xImageDescription && !item.metadata?.extra_data?.x_image_description) {
+          // Fetch image description inline without opening description view
+          try {
+            const response = await fetch('/api/describe-x-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageUrl: item.thumbnail_url, text: item.content }),
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              setXImageDescription(data.description);
+              
+              // Save to metadata
+              await fetch('/api/update-metadata', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  itemId: item.id,
+                  metadata: {
+                    ...item.metadata,
+                    extra_data: { ...item.metadata?.extra_data, x_image_description: data.description }
+                  }
+                }),
+              });
+              if (onUpdateItem) await onUpdateItem(item.id, {});
+            }
+          } catch (error) {
+            console.error('Error fetching X image description for chat:', error);
+          }
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const rightColumn = (
@@ -430,14 +547,14 @@ export function ItemDetailModal({
             item={item}
             isTranscriptOpen={centerShelfView === 'transcript'}
             onTranscriptToggle={() => setCenterShelfView(centerShelfView === 'transcript' ? null : 'transcript')}
-            onChat={(context) => setCenterShelfView('chat')}
+            onChat={handleOpenChat}
             chatContext={getChatContext()}
           />
         )}
         {contentType === 'twitter' && (
           <XToolsSection
             postType={twitterPostType as 'video' | 'image' | 'text'}
-            onChat={(context) => setCenterShelfView('chat')}
+            onChat={handleOpenChat}
             onCopy={handleCopyXText}
             onShowTranscript={handleXTranscript}
             onShowImageDescription={handleXImageDescription}
@@ -460,13 +577,7 @@ export function ItemDetailModal({
   );
 
   let centerShelfContent;
-  if (isLoading) {
-    centerShelfContent = (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  } else if (centerShelfView === 'transcript') {
+  if (centerShelfView === 'transcript') {
     if (contentType === 'youtube') {
       centerShelfContent = (
         <YouTubeTranscript
@@ -499,8 +610,31 @@ export function ItemDetailModal({
       />
     );
   } else if (centerShelfView === 'chat') {
-    centerShelfContent = <Chat initialContext={getChatContext()} itemId={item.id} spaceId={null} onClose={() => setCenterShelfView(null)} />;
-    console.log('Chat component rendered with itemId:', item.id, 'and spaceId:', null);
+    if (isLoading) {
+      // Show loading spinner while fetching transcript/description data
+      centerShelfContent = (
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="text-lg font-semibold">Chat</h2>
+            <button
+              onClick={() => setCenterShelfView(null)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-sm text-muted-foreground">Loading transcript data...</p>
+            </div>
+          </div>
+        </div>
+      );
+    } else {
+      centerShelfContent = <Chat initialContext={getChatContext()} itemId={item.id} spaceId={null} onClose={() => setCenterShelfView(null)} />;
+      console.log('Chat component rendered with itemId:', item.id, 'and spaceId:', null);
+    }
   }
 
   return (
