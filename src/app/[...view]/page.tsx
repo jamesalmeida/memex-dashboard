@@ -207,15 +207,16 @@ export default function Dashboard({ params }: DashboardProps) {
         // Hash exists and modal isn't open - try to open the item
         try {
           // Always fetch fresh data from database to ensure we have latest tags/data
-          console.log('Fetching fresh item data for hash:', hash);
+          console.log('handleHashChange: Attempting to fetch item for hash:', hash);
           const fetchedItem = await itemsService.getItem(hash);
+          console.log('handleHashChange: Fetched item:', fetchedItem);
+
           if (fetchedItem) {
-            console.log('Fresh item fetched with tags:', fetchedItem.tags);
+            console.log('handleHashChange: Item found, setting selectedItem and showItemDetail to true');
             setSelectedItem(fetchedItem);
             setShowItemDetail(true);
           } else {
-            // Item doesn't exist, clear the hash
-            console.log('Item not found, clearing hash');
+            console.log('handleHashChange: Item not found for hash, clearing hash');
             window.history.replaceState({}, '', window.location.pathname);
           }
         } catch (error) {
