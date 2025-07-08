@@ -224,11 +224,11 @@ export function ItemDetailModal({
 
   const handleXTranscript = async () => {
     setIsLoading(true);
+    setCenterShelfView('transcript'); // Open center shelf immediately
 
     // Check if transcript already exists in metadata
     if (item.metadata?.extra_data?.x_transcript) {
       setXTranscript(item.metadata.extra_data.x_transcript);
-      setCenterShelfView('transcript');
       setIsLoading(false);
       return;
     }
@@ -258,7 +258,6 @@ export function ItemDetailModal({
       if (!response.ok) throw new Error('Failed to transcribe video');
       const data = await response.json();
       setXTranscript(data.transcript);
-      setCenterShelfView('transcript');
       // Use the API endpoint with service role key to update metadata
       try {
         const metadataResponse = await fetch('/api/update-metadata', {
@@ -292,11 +291,11 @@ export function ItemDetailModal({
 
   const handleXImageDescription = async () => {
     setIsLoading(true);
+    setCenterShelfView('image-description'); // Open center shelf immediately
 
     // Check if image description already exists in metadata
     if (item.metadata?.extra_data?.x_image_description) {
       setXImageDescription(item.metadata.extra_data.x_image_description);
-      setCenterShelfView('image-description');
       setIsLoading(false);
       return;
     }
@@ -314,7 +313,6 @@ export function ItemDetailModal({
       }
       const data = await response.json();
       setXImageDescription(data.description);
-      setCenterShelfView('image-description');
       
       // Save the image description to metadata using API with service role key
       try {
