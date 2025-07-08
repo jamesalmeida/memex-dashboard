@@ -87,6 +87,12 @@ export function ItemDetailModal({
     } else {
       setXTranscript(null);
     }
+    // Load X image description from metadata if it exists
+    if (item?.metadata?.extra_data?.x_image_description) {
+      setXImageDescription(item.metadata.extra_data.x_image_description);
+    } else {
+      setXImageDescription(null);
+    }
   }, [item?.id]);
 
   useEffect(() => {
@@ -191,11 +197,28 @@ export function ItemDetailModal({
     if (onRemoveTag) await onRemoveTag(item.id, tag);
   };
 
-  const handleYouTubeTranscriptFetch = (transcript: string) => {
-    if (onUpdateItem) {
-      onUpdateItem(item.id, {
-        metadata: { ...item.metadata, extra_data: { ...item.metadata?.extra_data, transcript } },
+  const handleYouTubeTranscriptFetch = async (transcript: string) => {
+    try {
+      const response = await fetch('/api/update-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId: item.id,
+          metadata: {
+            ...item.metadata,
+            extra_data: { ...item.metadata?.extra_data, transcript }
+          }
+        }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update metadata');
+      }
+      
+      if (onUpdateItem) await onUpdateItem(item.id, {});
+    } catch (error) {
+      console.error('Error saving YouTube transcript:', error);
     }
   };
 
@@ -236,13 +259,25 @@ export function ItemDetailModal({
       const data = await response.json();
       setXTranscript(data.transcript);
       setCenterShelfView('transcript');
-      // Use the itemsService to update metadata properly
+      // Use the API endpoint with service role key to update metadata
       try {
-        const { itemsService } = await import('@/lib/supabase/services');
-        await itemsService.updateItemMetadata(item.id, {
-          ...item.metadata,
-          extra_data: { ...item.metadata?.extra_data, x_transcript: data.transcript }
+        const metadataResponse = await fetch('/api/update-metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itemId: item.id,
+            metadata: {
+              ...item.metadata,
+              extra_data: { ...item.metadata?.extra_data, x_transcript: data.transcript }
+            }
+          }),
         });
+        
+        if (!metadataResponse.ok) {
+          const errorData = await metadataResponse.json();
+          throw new Error(errorData.error || 'Failed to update metadata');
+        }
+        
         // Refresh the item data
         if (onUpdateItem) await onUpdateItem(item.id, {});
       } catch (updateError) {
@@ -257,18 +292,57 @@ export function ItemDetailModal({
 
   const handleXImageDescription = async () => {
     setIsLoading(true);
+
+    // Check if image description already exists in metadata
+    if (item.metadata?.extra_data?.x_image_description) {
+      setXImageDescription(item.metadata.extra_data.x_image_description);
+      setCenterShelfView('image-description');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/describe-x-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl: item.thumbnail_url, text: item.content }),
       });
-      if (!response.ok) throw new Error('Failed to describe image');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || 'Failed to describe image');
+      }
       const data = await response.json();
       setXImageDescription(data.description);
       setCenterShelfView('image-description');
+      
+      // Save the image description to metadata using API with service role key
+      try {
+        const metadataResponse = await fetch('/api/update-metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itemId: item.id,
+            metadata: {
+              ...item.metadata,
+              extra_data: { ...item.metadata?.extra_data, x_image_description: data.description }
+            }
+          }),
+        });
+        
+        if (!metadataResponse.ok) {
+          const errorData = await metadataResponse.json();
+          throw new Error(errorData.error || 'Failed to update metadata');
+        }
+        
+        // Refresh the item data
+        if (onUpdateItem) await onUpdateItem(item.id, {});
+      } catch (updateError) {
+        console.error('Error saving image description to database:', updateError);
+      }
     } catch (error) {
       console.error('Error describing X image:', error);
+      alert('Failed to describe image. Please check the console for details.');
     } finally {
       setIsLoading(false);
     }
@@ -284,8 +358,20 @@ export function ItemDetailModal({
       contentType={contentType}
       onUpdateMetadata={async (metadata) => {
         try {
-          const { itemsService } = await import('@/lib/supabase/services');
-          await itemsService.updateItemMetadata(item.id, metadata);
+          const response = await fetch('/api/update-metadata', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              itemId: item.id,
+              metadata: metadata
+            }),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to update metadata');
+          }
+          
           if (onUpdateItem) await onUpdateItem(item.id, {});
         } catch (error) {
           console.error('Error updating metadata:', error);

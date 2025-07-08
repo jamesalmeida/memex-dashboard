@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4-vision-preview',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'user',
@@ -25,11 +25,19 @@ export async function POST(request: Request) {
           ],
         },
       ],
+      max_tokens: 1000,
     });
 
     return NextResponse.json({ description: response.choices[0].message.content });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error describing image:', error);
-    return NextResponse.json({ error: 'Failed to describe image' }, { status: 500 });
+    console.error('Error details:', error.message);
+    if (error.response) {
+      console.error('OpenAI API response:', error.response.data);
+    }
+    return NextResponse.json({ 
+      error: 'Failed to describe image',
+      details: error.message 
+    }, { status: 500 });
   }
 }
