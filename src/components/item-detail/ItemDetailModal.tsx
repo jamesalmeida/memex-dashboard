@@ -81,6 +81,12 @@ export function ItemDetailModal({
   useEffect(() => {
     setUserNotes(item?.user_notes || '');
     setCenterShelfView(null); // Close chat when item changes
+    // Load X transcript from metadata if it exists
+    if (item?.metadata?.extra_data?.x_transcript) {
+      setXTranscript(item.metadata.extra_data.x_transcript);
+    } else {
+      setXTranscript(null);
+    }
   }, [item?.id]);
 
   useEffect(() => {
@@ -195,7 +201,32 @@ export function ItemDetailModal({
 
   const handleXTranscript = async () => {
     setIsLoading(true);
+
+    // Check if transcript already exists in metadata
+    if (item.metadata?.extra_data?.x_transcript) {
+      setXTranscript(item.metadata.extra_data.x_transcript);
+      setCenterShelfView('transcript');
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      // Check video file size before sending to API
+      const videoUrl = item.metadata.video_url;
+      if (!videoUrl) {
+        throw new Error('Video URL not found in item metadata.');
+      }
+
+      const headResponse = await fetch(videoUrl, { method: 'HEAD' });
+      const contentLength = headResponse.headers.get('Content-Length');
+      const videoSizeMB = contentLength ? parseInt(contentLength, 10) / (1024 * 1024) : 0;
+
+      if (videoSizeMB > 25) {
+        alert(`Video file size (${videoSizeMB.toFixed(2)} MB) exceeds the 25 MB limit for transcription.`);
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/transcribe-x-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,10 +236,17 @@ export function ItemDetailModal({
       const data = await response.json();
       setXTranscript(data.transcript);
       setCenterShelfView('transcript');
-      if (onUpdateItem) {
-        onUpdateItem(item.id, {
-          metadata: { ...item.metadata, extra_data: { ...item.metadata?.extra_data, x_transcript: data.transcript } },
+      // Use the itemsService to update metadata properly
+      try {
+        const { itemsService } = await import('@/lib/supabase/services');
+        await itemsService.updateItemMetadata(item.id, {
+          ...item.metadata,
+          extra_data: { ...item.metadata?.extra_data, x_transcript: data.transcript }
         });
+        // Refresh the item data
+        if (onUpdateItem) await onUpdateItem(item.id, {});
+      } catch (updateError) {
+        console.error('Error saving transcript to database:', updateError);
       }
     } catch (error) {
       console.error('Error transcribing X video:', error);
@@ -240,9 +278,7 @@ export function ItemDetailModal({
     navigator.clipboard.writeText(item.content);
   };
 
-  const leftColumn = isLoading ? (
-    <ContentSkeleton type={contentType === 'unknown' ? 'default' : contentType as any} />
-  ) : (
+  const leftColumn = (
     <ContentViewer 
       item={item} 
       contentType={contentType}
@@ -280,63 +316,53 @@ export function ItemDetailModal({
   const rightColumn = (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
-        {isLoading ? (
-          <div className="h-7 w-3/4 bg-muted rounded animate-pulse" />
-        ) : (
-          <EditableTitle title={item.title} onSave={handleSaveTitle} />
-        )}
+        <EditableTitle title={item.title} onSave={handleSaveTitle} />
       </div>
       <div className="flex-1 overflow-auto">
-        {isLoading ? (
-          <MetadataSkeleton />
-        ) : (
-          <>
-            <MetadataPanel item={item} contentType={selectedContentType} onContentTypeChange={setSelectedContentType} />
-            <div className="p-4 border-t">
-              <h3 className="text-sm font-medium mb-3">Space</h3>
-              <SpaceSelector
-                spaces={spaces}
-                currentSpaceId={item.space_id}
-                onSelect={(spaceId) => {
-                  if (onChangeSpace) onChangeSpace(item.id, spaceId);
-                }}
-              />
-            </div>
-            <div className="p-4 border-t">
-              <ItemTags
-                itemId={item.id}
-                tags={item.tags?.map((tag: any) => typeof tag === 'string' ? tag : tag.name) || []}
-                contentType={contentType}
-                onAddTag={handleAddTag}
-                onRemoveTag={handleRemoveTag}
-                item={{...item}}
-              />
-            </div>
-            {contentType === 'youtube' && (
-              <ToolsSection
-                contentType={contentType}
-                item={item}
-                isTranscriptOpen={centerShelfView === 'transcript'}
-                onTranscriptToggle={() => setCenterShelfView(centerShelfView === 'transcript' ? null : 'transcript')}
-                onChat={(context) => setCenterShelfView('chat')}
-                chatContext={getChatContext()}
-              />
-            )}
-            {contentType === 'twitter' && (
-              <XToolsSection
-                postType={twitterPostType as 'video' | 'image' | 'text'}
-                onChat={(context) => setCenterShelfView('chat')}
-                onCopy={handleCopyXText}
-                onShowTranscript={handleXTranscript}
-                onShowImageDescription={handleXImageDescription}
-                chatContext={getChatContext()}
-              />
-            )}
-            <div className="p-4 border-t">
-              <UserNotes itemId={item.id} initialNotes={userNotes} onSave={handleSaveNotes} />
-            </div>
-          </>
+        <MetadataPanel item={item} contentType={selectedContentType} onContentTypeChange={setSelectedContentType} />
+        <div className="p-4 border-t">
+          <h3 className="text-sm font-medium mb-3">Space</h3>
+          <SpaceSelector
+            spaces={spaces}
+            currentSpaceId={item.space_id}
+            onSelect={(spaceId) => {
+              if (onChangeSpace) onChangeSpace(item.id, spaceId);
+            }}
+          />
+        </div>
+        <div className="p-4 border-t">
+          <ItemTags
+            itemId={item.id}
+            tags={item.tags?.map((tag: any) => typeof tag === 'string' ? tag : tag.name) || []}
+            contentType={contentType}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            item={{...item}}
+          />
+        </div>
+        {contentType === 'youtube' && (
+          <ToolsSection
+            contentType={contentType}
+            item={item}
+            isTranscriptOpen={centerShelfView === 'transcript'}
+            onTranscriptToggle={() => setCenterShelfView(centerShelfView === 'transcript' ? null : 'transcript')}
+            onChat={(context) => setCenterShelfView('chat')}
+            chatContext={getChatContext()}
+          />
         )}
+        {contentType === 'twitter' && (
+          <XToolsSection
+            postType={twitterPostType as 'video' | 'image' | 'text'}
+            onChat={(context) => setCenterShelfView('chat')}
+            onCopy={handleCopyXText}
+            onShowTranscript={handleXTranscript}
+            onShowImageDescription={handleXImageDescription}
+            chatContext={getChatContext()}
+          />
+        )}
+        <div className="p-4 border-t">
+          <UserNotes itemId={item.id} initialNotes={userNotes} onSave={handleSaveNotes} />
+        </div>
       </div>
       <ActionButtons
         itemId={item.id}
@@ -350,7 +376,13 @@ export function ItemDetailModal({
   );
 
   let centerShelfContent;
-  if (centerShelfView === 'transcript') {
+  if (isLoading) {
+    centerShelfContent = (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  } else if (centerShelfView === 'transcript') {
     if (contentType === 'youtube') {
       centerShelfContent = (
         <YouTubeTranscript

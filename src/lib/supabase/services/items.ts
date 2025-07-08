@@ -163,7 +163,7 @@ export const itemsService = {
   },
 
   // Update an item
-  async updateItem(id: string, input: UpdateItemInput): Promise<Item> {
+  async updateItem(id: string, input: UpdateItemInput): Promise<Item | null> {
     const supabase = createClient()
     
     const { data, error } = await supabase
@@ -171,11 +171,11 @@ export const itemsService = {
       .update(input)
       .eq('id', id)
       .select()
-      .single()
+      .limit(1)
     
     if (error) throw error
     
-    return data
+    return data ? data[0] : null
   },
 
   // Archive an item
@@ -276,13 +276,13 @@ export const itemsService = {
       .from('item_metadata')
       .select('id')
       .eq('item_id', itemId)
-      .single()
+      .limit(1)
     
     if (selectError && selectError.code !== 'PGRST116') {
       console.error('Error checking existing metadata:', selectError);
     }
     
-    if (existing) {
+    if (existing && existing.length > 0) {
       console.log('Updating existing metadata record:', existing.id);
       // Update existing metadata
       const { data, error } = await supabase
