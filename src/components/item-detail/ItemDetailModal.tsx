@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { ItemDetailLayout } from './ItemDetailLayout';
 import { ContentViewer } from './viewers/ViewerRegistry';
@@ -56,6 +56,17 @@ export function ItemDetailModal({
   const [selectedContentType, setSelectedContentType] = useState<ContentType>(contentType);
   const [xTranscript, setXTranscript] = useState<string | null>(null);
   const [xImageDescription, setXImageDescription] = useState<string | null>(null);
+
+  // Determine Twitter post type based on metadata
+  const twitterPostType = useMemo(() => {
+    if (item?.metadata?.video_url) {
+      return 'video';
+    } else if (item?.thumbnail_url) {
+      return 'image';
+    } else {
+      return 'text';
+    }
+  }, [item?.metadata?.video_url, item?.thumbnail_url]);
 
   useEffect(() => {
     setSelectedContentType(contentType);
@@ -194,6 +205,11 @@ export function ItemDetailModal({
       const data = await response.json();
       setXTranscript(data.transcript);
       setCenterShelfView('transcript');
+      if (onUpdateItem) {
+        onUpdateItem(item.id, {
+          metadata: { ...item.metadata, extra_data: { ...item.metadata?.extra_data, x_transcript: data.transcript } },
+        });
+      }
     } catch (error) {
       console.error('Error transcribing X video:', error);
     } finally {
@@ -308,7 +324,7 @@ export function ItemDetailModal({
             )}
             {contentType === 'twitter' && (
               <XToolsSection
-                postType={item.postType}
+                postType={twitterPostType as 'video' | 'image' | 'text'}
                 onChat={(context) => setCenterShelfView('chat')}
                 onCopy={handleCopyXText}
                 onShowTranscript={handleXTranscript}
